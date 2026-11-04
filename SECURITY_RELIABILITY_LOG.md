@@ -46,6 +46,30 @@ defense-in-depth, availability), **Low** (hygiene).
 
 ---
 
+## 2026-11-04 — Wave 8: OAuth account takeover, NUL-byte robustness
+
+### H-7 (High) Google OAuth linked accounts without checking email_verified
+- **Finding**: the OAuth callback linked a Google identity to an existing
+  account purely by matching email address. Google permits accounts with
+  **unverified** emails; registering one with a victim's address and signing
+  in via Google would attach the attacker's Google identity to the victim's
+  NicFinder account — full account takeover. (Not exploitable until Google
+  OAuth is configured in production, but the code path shipped.)
+- **Fix**: `email_verified === true` is now required from the userinfo
+  response before any email-based linking or account creation; both OAuth
+  fetches also gained 10s timeouts (a hung Google endpoint hung the whole
+  request).
+
+### L-6 (Low) NUL bytes in text inputs caused 500s
+- **Finding**: Postgres `text` rejects `\u0000`; a NUL byte inside any JSON
+  string field (comment body, dispute note, moderation reason, display name,
+  admin notes) surfaced as an unhandled 500.
+- **Fix**: shared `cleanText()` strips NUL/control chars (keeps \n \t),
+  trims and caps length; applied at every free-text input boundary. Unit
+  tested.
+
+---
+
 ## 2026-11-04 — Wave 7: identical-file commit race, hot-query indexes
 
 ### M-16 (Medium) Concurrent commits of identical files applied data twice

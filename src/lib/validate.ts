@@ -8,6 +8,19 @@
  *  - undefined when present but invalid (caller should 400).
  */
 /**
+ * Clean untrusted free text for storage: strips NUL bytes (Postgres `text`
+ * rejects them → 500) and other control characters except newline/tab,
+ * trims, and caps the length. Returns "" for non-string input.
+ */
+export function cleanText(input: unknown, maxLen: number): string {
+  if (input === null || input === undefined) return "";
+  return String(input)
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "")
+    .trim()
+    .slice(0, maxLen);
+}
+
+/**
  * Encode one CSV cell safely: quotes/commas/newlines are quoted, and a
  * leading = + - @ (or tab/CR) is neutralized with an apostrophe so values
  * from untrusted imports cannot execute as formulas when the exported

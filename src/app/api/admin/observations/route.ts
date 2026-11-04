@@ -4,6 +4,7 @@ import { withStaff } from "@/lib/admin-api";
 import { prisma } from "@/lib/db";
 import { parsePriceToCents, isPriceSane } from "@/lib/money";
 import { audit } from "@/lib/audit";
+import { cleanText } from "@/lib/validate";
 
 export async function POST(req: NextRequest) {
   return withStaff(async (user) => {
@@ -36,7 +37,7 @@ export async function POST(req: NextRequest) {
           : "UNKNOWN",
         observedAt,
         sourceType: "ADMIN",
-        notes: b?.notes ? String(b.notes).slice(0, 500) : null,
+        notes: b?.notes ? cleanText(b.notes, 500) || null : null,
       },
     });
     await audit("ADMIN_PRICE_ENTERED", {

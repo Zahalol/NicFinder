@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { requireUser, AuthError } from "@/lib/auth";
 import { getSettings } from "@/lib/settings";
 import { countRecentComments } from "@/lib/rate-limit";
+import { cleanText } from "@/lib/validate";
 
 export async function POST(
   req: NextRequest,
@@ -22,7 +23,7 @@ export async function POST(
       return NextResponse.json({ error: "Store not found." }, { status: 404 });
 
     const body = await req.json().catch(() => null);
-    const text = String(body?.body ?? "").trim();
+    const text = cleanText(body?.body, 500);
     if (text.length < 2 || text.length > 500)
       return NextResponse.json({ error: "Comment must be 2–500 characters." }, { status: 400 });
 

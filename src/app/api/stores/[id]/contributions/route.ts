@@ -5,7 +5,7 @@ import { requireUser, AuthError } from "@/lib/auth";
 import { getSettings } from "@/lib/settings";
 import { parsePriceToCents } from "@/lib/money";
 import { countRecentContributions } from "@/lib/rate-limit";
-import { parseOptionalQty } from "@/lib/validate";
+import { parseOptionalQty, cleanText } from "@/lib/validate";
 import { selectLatestPrice } from "@/lib/prices";
 import {
   decideDispute,
@@ -183,7 +183,7 @@ export async function POST(
             targetObservationId: openProposal.id, // references the proposal
             status: "PUBLISHED",
             resolvedAt: new Date(),
-            comment: body?.comment ? String(body.comment).slice(0, 500) : null,
+            comment: body?.comment ? cleanText(body.comment, 500) || null : null,
           },
         });
         const published = await maybePublishCorroborated(openProposal.id, settings);
@@ -217,7 +217,7 @@ export async function POST(
           kind: "DISPUTE",
           proposedPriceCents: priceCents,
           proposedQty,
-          comment: body?.comment ? String(body.comment).slice(0, 500) : null,
+          comment: body?.comment ? cleanText(body.comment, 500) || null : null,
           status:
             decision.action === "AUTO_PUBLISH"
               ? "PENDING" // flipped by publishDispute

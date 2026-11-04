@@ -10,6 +10,7 @@ import {
   validatePassword,
 } from "@/lib/auth";
 import { memoryRateLimit } from "@/lib/rate-limit";
+import { cleanText } from "@/lib/validate";
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0] ?? "local";
@@ -20,7 +21,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const email = String(body?.email ?? "").trim().toLowerCase();
   const password = String(body?.password ?? "");
-  const displayName = String(body?.displayName ?? "").trim().slice(0, 40);
+  const displayName = cleanText(body?.displayName, 40);
 
   const emailErr = validateEmail(email);
   if (emailErr) return NextResponse.json({ error: emailErr }, { status: 400 });

@@ -3,13 +3,14 @@ import { withStaff } from "@/lib/admin-api";
 import { prisma } from "@/lib/db";
 import { publishDispute, addReputation, REP_DELTAS } from "@/lib/reputation";
 import { audit } from "@/lib/audit";
+import { cleanText } from "@/lib/validate";
 
 export async function POST(req: NextRequest) {
   return withStaff(async (user) => {
     const b = await req.json().catch(() => null);
     const action = String(b?.action ?? "");
     const targetId = String(b?.targetId ?? "");
-    const reason = String(b?.reason ?? "").slice(0, 300);
+    const reason = cleanText(b?.reason, 300);
 
     if (action === "APPROVE_CONTRIBUTION") {
       const c = await prisma.contribution.findUnique({ where: { id: targetId } });

@@ -10,7 +10,7 @@ import { resetDb, seedProductLines, makeUser } from "./helpers";
 import { DEFAULT_SETTINGS } from "@/lib/settings";
 import { publishDispute } from "@/lib/reputation";
 import { reportComment } from "@/lib/comments";
-import { parseOptionalQty, csvCell } from "@/lib/validate";
+import { parseOptionalQty, csvCell, cleanText } from "@/lib/validate";
 import {
   validateRows,
   createPreviewBatch,
@@ -324,6 +324,20 @@ describe("import field-length bounds", () => {
     const validated = await validateRows(rows as Record<string, unknown>[], mapping);
     expect(validated[0].outcome).toBe("REJECTED");
     expect(validated[0].issues.some((i) => i.code === "FIELD_TOO_LONG")).toBe(true);
+  });
+});
+
+describe("cleanText", () => {
+  it("strips NUL and control characters (Postgres text rejects \\0)", () => {
+    expect(cleanText("a\u0000b", 100)).toBe("ab");
+    expect(cleanText("x\u0007\u001b[31my", 100)).toBe("x[31my");
+    expect(cleanText("keep\nnewlines\tand tabs", 100)).toBe("keep\nnewlines\tand tabs");
+  });
+  it("trims and caps length", () => {
+    expect(cleanText("  hi  ", 100)).toBe("hi");
+    expect(cleanText("a".repeat(600), 500)).toHaveLength(500);
+    expect(cleanText(null, 10)).toBe("");
+    expect(cleanText(12345, 3)).toBe("123");
   });
 });
 
