@@ -9,6 +9,7 @@ import { BackLink } from "@/components/BackLink";
 import { SaveStoreButton } from "@/components/SaveStoreButton";
 import { ContributePanel } from "./ContributePanel";
 import { Comments } from "./Comments";
+import { FlagObservationButton } from "./FlagObservationButton";
 
 export const dynamic = "force-dynamic";
 
@@ -231,7 +232,8 @@ export default async function StorePage({
                 <th className="py-1.5 pr-2">Product</th>
                 <th className="py-1.5 pr-2">Price</th>
                 <th className="py-1.5 pr-2">Source</th>
-                <th className="py-1.5">Status</th>
+                <th className="py-1.5 pr-2">Status</th>
+                <th className="py-1.5"></th>
               </tr>
             </thead>
             <tbody>
@@ -253,7 +255,14 @@ export default async function StorePage({
                     )}
                   </td>
                   <td className="py-1.5 pr-2 text-stone-500">{o.sourceType.toLowerCase()}</td>
-                  <td className="py-1.5 text-xs text-stone-400">{o.status.toLowerCase()}</td>
+                  <td className="py-1.5 pr-2 text-xs text-stone-400">{o.status.toLowerCase()}</td>
+                  <td className="py-1.5 text-right">
+                    <FlagObservationButton
+                      storeId={store.id}
+                      observationId={o.id}
+                      signedIn={Boolean(user)}
+                    />
+                  </td>
                 </tr>
               ))}
             </tbody>

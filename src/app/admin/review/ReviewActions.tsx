@@ -7,10 +7,12 @@ export function ReviewActions({
   contributionId,
   commentId,
   commentStatus,
+  flagId,
 }: {
   contributionId?: string;
   commentId?: string;
   commentStatus?: string;
+  flagId?: string;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -53,6 +55,24 @@ export function ReviewActions({
             className="rounded border border-red-300 text-red-700 px-2 py-1 text-xs hover:bg-red-50"
           >
             Reject
+          </button>
+        </>
+      )}
+      {flagId && (
+        <>
+          <button
+            disabled={busy}
+            onClick={() => act("UPHOLD_FLAG", flagId)}
+            className="rounded border border-teal-300 text-teal-700 px-2 py-1 text-xs hover:bg-teal-50"
+          >
+            Uphold — invalidate observation
+          </button>
+          <button
+            disabled={busy}
+            onClick={() => act("DISMISS_FLAG", flagId, true)}
+            className="rounded border border-red-300 text-red-700 px-2 py-1 text-xs hover:bg-red-50"
+          >
+            Dismiss
           </button>
         </>
       )}

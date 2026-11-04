@@ -12,6 +12,7 @@ import {
   addReputation,
   REP_DELTAS,
 } from "@/lib/reputation";
+import { flagObservation } from "@/lib/flags";
 
 export async function POST(
   req: NextRequest,
@@ -36,6 +37,25 @@ export async function POST(
 
     const body = await req.json().catch(() => null);
     const kind = body?.kind;
+
+    // ----- FLAG a specific (possibly historical) observation ---------------
+    // Product line comes from the observation itself, so handle before the
+    // productLineId validation below.
+    if (kind === "FLAG_OBSERVATION") {
+      const result = await flagObservation({
+        observationId: String(body?.targetObservationId ?? ""),
+        storeId,
+        userId: user.id,
+        reason: String(body?.comment ?? ""),
+      });
+      if (!result.ok)
+        return NextResponse.json({ error: result.error }, { status: result.status });
+      return NextResponse.json({
+        ok: true,
+        message: "Thanks — a moderator will review this observation.",
+      });
+    }
+
     const productLineId = String(body?.productLineId ?? "");
     const productLine = await prisma.productLine.findUnique({ where: { id: productLineId } });
     if (!productLine)

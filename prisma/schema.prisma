@@ -320,9 +320,11 @@ model Contribution {
   storeId       String
   store         Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
   productLineId String
-  // CONFIRM | DISPUTE (replacement price proposed)
+  // CONFIRM | DISPUTE (replacement price proposed) |
+  // FLAG_OBSERVATION (a specific listed observation reported as wrong)
   kind          String
   // For CONFIRM: the observation being confirmed.
+  // For FLAG_OBSERVATION: the observation being flagged.
   targetObservationId String?
   // For DISPUTE: proposed values
   proposedPriceCents Int?

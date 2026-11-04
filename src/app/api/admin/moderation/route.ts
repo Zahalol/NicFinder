@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { withStaff } from "@/lib/admin-api";
 import { prisma } from "@/lib/db";
 import { publishDispute, addReputation, REP_DELTAS } from "@/lib/reputation";
+import { upholdFlag, dismissFlag } from "@/lib/flags";
 import { audit } from "@/lib/audit";
 
 export async function POST(req: NextRequest) {
@@ -15,6 +16,8 @@ export async function POST(req: NextRequest) {
       const c = await prisma.contribution.findUnique({ where: { id: targetId } });
       if (!c || !["PENDING", "CORROBORATING"].includes(c.status))
         return NextResponse.json({ error: "Contribution not reviewable." }, { status: 409 });
+      if (c.kind === "FLAG_OBSERVATION")
+        return NextResponse.json({ error: "Use UPHOLD_FLAG for observation flags." }, { status: 400 });
       await publishDispute(c.id, "moderator", user.id);
       await prisma.moderationAction.create({
         data: { actorId: user.id, action, targetType: "contribution", targetId, reason: reason || "Approved" },
@@ -26,6 +29,8 @@ export async function POST(req: NextRequest) {
       const c = await prisma.contribution.findUnique({ where: { id: targetId } });
       if (!c || !["PENDING", "CORROBORATING"].includes(c.status))
         return NextResponse.json({ error: "Contribution not reviewable." }, { status: 409 });
+      if (c.kind === "FLAG_OBSERVATION")
+        return NextResponse.json({ error: "Use DISMISS_FLAG for observation flags." }, { status: 400 });
       if (!reason)
         return NextResponse.json({ error: "A reason is required to reject." }, { status: 400 });
       await prisma.$transaction(async (tx) => {
@@ -41,6 +46,20 @@ export async function POST(req: NextRequest) {
           data: { actorId: user.id, action, targetType: "contribution", targetId, reason },
         });
       });
+      return NextResponse.json({ ok: true });
+    }
+
+    if (action === "UPHOLD_FLAG") {
+      const result = await upholdFlag(targetId, user.id, reason || undefined);
+      if (!result.ok)
+        return NextResponse.json({ error: result.error }, { status: result.status });
+      return NextResponse.json({ ok: true });
+    }
+
+    if (action === "DISMISS_FLAG") {
+      const result = await dismissFlag(targetId, user.id, reason);
+      if (!result.ok)
+        return NextResponse.json({ error: result.error }, { status: result.status });
       return NextResponse.json({ ok: true });
     }
 
