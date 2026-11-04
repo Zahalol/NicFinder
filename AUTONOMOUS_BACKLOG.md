@@ -23,5 +23,5 @@ Status: `todo` | `in-progress` | `done` | `blocked` | `rejected`.
 | 16 | In-app price-watch alerts (no email), building on watchlist | Med | M | Med | Needs notification UI | done |
 | 17 | Admin duplicate-suggestion improvements (fuzzy name+geo matching quality) | Med | M | Med | — | done |
 | 18 | Accessibility sweep: focus traps, aria on map/list toggle, contrast | Med | S-M | High | — | todo |
-| 19 | SEO store-page metadata + structured data review (21+ informational constraints) | Low-Med | S | Med | Legal care | todo |
+| 19 | SEO store-page metadata + structured data review (21+ informational constraints) | Low-Med | S | Med | Legal care | done |
 | 20 | Cross-platform setup validation (Windows CRLF, docs accuracy) | Low | S | High | Can't test Windows here | todo |

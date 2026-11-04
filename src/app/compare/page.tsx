@@ -14,7 +14,11 @@ import { DemoBadge, ReliabilityBadge } from "@/components/badges";
 import { BackLink } from "@/components/BackLink";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Compare stores — NicFinder" };
+export const metadata = {
+  title: "Compare stores — NicFinder",
+  // Parameterized pairwise pages: crawl bloat with no standalone value.
+  robots: { index: false, follow: true },
+};
 
 const QTYS = [1, 3, 5, 10];
 

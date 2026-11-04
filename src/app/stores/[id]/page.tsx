@@ -15,6 +15,26 @@ import { PriceHistorySparkline } from "@/components/PriceHistorySparkline";
 
 export const dynamic = "force-dynamic";
 
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const store = await prisma.store.findUnique({
+    where: { id },
+    select: { name: true, city: true, state: true, isDemo: true, status: true },
+  });
+  if (!store || store.status !== "ACTIVE") return { title: "Store — NicFinder" };
+  const place = [store.city, store.state].filter(Boolean).join(", ");
+  return {
+    title: `ZYN prices at ${store.name}${place ? ` — ${place}` : ""}`,
+    description: `Reported ZYN nicotine pouch prices, deals and availability at ${store.name}${place ? ` in ${place}` : ""}. Community-verified observations with freshness and confidence shown. Adults 21+ — informational only, nothing is sold here.`,
+    // Fictional demo stores must never be indexed as if they were real places.
+    robots: store.isDemo ? { index: false, follow: false } : undefined,
+  };
+}
+
 export default async function StorePage({
   params,
 }: {
@@ -74,8 +94,43 @@ export default async function StorePage({
       ? `https://www.openstreetmap.org/?mlat=${store.latitude}&mlon=${store.longitude}#map=17/${store.latitude}/${store.longitude}`
       : null;
 
+  // LocalBusiness structured data — real stores only. Emitting a fictional
+  // demo store as a real place would be dishonest structured data.
+  const jsonLd = !store.isDemo
+    ? {
+        "@context": "https://schema.org",
+        "@type": "LocalBusiness",
+        name: store.name,
+        address: {
+          "@type": "PostalAddress",
+          streetAddress: store.address ?? undefined,
+          addressLocality: store.city ?? undefined,
+          addressRegion: store.state ?? undefined,
+          postalCode: store.zip ?? undefined,
+          addressCountry: "US",
+        },
+        ...(store.latitude !== null && store.longitude !== null
+          ? {
+              geo: {
+                "@type": "GeoCoordinates",
+                latitude: store.latitude,
+                longitude: store.longitude,
+              },
+            }
+          : {}),
+        ...(store.phone ? { telephone: store.phone } : {}),
+      }
+    : null;
+
   return (
     <div className="py-6 max-w-3xl mx-auto">
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          // escape "<" so a store name can never close the script tag
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
+        />
+      )}
       <BackLink fallback="/search?q=60614">← Back to search</BackLink>
 
       <div className="mt-3 flex items-start justify-between gap-4 flex-wrap">
