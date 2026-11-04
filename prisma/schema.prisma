@@ -113,7 +113,9 @@ model PriceObservation {
   productLineId String
   productLine   ProductLine @relation(fields: [productLineId], references: [id])
 
-  priceCents    Int // regular single-can shelf price
+  // Regular single-can shelf price. Null for availability-only observations
+  // ("not carried" / "out of stock" with no price) — we never invent a price.
+  priceCents    Int?
   currency      String   @default("USD")
   // true | false | null=unknown
   taxIncluded   Boolean?

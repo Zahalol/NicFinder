@@ -2,7 +2,11 @@
 
 import { prisma } from "./db";
 import { boundingBox, haversineMiles } from "./geo";
-import { selectLatestPrice, type LatestPrice } from "./prices";
+import {
+  selectLatestPrice,
+  selectLatestAvailability,
+  type LatestPrice,
+} from "./prices";
 import { effectivePerCanCents, totalCents, type DealInput } from "./deals";
 import { getSettings } from "./settings";
 
@@ -35,6 +39,16 @@ export interface StoreResult {
     appliesAboveMinQty: boolean | null;
     conditions: string | null;
     expiresAt: string | null;
+  } | null;
+  /**
+   * Explicit stock signal that the price card can't already convey: set when
+   * the newest evidence is a NOT_CARRIED / OUT_OF_STOCK report newer than the
+   * displayed price (or there is no displayable price at all).
+   */
+  availabilitySignal: {
+    availability: "OUT_OF_STOCK" | "NOT_CARRIED";
+    observedAt: string;
+    ageDays: number;
   } | null;
   effective: {
     qty: number;
@@ -95,6 +109,18 @@ export async function searchStores(opts: {
     if (distance > opts.radiusMiles) continue;
 
     const latest: LatestPrice | null = selectLatestPrice(s.observations, settings);
+    const availSignal = selectLatestAvailability(s.observations, settings);
+    const availabilitySignal =
+      availSignal &&
+      (availSignal.availability === "OUT_OF_STOCK" ||
+        availSignal.availability === "NOT_CARRIED") &&
+      (!latest || availSignal.observedAt > latest.observation.observedAt)
+        ? {
+            availability: availSignal.availability,
+            observedAt: availSignal.observedAt.toISOString(),
+            ageDays: availSignal.ageDays,
+          }
+        : null;
     const dealRow = s.deals[0] ?? null;
     const deal: DealInput | null = dealRow
       ? {
@@ -133,6 +159,7 @@ export async function searchStores(opts: {
             taxIncluded: latest.observation.taxIncluded,
           }
         : null,
+      availabilitySignal,
       deal: dealRow
         ? {
             minQty: dealRow.minQty,

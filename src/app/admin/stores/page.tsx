@@ -95,7 +95,13 @@ export default async function AdminStores({
               <td className="py-2 pr-2 text-stone-500">{s.phone ?? "—"}</td>
               <td className="py-2 pr-2">
                 {s.observations[0]
-                  ? `$${(s.observations[0].priceCents / 100).toFixed(2)} (${s.observations[0].observedAt.toLocaleDateString()})`
+                  ? `${
+                      s.observations[0].priceCents !== null
+                        ? `$${(s.observations[0].priceCents / 100).toFixed(2)}`
+                        : s.observations[0].availability === "NOT_CARRIED"
+                          ? "not carried"
+                          : "no price"
+                    } (${s.observations[0].observedAt.toLocaleDateString()})`
                   : <span className="text-stone-400">none</span>}
               </td>
               <td className="py-2 text-stone-500">

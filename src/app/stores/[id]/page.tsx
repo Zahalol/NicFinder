@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { getSettings } from "@/lib/settings";
-import { selectLatestPrice } from "@/lib/prices";
+import { selectLatestPrice, selectLatestAvailability } from "@/lib/prices";
 import { formatCents } from "@/lib/money";
 import { DemoBadge } from "@/components/badges";
 import { BackLink } from "@/components/BackLink";
@@ -55,13 +55,16 @@ export default async function StorePage({
       })) !== null
     : false;
 
-  const latestByLine = productLines.map((line) => ({
-    line,
-    latest: selectLatestPrice(
-      store.observations.filter((o) => o.productLineId === line.id && o.status === "ACTIVE"),
-      settings
-    ),
-  }));
+  const latestByLine = productLines.map((line) => {
+    const lineObs = store.observations.filter(
+      (o) => o.productLineId === line.id && o.status === "ACTIVE"
+    );
+    return {
+      line,
+      latest: selectLatestPrice(lineObs, settings),
+      avail: selectLatestAvailability(lineObs, settings),
+    };
+  });
 
   const mapsUrl =
     store.latitude !== null
@@ -100,7 +103,7 @@ export default async function StorePage({
 
       {/* Current prices per product line */}
       <div className="mt-6 grid sm:grid-cols-2 gap-4">
-        {latestByLine.map(({ line, latest }) => (
+        {latestByLine.map(({ line, latest, avail }) => (
           <div key={line.id} className="rounded-xl border border-stone-200 bg-white p-5">
             <h2 className="text-sm font-medium text-stone-500">{line.name}</h2>
             {latest ? (
@@ -135,7 +138,31 @@ export default async function StorePage({
                     <span className="text-red-600"> · reported out of stock</span>
                   )}
                 </p>
+                {avail &&
+                  avail.observedAt > latest.observation.observedAt &&
+                  avail.availability !== "IN_STOCK" && (
+                    <p className="mt-1 text-xs text-red-600">
+                      Newer report ({avail.observedAt.toLocaleDateString()}):{" "}
+                      {avail.availability === "NOT_CARRIED" ? "no longer carried" : "out of stock"}
+                    </p>
+                  )}
               </>
+            ) : avail && avail.availability === "NOT_CARRIED" ? (
+              <div className="mt-1">
+                <div className="text-xl font-medium text-stone-500">Not carried</div>
+                <p className="text-xs text-stone-500 mt-1">
+                  Reported {avail.observedAt.toLocaleDateString()} as not carrying{" "}
+                  {line.name}. No price is shown because none exists.
+                </p>
+              </div>
+            ) : avail && avail.availability === "OUT_OF_STOCK" ? (
+              <div className="mt-1">
+                <div className="text-xl font-medium text-red-600">Out of stock</div>
+                <p className="text-xs text-stone-500 mt-1">
+                  Reported {avail.observedAt.toLocaleDateString()} as out of stock,
+                  with no price recorded.
+                </p>
+              </div>
             ) : (
               <div className="mt-1">
                 <div className="text-xl font-medium text-stone-400">No recent price</div>
@@ -212,7 +239,19 @@ export default async function StorePage({
                 <tr key={o.id} className="border-b border-stone-100 text-stone-700">
                   <td className="py-1.5 pr-2">{o.observedAt.toLocaleDateString()}</td>
                   <td className="py-1.5 pr-2">{o.productLine.name}</td>
-                  <td className="py-1.5 pr-2 font-medium">{formatCents(o.priceCents)}</td>
+                  <td className="py-1.5 pr-2 font-medium">
+                    {o.priceCents !== null ? (
+                      formatCents(o.priceCents)
+                    ) : (
+                      <span className="font-normal text-stone-500">
+                        {o.availability === "NOT_CARRIED"
+                          ? "not carried"
+                          : o.availability === "OUT_OF_STOCK"
+                            ? "out of stock"
+                            : "no price"}
+                      </span>
+                    )}
+                  </td>
                   <td className="py-1.5 pr-2 text-stone-500">{o.sourceType.toLowerCase()}</td>
                   <td className="py-1.5 text-xs text-stone-400">{o.status.toLowerCase()}</td>
                 </tr>

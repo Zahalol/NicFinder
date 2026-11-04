@@ -52,8 +52,28 @@ export function PriceBadge({
   result: StoreResult;
   qty: number;
 }) {
-  const { latest, effective } = result;
+  const { latest, effective, availabilitySignal } = result;
   if (!latest) {
+    if (availabilitySignal?.availability === "NOT_CARRIED") {
+      return (
+        <div className="text-right shrink-0">
+          <div className="text-sm font-medium text-stone-500">Not carried</div>
+          <div className="text-[11px] text-stone-400">
+            reported {availabilitySignal.ageDays === 0 ? "today" : `${availabilitySignal.ageDays}d ago`}
+          </div>
+        </div>
+      );
+    }
+    if (availabilitySignal?.availability === "OUT_OF_STOCK") {
+      return (
+        <div className="text-right shrink-0">
+          <div className="text-sm font-medium text-red-600">Out of stock</div>
+          <div className="text-[11px] text-stone-400">
+            reported {availabilitySignal.ageDays === 0 ? "today" : `${availabilitySignal.ageDays}d ago`}
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="text-right shrink-0">
         <div className="text-sm font-medium text-stone-400">No price yet</div>

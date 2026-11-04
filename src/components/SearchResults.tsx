@@ -92,6 +92,21 @@ export function SearchResults({
                         {r.latest.availability === "OUT_OF_STOCK" && (
                           <span className="text-red-600">reported out of stock</span>
                         )}
+                        {r.availabilitySignal && (
+                          <span className={r.availabilitySignal.availability === "NOT_CARRIED" ? "text-stone-500" : "text-red-600"}>
+                            {r.availabilitySignal.availability === "NOT_CARRIED"
+                              ? "newer report: not carried"
+                              : "newer report: out of stock"}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    {!r.latest && r.availabilitySignal && (
+                      <div className="mt-1.5 text-xs text-stone-500">
+                        {r.availabilitySignal.availability === "NOT_CARRIED"
+                          ? "Reported as not carrying this product"
+                          : "Reported out of stock"}{" "}
+                        · {r.availabilitySignal.ageDays === 0 ? "today" : `${r.availabilitySignal.ageDays}d ago`}
                       </div>
                     )}
                   </div>

@@ -7,6 +7,8 @@ cycle. Recommendation is mine, not a decision on the owner's behalf.
 |---|--------|-----|----------------|------------------|---------------------|-----|
 | 1 | Built missing `/admin/coverage` "Coverage demand" page | Admin nav linked to it and e2e expected it, but the page file never existed (e2e was red: 1/35 failing) | `src/app/admin/coverage/page.tsx` | lint, typecheck, build green; full e2e now 35/35 passing (was 34/35) | Demand bar is relative to max ZIP only; no pagination (fine at pilot scale) | Keep |
 
+| 2 | Availability-only observations: "not carried"/"out of stock" rows import as price-less observations; surfaced on search list, price badge, store page (per-line cards, history, newer-report warnings); `NO_FACTS` rows flagged; availability now part of row dedupe hash | Core data-honesty gap called out in roadmap: a store saying "ZYN not carried" could not be represented without inventing a price | prisma migration `availability_only_observations`; src/lib/prices.ts (selectLatestAvailability, PricedObservation), import engine, search.ts, badges, SearchResults, store page, admin stores page; docs/IMPORT_CONTRACT.md | 60 vitest (7 new), lint, typecheck, build, 35/35 e2e | Row-hash change means rows committed before this change won't cross-batch-dedupe against re-imports (batch-level file hash still dedupes identical files); availability signals expire on the same window as prices | Keep |
+
 ## Resume instructions
 
 - Branch: `claude/keen-planck-rmqrm9` (full MVP history from `claude/hopeful-feynman-mchyuv`).

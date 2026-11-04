@@ -123,6 +123,7 @@ export function computeRowHash(c: CanonicalRow): string {
     c.observed_at ?? "",
     c.product_line ?? "",
     String(c.price_usd ?? ""),
+    (c.availability ?? "").toLowerCase().trim(),
     String(c.deal_min_qty ?? ""),
     String(c.deal_price_per_can_usd ?? ""),
     String(c.deal_discount_per_can_usd ?? ""),
@@ -338,26 +339,41 @@ export async function validateRows(
     if (c.currency && c.currency !== "USD")
       issues.push({ code: "BAD_CURRENCY", field: "currency", message: `Only USD supported (got ${c.currency})` });
 
-    let productLineId: string | null = null;
-    if (c.product_line) {
-      productLineId = slugById.get(c.product_line) ?? null;
-      if (!productLineId)
-        issues.push({ code: "UNKNOWN_PRODUCT", field: "product_line", message: `Unknown product line "${c.product_line}" — must be one of: ${[...slugById.keys()].join(", ")}` });
-    } else {
-      // Unlabeled price → attach to the default (regular) line; never to Ultra.
-      productLineId = defaultLine?.id ?? null;
-      if (priceCents !== null)
-        issues.push({ code: "PRODUCT_DEFAULTED", field: "product_line", message: `No product line given; attached to "${defaultLine?.slug}" with reduced confidence` });
-    }
-
     const availability = c.availability
       ? (AVAILABILITY_VALUES[c.availability.toLowerCase().trim()] ?? null)
       : "UNKNOWN";
     if (availability === null)
       issues.push({ code: "BAD_AVAILABILITY", field: "availability", message: `Unrecognized availability "${c.availability}"` });
 
+    let productLineId: string | null = null;
+    if (c.product_line) {
+      productLineId = slugById.get(c.product_line) ?? null;
+      if (!productLineId)
+        issues.push({ code: "UNKNOWN_PRODUCT", field: "product_line", message: `Unknown product line "${c.product_line}" — must be one of: ${[...slugById.keys()].join(", ")}` });
+    } else {
+      // Unlabeled fact → attach to the default (regular) line; never to Ultra.
+      productLineId = defaultLine?.id ?? null;
+      if (priceCents !== null || (availability !== null && availability !== "UNKNOWN"))
+        issues.push({ code: "PRODUCT_DEFAULTED", field: "product_line", message: `No product line given; attached to "${defaultLine?.slug}" with reduced confidence` });
+    }
+
     if (c.confidence !== null && (c.confidence < 0 || c.confidence > 1))
       issues.push({ code: "BAD_CONFIDENCE", field: "confidence", message: "Confidence must be 0..1" });
+
+    // A row with no price, no deal and no explicit availability asserts no
+    // fact — flag it rather than silently creating an evidence-free store.
+    const hasExplicitAvailability =
+      availability !== null && availability !== "UNKNOWN";
+    const hasAnyDealField =
+      c.deal_min_qty !== null ||
+      c.deal_price_per_can_usd !== null ||
+      c.deal_discount_per_can_usd !== null;
+    if (c.price_usd === null && !hasAnyDealField && !hasExplicitAvailability)
+      issues.push({
+        code: "NO_FACTS",
+        message:
+          "Row has no price, no deal and no explicit availability — nothing to record",
+      });
 
     // --- deal validation
     let deal: ValidatedRow["deal"] = null;
@@ -423,6 +439,12 @@ export async function validateRows(
         }
       }
       if (outcome !== "FLAGGED" && issues.some((x) => x.code === "PRICE_OUT_OF_RANGE")) {
+        outcome = "FLAGGED";
+      }
+      if (
+        (outcome === "ACCEPTED" || outcome === "UPDATED") &&
+        issues.some((x) => x.code === "NO_FACTS")
+      ) {
         outcome = "FLAGGED";
       }
     }
@@ -652,11 +674,31 @@ export async function commitBatch(
               },
             });
           } else if (row.observedAt && row.productLineId && c.availability) {
-            // Availability-only rows (e.g. "not carried") still record evidence.
+            // Availability-only rows (e.g. "not carried") record evidence as a
+            // price-less observation — we never invent a price for them.
             const avail = AVAILABILITY_VALUES[c.availability.toLowerCase().trim()];
             if (avail && avail !== "UNKNOWN") {
-              // No price — we record nothing in PriceObservation (priceCents is
-              // required); availability-only facts live in notes/audit for MVP.
+              const defaulted = row.issues.some((x) => x.code === "PRODUCT_DEFAULTED");
+              await tx.priceObservation.create({
+                data: {
+                  storeId,
+                  productLineId: row.productLineId,
+                  priceCents: null,
+                  taxIncluded: c.tax_included,
+                  availability: avail,
+                  strength: c.strength,
+                  flavor: c.flavor,
+                  canSize: c.can_size,
+                  observedAt: row.observedAt,
+                  sourceType: "IMPORT",
+                  confidence: defaulted ? Math.min(c.confidence ?? 0.6, 0.6) : c.confidence,
+                  importRowId: dbRow.id,
+                  externalCallId: c.call_id,
+                  notes: defaulted
+                    ? [c.notes, "Product line not specified in source; attached to regular line."].filter(Boolean).join(" ")
+                    : c.notes,
+                },
+              });
             }
           }
           if (row.deal && row.observedAt && row.productLineId) {

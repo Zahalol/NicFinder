@@ -6,7 +6,7 @@ Status: `todo` | `in-progress` | `done` | `blocked` | `rejected`.
 | # | Idea | Impact | Effort | Confidence | Risks | Status |
 |---|------|--------|--------|------------|-------|--------|
 | 1 | Build missing `/admin/coverage` page (nav linked, e2e expected, file absent) | High — broken admin link, red e2e | S | High | None | done |
-| 2 | Availability-only observations: represent "ZYN not carried / out of stock" imports honestly without inventing a price (schema supports `availability`, price is required today) | High — data honesty core value | M | Med | Import contract change | todo |
+| 2 | Availability-only observations: represent "ZYN not carried / out of stock" imports honestly without inventing a price (schema supports `availability`, price is required today) | High — data honesty core value | M | Med | Import contract change | done |
 | 3 | Security audit pass: authz on every mutating route, rate limiting coverage, open redirect, XSS in comments, session fixation | High | M | High | None (read + patch) | todo |
 | 4 | Historical-observation disputes (dispute any listed observation, not only displayed price) with provenance | Med-High | M | Med | Moderation flow churn | todo |
 | 5 | Mobile UX audit: search → nearest → price readability; loading/empty/error states; keyboard support | Med-High | M | Med | Subjective | todo |
