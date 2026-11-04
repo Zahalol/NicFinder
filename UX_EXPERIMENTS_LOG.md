@@ -285,3 +285,28 @@ logic to verify beyond rendering).
 green; 68 tests unaffected.
 
 **Recommendation: Keep.**
+
+---
+
+## Cycle 9 — Watchlist dashboard upgrade
+
+**Problem.** The account watchlist was a bare name+number list that used the
+*raw newest observation of any product line* — inconsistent with the site's
+display policy (no expiry/staleness handling) and with no way to see at a
+glance which saved store is the best buy.
+
+**What changed.** Watchlist rows became cards computed through
+`selectLatestPrice` on the ZYN-regular line (the same policy as everywhere
+else): price + age + stale warning, confidence badge, demo chip, and a
+teal-ringed "Cheapest on your watchlist" highlight when ≥2 saved stores have
+comparable prices. Stores without a recent ZYN price say so instead of
+showing an old/other-line number.
+
+**Why selected.** #4 in ranked backlog; also fixed a real display-policy
+inconsistency (the old code could show an expired or Ultra price as the
+store's number).
+
+**Testing.** Playwright: signed in as demo user, saved two stores, verified
+cheapest highlight, confidence badges, freshness text. Typecheck/lint green.
+
+**Recommendation: Keep.**

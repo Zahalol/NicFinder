@@ -4,6 +4,8 @@ import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { formatCents } from "@/lib/money";
 import { getSettings } from "@/lib/settings";
+import { selectLatestPrice } from "@/lib/prices";
+import { ConfidenceBadge } from "@/components/badges";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Your account — NicFinder" };
@@ -33,8 +35,8 @@ export default async function AccountPage() {
             observations: {
               where: { status: "ACTIVE" },
               orderBy: { observedAt: "desc" },
-              take: 1,
-              include: { productLine: true },
+              take: 10,
+              include: { productLine: true, verifications: true },
             },
           },
         },
@@ -43,6 +45,21 @@ export default async function AccountPage() {
       take: 100,
     }),
   ]);
+
+  // Watchlist prices follow the same display policy as the rest of the site
+  // (selectLatestPrice), computed on the ZYN-regular line for comparability.
+  const watchRows = savedStores.map((s) => {
+    const zynObs = s.store.observations.filter((o) => o.productLine.slug === "zyn");
+    const latest = selectLatestPrice(zynObs, settings);
+    return { saved: s, store: s.store, latest };
+  });
+  const pricedRows = watchRows.filter((r) => r.latest);
+  const cheapestId =
+    pricedRows.length >= 2
+      ? pricedRows.reduce((a, b) =>
+          a.latest!.observation.priceCents <= b.latest!.observation.priceCents ? a : b
+        ).store.id
+      : null;
 
   const trusted = user.reputation >= settings.trustedReputation;
 
@@ -81,27 +98,68 @@ export default async function AccountPage() {
           to track it here.
         </p>
       ) : (
-        <ul className="mt-2 divide-y divide-stone-100 rounded-xl border border-stone-200 bg-white">
-          {savedStores.map((s) => {
-            const latest = s.store.observations[0];
+        <ul className="mt-2 space-y-2">
+          {watchRows.map(({ saved, store, latest }) => {
+            const cheapest = store.id === cheapestId;
             return (
-              <li key={s.id} className="p-3 text-sm flex items-center justify-between gap-2">
-                <span>
-                  <Link href={`/stores/${s.store.id}`} className="text-teal-700 hover:underline font-medium">
-                    {s.store.name}
-                  </Link>{" "}
-                  <span className="text-stone-500">{s.store.address}</span>
-                </span>
-                <span className="text-stone-700 shrink-0">
-                  {latest ? (
-                    <>
-                      {formatCents(latest.priceCents)}
-                      <span className="text-xs text-stone-400"> · {latest.productLine.name} · {latest.observedAt.toLocaleDateString()}</span>
-                    </>
-                  ) : (
-                    <span className="text-stone-400">no price yet</span>
+              <li key={saved.id}>
+                <Link
+                  href={`/stores/${store.id}`}
+                  className={`block rounded-xl border bg-white p-3.5 hover:border-teal-400 hover:shadow-sm transition ${
+                    cheapest ? "border-teal-400 ring-1 ring-teal-400" : "border-stone-200"
+                  }`}
+                >
+                  {cheapest && (
+                    <p className="text-[10px] font-medium uppercase tracking-wider text-teal-700 mb-1">
+                      Cheapest on your watchlist
+                    </p>
                   )}
-                </span>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-medium text-stone-900 truncate">
+                        {store.name}
+                        {store.isDemo && (
+                          <span className="ml-1.5 rounded bg-amber-100 text-amber-800 text-[9px] font-medium px-1 py-0.5 uppercase align-middle">
+                            demo
+                          </span>
+                        )}
+                      </p>
+                      <p className="text-xs text-stone-500 truncate">{store.address}</p>
+                      {latest && (
+                        <div className="mt-1.5 text-[11px]">
+                          <ConfidenceBadge
+                            input={{
+                              sourceType: latest.observation.sourceType,
+                              ageDays: latest.ageDays,
+                              confirmCount: latest.confirmCount,
+                              disputeCount: latest.disputeCount,
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-right shrink-0">
+                      {latest ? (
+                        <>
+                          <div className="text-lg font-semibold text-stone-900">
+                            {formatCents(latest.observation.priceCents)}
+                          </div>
+                          <div className="text-[11px] text-stone-500">
+                            ZYN ·{" "}
+                            {latest.ageDays === 0
+                              ? "updated today"
+                              : `${latest.ageDays}d ago`}
+                            {latest.freshness === "stale" && (
+                              <span className="text-amber-600"> · may be outdated</span>
+                            )}
+                          </div>
+                        </>
+                      ) : (
+                        <span className="text-sm text-stone-400">no recent ZYN price</span>
+                      )}
+                    </div>
+                  </div>
+                </Link>
               </li>
             );
           })}
