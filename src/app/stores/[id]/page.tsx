@@ -10,6 +10,8 @@ import { computeConfidence } from "@/lib/confidence";
 import { PriceSparkline, trendSummary, type SparkPoint } from "@/components/PriceSparkline";
 import { BackLink } from "@/components/BackLink";
 import { SaveStoreButton } from "@/components/SaveStoreButton";
+import { ShareButton } from "@/components/ShareButton";
+import { MiniMap } from "@/components/MiniMap";
 import { ContributePanel } from "./ContributePanel";
 import { Comments } from "./Comments";
 
@@ -184,9 +186,12 @@ export default async function StorePage({
 
       <div className="mt-3 flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-semibold text-stone-900 flex items-center gap-2">
+          <h1 className="text-2xl font-semibold text-stone-900 flex items-center gap-2 flex-wrap">
             {store.name} {store.isDemo && <DemoBadge />}
-            <SaveStoreButton storeId={store.id} initialSaved={saved} signedIn={Boolean(user)} />
+            <span className="inline-flex items-center gap-1.5">
+              <SaveStoreButton storeId={store.id} initialSaved={saved} signedIn={Boolean(user)} />
+              <ShareButton title={`${store.name} — ZYN prices`} />
+            </span>
           </h1>
           <p className="text-stone-500 mt-1">
             {store.address}
@@ -206,6 +211,12 @@ export default async function StorePage({
           This is a fictional demonstration store. All prices here are
           synthetic sample data.
         </p>
+      )}
+
+      {store.latitude !== null && store.longitude !== null && (
+        <div className="mt-4">
+          <MiniMap lat={store.latitude} lng={store.longitude} name={store.name} />
+        </div>
       )}
 
       {/* Current prices per product line */}
