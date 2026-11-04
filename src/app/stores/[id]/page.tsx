@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { getSettings } from "@/lib/settings";
@@ -12,6 +13,7 @@ import { ContributePanel } from "./ContributePanel";
 import { Comments } from "./Comments";
 import { FlagObservationButton } from "./FlagObservationButton";
 import { PriceHistorySparkline } from "@/components/PriceHistorySparkline";
+import { searchStores } from "@/lib/search";
 
 export const dynamic = "force-dynamic";
 
@@ -88,6 +90,28 @@ export default async function StorePage({
       avail: selectLatestAvailability(lineObs, settings),
     };
   });
+
+  // Up to 3 nearby alternatives within 2 miles, reusing the exact search
+  // policy (latest-price selection, deal handling) — cheapest first, this
+  // store excluded. Nothing invented for unpriced neighbors.
+  const nearby =
+    store.latitude !== null && store.longitude !== null
+      ? (
+          await searchStores({
+            lat: store.latitude,
+            lng: store.longitude,
+            radiusMiles: 2,
+            productSlug: "zyn",
+            qty: 1,
+            sort: "price",
+          })
+        ).results
+          .filter((r) => r.id !== store.id)
+          .slice(0, 3)
+      : [];
+  const thisZynPrice =
+    latestByLine.find((x) => x.line.slug === "zyn")?.latest?.observation
+      .priceCents ?? null;
 
   const mapsUrl =
     store.latitude !== null
@@ -358,6 +382,49 @@ export default async function StorePage({
           </table>
         )}
       </div>
+
+      {/* Nearby alternatives */}
+      {nearby.length > 0 && (
+        <div className="mt-8">
+          <h2 className="font-medium text-stone-900">Other stores within 2 miles</h2>
+          <ul className="mt-2 space-y-2">
+            {nearby.map((n) => {
+              const price = n.latest?.priceCents ?? null;
+              const cheaper =
+                price !== null && thisZynPrice !== null && price < thisZynPrice;
+              return (
+                <li key={n.id}>
+                  <Link
+                    href={`/stores/${n.id}`}
+                    className="flex items-center justify-between gap-3 rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm hover:border-teal-400"
+                  >
+                    <span className="min-w-0 truncate text-stone-800">
+                      {n.name}
+                      <span className="ml-1.5 text-xs text-stone-400">
+                        {n.distanceMiles} mi
+                      </span>
+                    </span>
+                    <span className="shrink-0">
+                      {price !== null ? (
+                        <>
+                          <span className="font-medium text-stone-900">
+                            {formatCents(price)}
+                          </span>
+                          {cheaper && (
+                            <span className="ml-1.5 text-xs text-teal-700">cheaper</span>
+                          )}
+                        </>
+                      ) : (
+                        <span className="text-xs text-stone-400">no price yet</span>
+                      )}
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
 
       {/* Comments */}
       <Comments
