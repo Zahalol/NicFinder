@@ -464,3 +464,40 @@ the cheapest store. Typecheck/lint green.
 
 **Recommendation: Keep.** High-value cross-navigation; one extra bounded
 query per store view (same code path as search).
+
+---
+
+## Cycle 16 — Accessibility pass
+
+**What changed.** Skip-to-content link (hidden until keyboard focus) +
+`#main` landmark; consistent `:focus-visible` outline in the accent color;
+`aria-pressed` on the List/Map toggle; filter groups are labeled
+`role=group`s (visual caption aria-hidden) with caption contrast bumped
+stone-400→500; the compare dialog focuses its close button on open.
+
+**Testing.** Keyboard walk: first Tab on a content page focuses "Skip to
+content" and jumps to main; toggles announce state. Full suite green.
+
+**Recommendation: Keep.**
+
+---
+
+## Cycle 17 — Trust & SEO: store JSON-LD, breadcrumbs, "How NicFinder works"
+
+**What changed.**
+- Store pages emit `ConvenienceStore` + `BreadcrumbList` JSON-LD
+  (directory facts only — deliberately **no price markup**: prices vary,
+  may exclude tax, and nicotine offers in merchant markup are a policy
+  minefield).
+- New `/about` ("How NicFinder works"): where prices come from, what the
+  confidence pill means, freshness/honesty rules, deal math incl. the 70¢/mi
+  assumption, contribution flow, and "what NicFinder is not". Linked from
+  the footer on every page; added to the sitemap.
+
+**Why selected.** The product's differentiator *is* the honesty system —
+now it's explained to users and search engines in one place.
+
+**Testing.** JSON-LD verified in rendered store HTML; /about screenshots
+(light+dark via shared classes); typecheck/lint/tests green.
+
+**Recommendation: Keep.**

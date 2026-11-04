@@ -221,8 +221,57 @@ export default async function StorePage({
       }));
   }
 
+  // Structured data: the store as a local business (directory facts only —
+  // no prices in markup; they vary and may exclude tax) + breadcrumbs.
+  const storeLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "ConvenienceStore",
+        name: store.name,
+        address: {
+          "@type": "PostalAddress",
+          streetAddress: store.address ?? undefined,
+          addressLocality: store.city ?? undefined,
+          addressRegion: store.state ?? undefined,
+          postalCode: store.zip ?? undefined,
+        },
+        ...(store.latitude !== null
+          ? {
+              geo: {
+                "@type": "GeoCoordinates",
+                latitude: store.latitude,
+                longitude: store.longitude,
+              },
+            }
+          : {}),
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "NicFinder", item: "/" },
+          ...(store.zip
+            ? [
+                {
+                  "@type": "ListItem",
+                  position: 2,
+                  name: `ZYN prices in ${store.zip}`,
+                  item: `/zyn-prices/${store.zip}`,
+                },
+              ]
+            : []),
+          { "@type": "ListItem", position: store.zip ? 3 : 2, name: store.name },
+        ],
+      },
+    ],
+  };
+
   return (
     <div className="py-6 max-w-3xl mx-auto">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(storeLd) }}
+      />
       <BackLink fallback="/search?q=60614">← Back to search</BackLink>
 
       <div className="mt-3 flex items-start justify-between gap-4 flex-wrap">
