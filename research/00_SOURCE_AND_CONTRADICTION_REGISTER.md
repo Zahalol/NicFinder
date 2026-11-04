@@ -45,9 +45,9 @@ All access dates are 2026-11-04 unless stated.
 | M4 | Chicago ZYN ≈ $8–10/can; IL $9.92 "observed" | Takeroon table is mostly modeled ("not receipts"). Not a shelf audit. **UNVERIFIED as a Chicago distribution.** |
 | M5 | Intra-city dispersion $1.50–3.00+/can | **ASSUMPTION.** The business doc itself says so. Decides go/no-go (gate G1). |
 | M6 | ~1,200 c-stores in Chicago; 1,500–3,000 licensed tobacco retailers | Naive scaling. Re-estimated in Phase 5. |
-| M7 | ElevenLabs Agents $0.08/min; plan concurrency 4–40; burst $0.16/min | Re-verified in Phase 4 |
-| M8 | Twilio $0.014/min outbound, $1.15/number, AMD $0.0075/answered call; billed per started minute | Re-verified in Phase 4 |
-| M9 | Answer rate 65%, price-given 60% (business doc) vs success 50–70% (calling doc) | **Both are unsupported assumptions.** No published benchmark exists for this exact call type (Phase 4). |
+| M7 | ElevenLabs Agents $0.08/min; plan concurrency 4–40; burst $0.16/min | **VERIFIED** ($0.08 and $0.16 burst, from multiple 2026 sources). Billing granularity is **OPEN**. |
+| M8 | Twilio $0.014/min outbound, $1.15/number, AMD $0.0075/answered call; billed per started minute | **VERIFIED** for $0.014 and AMD. Whole-minute rounding comes from a third-party test only. Lookup line type costs $0.008. |
+| M9 | Answer rate 65%, price-given 60% (business doc) vs success 50–70% (calling doc) | **Both are unsupported assumptions.** The only anchors found: 411 Locals (≈38% of small-business calls answered by a person) and **PHR 2009 (telephone cigarette prices not valid vs. in-store)**. |
 | M10 | Nicokick/Northerner/Prilla affiliate programs "exist" | **PARTLY VERIFIED.** Nicokick (5%, 1-day cookie, CJ) and Northerner (5–10%) appear only on aggregators. **Both are owned by Haypp Group.** No Prilla affiliate program was found. |
 
 ## D. Open questions log (carry forward)
@@ -62,3 +62,4 @@ All access dates are 2026-11-04 unless stated.
 ## E. Change log
 - 2026-11-04: Register created during Phase 1. L7 marked contradicted, L10 verified from IDOR, L11 reconciled, D1/D2 assigned to Phases 4/3.
 - 2026-11-04: Phase 3. D2 resolved (Google Ads = advertiser-side prohibition; Publisher Policies = restricted serving). M10 updated.
+- 2026-11-04: Phase 4. D1 reconciled ($0.90 overstated per-dial cost ~8×; both figures omitted accuracy, QA, and fixed floors). M7–M9 updated.

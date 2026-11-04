@@ -10,3 +10,5 @@
 - Next: Phase 3 monetization.
 - Phase 3 complete: 03 monetization. Key finding: consumer revenue is negative or break-even in the base case without B2B. Discovered common Haypp ownership of Nicokick and Northerner. Commission figures come from aggregators only.
 - Next: Phase 4 calling unit economics.
+- Phase 4 complete: 04 doc + CSV. Corrected my own first-draft sensitivity table after recomputing it. Found that Twilio whole-minute rounding makes 60 s a cost cliff. Key evidence: PHR 2009 phone-price validity failure.
+- Next: Phase 5 scaling and Chicago launch plan.
