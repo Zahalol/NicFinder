@@ -33,7 +33,8 @@ export default async function AccountPage() {
         store: {
           include: {
             observations: {
-              where: { status: "ACTIVE" },
+              // priced only — a 'not carried' row must not stand in for a price
+              where: { status: "ACTIVE", priceCents: { not: null } },
               orderBy: { observedAt: "desc" },
               take: 1,
               include: { productLine: true },
