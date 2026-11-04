@@ -12,3 +12,5 @@
 - Next: Phase 4 calling unit economics.
 - Phase 4 complete: 04 doc + CSV. Corrected my own first-draft sensitivity table after recomputing it. Found that Twilio whole-minute rounding makes 60 s a cost cliff. Key evidence: PHR 2009 phone-price validity failure.
 - Next: Phase 5 scaling and Chicago launch plan.
+- Phase 5 complete: queried the Chicago Data Portal (free public API, read-only) for the active tobacco license universe. Found the dataset lacks phone numbers, and Twilio has a 3-concurrent-call cap for Individual profiles.
+- Next: Phase 6 city expansion ranking.
