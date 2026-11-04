@@ -3,7 +3,8 @@
 ## Stack
 
 Next.js 15 (App Router, server components) · TypeScript strict · Tailwind 4 ·
-Prisma 6 + SQLite (dev) · Leaflet/OSM (map) · Vitest + Playwright. One
+Prisma 6 + **PostgreSQL** (local Postgres for dev; Replit/Neon in
+production — see REPLIT.md) · Leaflet/OSM (map) · Vitest + Playwright. One
 deployable unit — no microservices. Rendering is dynamic (prices change);
 route handlers under `src/app/api/**` carry all mutations.
 
@@ -74,20 +75,30 @@ fine for thousands of stores; see Postgres path for scale.
 - **Rate limits**: DB-counted per-user limits for contributions/comments;
   in-memory IP limits for signup/login (single-process MVP — move to
   Redis/upstash or a reverse-proxy limiter when horizontally scaled).
-- **Age gate**: middleware checks a cookie on every page; API routes are
-  data-only. This is an interstitial, not identity verification (industry
-  norm for informational nicotine content; see PRODUCT_REQUIREMENTS).
+- **Age gate**: a full-screen client overlay rendered by the root layout
+  whenever the 21+ cookie is absent — not a redirect, so public pages stay
+  crawlable/indexable (SEO) while interaction is blocked until confirmed.
+  Interstitial, not identity verification (industry norm for informational
+  nicotine content; see PRODUCT_REQUIREMENTS).
+- **Replit Auth**: `/api/auth/replit` trusts Replit's injected
+  `X-Replit-User-*` identity headers ONLY when `REPLIT_AUTH_ENABLED=true`,
+  a secret set exclusively on the Replit deployment where the proxy
+  verifies them; anywhere else the headers are forgeable and the route
+  refuses. Accounts link via `User.replitId`.
 - No secrets in code; `.env.example` documents all configuration; the
   original research workbook (which held credentials) is gitignored.
 
-## PostgreSQL migration path
+## PostgreSQL notes
 
-Schema avoids SQLite-isms: swap the datasource to `postgresql`, regenerate
-migrations, and (recommended) change `priceCents Int` to stay as-is (cents)
-— no DECIMAL needed. For scale: add PostGIS or an earthdistance index to
-replace the bounding-box prefilter, move rate limiting out of process, and
-put Prisma behind pgbouncer. No query in the app relies on SQLite behavior
-(verified by the test suite running the same Prisma API).
+The app began on SQLite and was migrated to Postgres (fresh init
+migration). One behavioral difference bit during migration and is worth
+remembering: **a failed statement inside a Postgres transaction aborts the
+whole transaction** — tolerate expected unique-collisions with
+`createMany({ skipDuplicates: true })` (ON CONFLICT DO NOTHING), never
+`create().catch()`. Tests run against a dedicated `nicfinder_test`
+database (name must contain "test"; reset in `tests/global-setup.ts`).
+For scale later: PostGIS/earthdistance index to replace the bounding-box
+prefilter, out-of-process rate limiting, pgbouncer.
 
 ## Operational notes
 

@@ -1,23 +1,22 @@
 // End-to-end smoke test against a production build.
-// Prereqs: `npm run build` and a migrated+seeded dev database.
-// Runs: age gate → search → store detail → guest authz → admin login →
-// CSV import preview/commit → imported store appears in search.
+// Prereqs: `npm run build` and a migrated+seeded database (DATABASE_URL).
+// Covers: age-gate overlay → search (best-price card, honest states) →
+// store detail → watchlist → guest authz → coverage requests → SEO page →
+// admin login → CSV import preview/commit → admin pages → health.
 //
-// Uses the environment's preinstalled Playwright/Chromium.
+// Uses the environment's preinstalled Playwright/Chromium when available.
 import { spawn } from "node:child_process";
 import { createRequire } from "node:module";
 import path from "node:path";
 import fs from "node:fs";
 
-// Playwright may be installed globally (e.g. preconfigured CI images) rather
-// than in node_modules — resolve it via require from either location.
 const require = createRequire(import.meta.url);
 let chromium;
 try {
   ({ chromium } = require("playwright"));
 } catch {
   console.error(
-    "Playwright not available — install it (`npm i -D playwright`) or run in an environment that provides it. Skipping smoke test with failure."
+    "Playwright not available — install it (`npm i -D playwright`) or run in an environment that provides it."
   );
   process.exit(2);
 }
@@ -29,9 +28,8 @@ let server;
 let browser;
 
 function check(name, cond, extra = "") {
-  if (cond) {
-    console.log(`  ✓ ${name}`);
-  } else {
+  if (cond) console.log(`  ✓ ${name}`);
+  else {
     failures++;
     console.error(`  ✗ ${name} ${extra}`);
   }
@@ -50,11 +48,28 @@ async function waitForServer(url, timeoutMs = 60_000) {
 }
 
 try {
+  // Fail fast if a stale server already holds the port (a previous run that
+  // wasn't cleaned up) — testing against an old build gives false results.
+  let portBusy = false;
+  try {
+    await fetch(BASE, { redirect: "manual", signal: AbortSignal.timeout(1500) });
+    portBusy = true;
+  } catch {}
+  if (portBusy) {
+    console.error(
+      `Port ${PORT} is already in use — kill the stale server first (pkill -f "next start -p ${PORT}") and re-run.`
+    );
+    process.exit(2);
+  }
+
   console.log("Starting production server…");
+  // detached → own process group, so we can kill next-server too (killing
+  // just the npx wrapper leaves the actual server running).
   server = spawn("npx", ["next", "start", "-p", String(PORT)], {
     cwd: process.cwd(),
     stdio: ["ignore", "pipe", "pipe"],
     env: { ...process.env },
+    detached: true,
   });
   server.stderr.on("data", (d) => process.stderr.write(`[server] ${d}`));
   await waitForServer(BASE);
@@ -63,17 +78,21 @@ try {
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
 
-  // 1. Age gate intercepts everything
-  console.log("Age gate…");
-  await page.goto(`${BASE}/search?q=60614`);
-  check("redirects to age gate", page.url().includes("/age-gate"));
+  // 1. Age gate overlay (content stays indexable underneath)
+  console.log("Age gate overlay…");
+  await page.goto(`${BASE}/search?q=60614&radius=5`);
+  const dialog = page.getByRole("dialog");
+  check("21+ overlay shown on first visit", await dialog.isVisible());
+  check(
+    "page content still present behind the overlay (SEO-safe)",
+    (await page.locator('a[href^="/stores/"]').count()) > 0
+  );
   await page.getByRole("button", { name: /21 or older/i }).click();
-  await page.waitForURL("**/search**");
-  check("returns to the requested page after confirming", page.url().includes("/search"));
+  await page.waitForTimeout(1200);
+  check("overlay dismissed after confirming", (await page.getByRole("dialog").count()) === 0);
 
-  // 2. Search results (acceptance 2)
+  // 2. Search results
   console.log("Search 60614…");
-  await page.waitForSelector("text=stores", { timeout: 15000 });
   const storeLinks = await page.locator('a[href^="/stores/"]').count();
   check("shows store cards", storeLinks > 0, `(found ${storeLinks})`);
   check("shows demo-data labeling", (await page.locator("text=demo data").count()) > 0);
@@ -81,15 +100,15 @@ try {
     "shows honest no-price state for unverified stores",
     (await page.locator("text=No price yet").count()) > 0
   );
-  check("shows at least one price", (await page.locator("text=$6.49").count()) > 0);
+  check(
+    "best-price-nearby card present",
+    (await page.locator("text=Best price nearby").count()) > 0
+  );
 
-  // Sorting by price puts cheapest demo store first
   await page.goto(`${BASE}/search?q=60614&sort=price&radius=5`);
-  const firstCard = page.locator('a[href^="/stores/"]').first();
-  const firstText = await firstCard.textContent();
+  const firstText = await page.locator('a[href^="/stores/"]').nth(1).textContent(); // nth(0) is the hero card
   check("price sort puts a priced store first", /\$\d/.test(firstText ?? ""));
 
-  // ZYN Ultra toggle shows unknown states rather than inheriting (acceptance 4)
   await page.goto(`${BASE}/search?q=60614&product=zyn-ultra&radius=5`);
   const bodyText = await page.textContent("body");
   check(
@@ -97,40 +116,64 @@ try {
     bodyText.includes("No price yet") && bodyText.includes("$7.49")
   );
 
-  // 3. Store detail
+  // 3. Store detail + watchlist authz
   console.log("Store detail…");
   await page.goto(`${BASE}/search?q=60614&radius=5`);
-  await page.locator('a[href^="/stores/"]').first().click();
+  await page.locator('a[href^="/stores/"]').nth(1).click();
   await page.waitForSelector("text=Price history");
   check("store page shows price history", true);
-  check(
-    "guests see sign-in prompt instead of contribute form",
-    (await page.locator("text=Sign in").count()) > 0
-  );
-
-  // 4. Guest cannot submit contributions (acceptance 9)
   const storeId = page.url().split("/stores/")[1]?.split("?")[0];
-  const guestPost = await page.evaluate(async (sid) => {
-    const r = await fetch(`/api/stores/${sid}/contributions`, {
+
+  const guestChecks = await page.evaluate(async (sid) => {
+    const c = await fetch(`/api/stores/${sid}/contributions`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ kind: "CONFIRM" }),
     });
-    return r.status;
+    const s = await fetch(`/api/stores/${sid}/save`, { method: "POST" });
+    const a = await fetch("/api/admin/settings");
+    const h = await fetch("/api/health");
+    return { contribution: c.status, save: s.status, admin: a.status, health: h.status };
   }, storeId);
-  check("guest contribution POST rejected with 401", guestPost === 401, `(got ${guestPost})`);
-
-  // Guest cannot reach admin APIs (acceptance 12 / admin authz)
-  const guestAdmin = await page.evaluate(async () => {
-    const r = await fetch("/api/admin/settings");
-    return r.status;
-  });
-  check("guest admin API rejected with 401", guestAdmin === 401, `(got ${guestAdmin})`);
+  check("guest contribution POST rejected with 401", guestChecks.contribution === 401);
+  check("guest save-store POST rejected with 401", guestChecks.save === 401);
+  check("guest admin API rejected with 401", guestChecks.admin === 401);
+  check("health endpoint ok", guestChecks.health === 200);
   await page.goto(`${BASE}/admin`);
   check("guest /admin redirects to login", page.url().includes("/login"));
 
-  // 5. Admin login + import flow (acceptance 6)
-  console.log("Admin import flow…");
+  // 4. Coverage request on an uncovered area
+  console.log("Coverage request…");
+  await page.goto(`${BASE}/search?q=10001`);
+  check(
+    "no-coverage state shown for uncovered ZIP",
+    (await page.locator("text=No coverage here yet").count()) > 0
+  );
+  const reqBtn = page.getByRole("button", { name: /Request prices/i });
+  // Next streams dynamic HTML — wait for the block to flush before checking.
+  await reqBtn.waitFor({ state: "visible", timeout: 10_000 }).catch(() => {});
+  check("coverage request button offered", await reqBtn.isVisible());
+  await reqBtn.click();
+  await page.waitForTimeout(800);
+  const afterReq = await page.textContent("body");
+  check(
+    "coverage request accepted (or already counted on re-run)",
+    /on the (coverage )?(wishlist|list)/i.test(afterReq)
+  );
+
+  // 5. SEO landing page + sitemap
+  console.log("SEO pages…");
+  await page.goto(`${BASE}/zyn-prices/60614`);
+  const seoBody = await page.textContent("body");
+  check("ZIP landing page renders with heading", /ZYN prices in Chicago, IL 60614/.test(seoBody));
+  check("ZIP landing page lists stores", (await page.locator("table tr").count()) > 1);
+  const sitemap = await page.evaluate(async () => (await fetch("/sitemap.xml")).text());
+  check("sitemap includes ZIP landing pages", sitemap.includes("/zyn-prices/60614"));
+  const robots = await page.evaluate(async () => (await fetch("/robots.txt")).text());
+  check("robots.txt disallows /admin", robots.includes("/admin"));
+
+  // 6. Admin login + import + watchlist
+  console.log("Admin flows…");
   const login = await page.evaluate(async () => {
     const r = await fetch("/api/auth/login", {
       method: "POST",
@@ -140,6 +183,14 @@ try {
     return r.status;
   });
   check("admin login succeeds", login === 200, `(got ${login})`);
+
+  const saveRes = await page.evaluate(async (sid) => {
+    const r = await fetch(`/api/stores/${sid}/save`, { method: "POST" });
+    return r.status;
+  }, storeId);
+  check("signed-in user can save a store", saveRes === 200);
+  await page.goto(`${BASE}/account`);
+  check("watchlist shows the saved store", (await page.locator("text=Your watchlist").count()) > 0);
 
   const csv = fs.readFileSync(path.join(process.cwd(), "sample-data", "sample-import.csv"), "utf-8");
   const uploadResult = await page.evaluate(async (csvText) => {
@@ -163,19 +214,22 @@ try {
   const body2 = await page.textContent("body");
   check(
     "imported fictional store appears in search",
-    body2.includes("Sample Mart Alpha") || uploadResult.counts.accepted === 0 /* re-run: idempotent */
+    body2.includes("Sample Mart Alpha") || uploadResult.counts.accepted === 0
   );
 
-  // Map view renders container (tiles need network; container suffices)
   await page.locator("button", { hasText: "Map" }).first().click();
   await page.waitForTimeout(1500);
   check("map container renders", (await page.locator(".leaflet-container").count()) > 0);
 
-  // Admin pages render
-  await page.goto(`${BASE}/admin`);
-  check("admin overview renders", (await page.locator("text=Active stores").count()) > 0);
-  await page.goto(`${BASE}/admin/imports`);
-  check("admin imports page lists the batch", (await page.locator("text=sample-import.csv").count()) > 0);
+  for (const [path2, marker] of [
+    ["/admin", "Active stores"],
+    ["/admin/imports", "sample-import.csv"],
+    ["/admin/coverage", "Coverage demand"],
+    ["/admin/analytics", "Price range by ZIP"],
+  ]) {
+    await page.goto(`${BASE}${path2}`);
+    check(`${path2} renders`, (await page.locator(`text=${marker}`).count()) > 0);
+  }
 
   console.log(failures === 0 ? "\nAll smoke checks passed." : `\n${failures} smoke check(s) FAILED.`);
 } catch (e) {
@@ -183,6 +237,12 @@ try {
   console.error("Smoke test crashed:", e);
 } finally {
   if (browser) await browser.close().catch(() => {});
-  if (server) server.kill("SIGTERM");
+  if (server) {
+    try {
+      process.kill(-server.pid, "SIGTERM"); // whole process group
+    } catch {
+      server.kill("SIGTERM");
+    }
+  }
 }
 process.exit(failures === 0 ? 0 : 1);

@@ -1,0 +1,19 @@
+# Replit workspace + deployment configuration for NicFinder.
+# See REPLIT.md for the full setup guide.
+
+modules = ["nodejs-22"]
+run = "npm run dev"
+
+[deployment]
+deploymentTarget = "autoscale"
+build = ["sh", "-c", "npm ci && npx prisma generate && npx prisma migrate deploy && npm run build"]
+run = ["sh", "-c", "npm start"]
+
+[[ports]]
+localPort = 3000
+externalPort = 80
+
+[env]
+# Non-secret defaults; put DATABASE_URL, SESSION_SECRET, REPLIT_AUTH_ENABLED
+# in Replit Secrets (Tools → Secrets), never here.
+NOMINATIM_ENABLED = "true"

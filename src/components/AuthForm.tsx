@@ -7,9 +7,11 @@ import Link from "next/link";
 export function AuthForm({
   mode,
   googleEnabled,
+  replitEnabled = false,
 }: {
   mode: "login" | "signup";
   googleEnabled: boolean;
+  replitEnabled?: boolean;
 }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -93,10 +95,18 @@ export function AuthForm({
         >
           Continue with Google
         </a>
-      ) : (
+      ) : !replitEnabled ? (
         <p className="mt-3 text-xs text-stone-400 text-center">
           Google sign-in is not configured in this environment (see .env.example).
         </p>
+      ) : null}
+      {replitEnabled && (
+        <a
+          href="/api/auth/replit"
+          className="mt-3 block w-full rounded-lg border border-stone-300 bg-white py-2.5 text-center font-medium text-stone-700 hover:bg-stone-50"
+        >
+          Continue with Replit (Google / GitHub / Apple / email)
+        </a>
       )}
 
       <p className="mt-6 text-sm text-stone-500 text-center">

@@ -120,6 +120,16 @@ export function googleOAuthConfigured(): boolean {
   return Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
 }
 
+/**
+ * Replit Auth is trusted only when explicitly enabled — set the
+ * REPLIT_AUTH_ENABLED secret ONLY in the Replit deployment, where Replit's
+ * proxy injects verified X-Replit-User-* headers. Anywhere else those
+ * headers could be forged by the client.
+ */
+export function replitAuthEnabled(): boolean {
+  return process.env.REPLIT_AUTH_ENABLED === "true";
+}
+
 // --- Validation ------------------------------------------------------------
 
 export function validatePassword(pw: string): string | null {

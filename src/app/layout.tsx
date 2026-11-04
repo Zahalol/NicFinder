@@ -1,13 +1,24 @@
 import type { Metadata, Viewport } from "next";
 import Link from "next/link";
+import { cookies } from "next/headers";
 import "./globals.css";
 import { getCurrentUser } from "@/lib/auth";
 import { LogoutButton } from "@/components/LogoutButton";
+import { AgeGateOverlay } from "@/components/AgeGateOverlay";
 
 export const metadata: Metadata = {
-  title: "NicFinder — nicotine pouch price comparison",
+  metadataBase: new URL(process.env.APP_URL ?? "http://localhost:3000"),
+  title: {
+    default: "NicFinder — nicotine pouch price comparison",
+    template: "%s — NicFinder",
+  },
   description:
-    "Compare reported nicotine pouch prices at stores near you. Informational service for adults 21+. We do not sell nicotine products.",
+    "Compare reported ZYN nicotine pouch prices at gas stations and convenience stores near you. Community-verified. Informational service for adults 21+ — we do not sell nicotine products.",
+  openGraph: {
+    siteName: "NicFinder",
+    type: "website",
+  },
+  robots: { index: true, follow: true },
 };
 
 export const viewport: Viewport = {
@@ -22,10 +33,13 @@ export default async function RootLayout({
 }) {
   const user = await getCurrentUser().catch(() => null);
   const demoMode = process.env.DEMO_MODE !== "false";
+  const cookieStore = await cookies();
+  const ageConfirmed = cookieStore.get("nf_age")?.value === "21plus";
 
   return (
     <html lang="en">
       <body className="min-h-screen antialiased">
+        {!ageConfirmed && <AgeGateOverlay />}
         {demoMode && (
           <div className="bg-amber-100 text-amber-900 text-center text-xs px-3 py-1.5 border-b border-amber-200">
             Demonstration data — prices shown on fictional “Demo” stores are

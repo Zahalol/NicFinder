@@ -10,6 +10,14 @@ A 10-minute walkthrough of every key flow. Setup: see README quick start.
 | Trusted user | `trusted@example.com` | `trusted-demo-password` | Reputation 80 → in-range price edits publish instantly |
 | New user | `newbie@example.com` | `newbie-demo-password` | Reputation 0 → reports need corroboration |
 
+> **Since the enhancement pass:** the age gate is now an overlay (not a
+> separate page); search results lead with a **Best price nearby** card;
+> uncovered areas offer **“Request prices for this area”** (view demand at
+> /admin/coverage); store pages have a **☆ Save** watchlist button (list on
+> /account); SEO pages live at **/zyn-prices/60614**; admin gained
+> **Coverage demand** and **Analytics** tabs. Database is now PostgreSQL —
+> see README "Database setup".
+
 ## 1. Guest browsing (no account)
 
 1. Open http://localhost:3000 → the **21+ age gate** appears first. Enter.

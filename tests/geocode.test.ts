@@ -1,6 +1,22 @@
 import { describe, it, expect } from "vitest";
-import { geocodeZip } from "@/lib/geocode";
+import { geocodeZip, zipInfo, nearestZip } from "@/lib/geocode";
 import { haversineMiles, boundingBox } from "@/lib/geo";
+
+describe("zipInfo / nearestZip (coverage requests)", () => {
+  it("returns city/state for a known ZIP", () => {
+    expect(zipInfo("60614")).toEqual({ city: "Chicago", state: "IL" });
+    expect(zipInfo("00000")).toBeNull();
+  });
+
+  it("finds the nearest ZIP to a coordinate", () => {
+    // Lincoln Park, Chicago
+    const n = nearestZip(41.9255, -87.6565);
+    expect(n).not.toBeNull();
+    expect(n!.state).toBe("IL");
+    expect(n!.city).toBe("Chicago");
+    expect(n!.zip.startsWith("606")).toBe(true);
+  });
+});
 
 describe("offline ZIP geocoding (acceptance 2, 3)", () => {
   it("resolves Chicago pilot ZIPs from the bundled dataset", () => {

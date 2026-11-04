@@ -50,6 +50,29 @@ function loadZipIndex(): Map<string, ZipRow> {
   return map;
 }
 
+/** City/state for a ZIP from the bundled dataset (no network). */
+export function zipInfo(zip: string): { city: string; state: string } | null {
+  const row = loadZipIndex().get(zip.trim().slice(0, 5));
+  return row ? { city: row.city, state: row.state } : null;
+}
+
+/** Nearest ZIP to a coordinate (linear scan of the bundled dataset). */
+export function nearestZip(
+  lat: number,
+  lng: number
+): { zip: string; city: string; state: string } | null {
+  let best: { zip: string; d2: number; row: ZipRow } | null = null;
+  const cosLat = Math.cos((lat * Math.PI) / 180) ** 2;
+  for (const [zip, row] of loadZipIndex()) {
+    const dLat = row.lat - lat;
+    const dLng = row.lng - lng;
+    const d2 = dLat * dLat + dLng * dLng * cosLat;
+    if (!best || d2 < best.d2) best = { zip, d2, row };
+  }
+  if (!best) return null;
+  return { zip: best.zip, city: best.row.city, state: best.row.state };
+}
+
 export function geocodeZip(zip: string): GeocodeResult | null {
   const z = zip.trim().slice(0, 5);
   if (!/^\d{5}$/.test(z)) return null;

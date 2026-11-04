@@ -578,10 +578,13 @@ export async function commitBatch(
           if (phone) identities.push({ kind: "PHONE", value: phone, source: null });
           const addr = normalizeAddress(c.address);
           if (addr) identities.push({ kind: "ADDRESS", value: addr, source: null });
-          for (const ident of identities) {
-            await tx.storeIdentity
-              .create({ data: { storeId, ...ident } })
-              .catch(() => {}); // unique collision → identity already maps elsewhere; fine
+          // skipDuplicates (ON CONFLICT DO NOTHING) — a colliding identity
+          // already maps elsewhere; never abort the batch transaction.
+          if (identities.length) {
+            await tx.storeIdentity.createMany({
+              data: identities.map((ident) => ({ storeId: storeId!, ...ident })),
+              skipDuplicates: true,
+            });
           }
           // Possible-duplicate flag when created near existing stores
           if (row.matchKind === "new" && c.latitude !== null && c.longitude !== null) {
@@ -595,13 +598,14 @@ export async function commitBatch(
               select: { id: true },
               take: 3,
             });
-            for (const n of near) {
-              const [a, b] = [storeId, n.id].sort();
-              await tx.duplicateCandidate
-                .create({
-                  data: { storeAId: a, storeBId: b, reason: "Created within ~100m of an existing store", score: 0.5 },
-                })
-                .catch(() => {});
+            if (near.length) {
+              await tx.duplicateCandidate.createMany({
+                data: near.map((n) => {
+                  const [a, b] = [storeId!, n.id].sort();
+                  return { storeAId: a, storeBId: b, reason: "Created within ~100m of an existing store", score: 0.5 };
+                }),
+                skipDuplicates: true,
+              });
             }
           }
         } else if (row.outcome === "UPDATED" && storeId) {
@@ -615,9 +619,10 @@ export async function commitBatch(
           if (Object.keys(data).length)
             await tx.store.update({ where: { id: storeId }, data });
           if (c.external_store_id) {
-            await tx.storeIdentity
-              .create({ data: { storeId, kind: "EXTERNAL_ID", value: c.external_store_id, source } })
-              .catch(() => {});
+            await tx.storeIdentity.createMany({
+              data: [{ storeId, kind: "EXTERNAL_ID", value: c.external_store_id, source }],
+              skipDuplicates: true,
+            });
           }
         }
 

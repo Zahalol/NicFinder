@@ -66,6 +66,33 @@ noted.
 16. **No zod on the small route surface** — hand validation kept the
     dependency count down; revisit if the API grows.
 
+## Enhancement pass (2026-11-04, second session block)
+
+19. **PostgreSQL now** (user choice): Replit Autoscale's ephemeral
+    filesystem would wipe SQLite, and Replit's built-in DB is Postgres.
+    Fresh init migration; SQLite history removed. Key fix: Postgres aborts
+    a transaction on any failed statement, so unique-collision tolerance
+    moved from `create().catch()` to `createMany({skipDuplicates})`.
+20. **Age gate switched from middleware redirect to client overlay**: a
+    redirect gate blocks crawlers, which would make the SEO landing pages
+    (the only viable acquisition channel) uncrawlable. Overlay = content
+    indexable, interaction blocked. Verified in e2e.
+21. **Replit Auth via trusted headers behind an explicit flag**
+    (`REPLIT_AUTH_ENABLED`, deployment-only secret): headers are verified
+    by Replit's proxy in production and forgeable everywhere else. Replit
+    gives no verified email → placeholder email + `replitId` link.
+22. **Coverage requests** (user's feature): dedupe = per-account per ZIP
+    for members; per daily-salted hashed IP per ZIP (max 5 ZIPs/day) for
+    guests. Raw IPs never stored. Admin ranks ZIPs by demand and shows
+    covered/uncovered status.
+23. **SEO pages are SSR, not ISR**: the root layout reads the age cookie,
+    which makes the tree dynamic; at pilot scale per-request rendering is
+    fine and always fresh.
+24. **Watchlist capped at 100 stores/user**; saving is idempotent.
+25. **Admin analytics uses single-hue labeled range/magnitude bars in
+    semantic tables** (per dataviz guidance: single series → no legend; a
+    table view is built in; values as text, color never carries identity).
+
 ## Research
 
 17. Historical workbook economics (≈$0.07/call, $0.108/store) are treated

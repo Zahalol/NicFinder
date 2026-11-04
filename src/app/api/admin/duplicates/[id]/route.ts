@@ -43,11 +43,13 @@ export async function POST(
         await tx.contribution.updateMany({ where: { storeId: mergeId }, data: { storeId: keepId } });
         await tx.comment.updateMany({ where: { storeId: mergeId }, data: { storeId: keepId } });
         const identities = await tx.storeIdentity.findMany({ where: { storeId: mergeId } });
-        for (const ident of identities) {
-          await tx.storeIdentity.delete({ where: { id: ident.id } });
-          await tx.storeIdentity
-            .create({ data: { storeId: keepId, kind: ident.kind, value: ident.value, source: ident.source } })
-            .catch(() => {});
+        await tx.storeIdentity.deleteMany({ where: { storeId: mergeId } });
+        if (identities.length) {
+          // skipDuplicates: the surviving store may already hold an identity
+          await tx.storeIdentity.createMany({
+            data: identities.map((i) => ({ storeId: keepId, kind: i.kind, value: i.value, source: i.source })),
+            skipDuplicates: true,
+          });
         }
         await tx.store.update({
           where: { id: mergeId },

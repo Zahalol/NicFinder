@@ -1,7 +1,10 @@
-import { geocode } from "@/lib/geocode";
+import { geocode, nearestZip } from "@/lib/geocode";
 import { searchStores, type SortKey } from "@/lib/search";
 import { SearchBox } from "@/components/SearchBox";
 import { SearchResults } from "@/components/SearchResults";
+import { CoverageRequestButton } from "@/components/CoverageRequestButton";
+import { formatCents } from "@/lib/money";
+import { prisma } from "@/lib/db";
 import Link from "next/link";
 
 export const metadata = { title: "Search — NicFinder" };
@@ -130,25 +133,108 @@ export default async function SearchPage({
           </div>
 
           {search.results.length === 0 ? (
-            <div className="mt-10 max-w-xl mx-auto rounded-xl border border-stone-200 bg-white p-6 text-center">
-              <h2 className="font-medium text-stone-900">No coverage here yet</h2>
-              <p className="mt-2 text-sm text-stone-600">
-                We don’t track any stores within {radius} miles of this
-                location. Our pilot area is Chicago, IL. We never guess or
-                invent prices for stores we haven’t covered — try widening the
-                radius or searching a Chicago ZIP like 60614.
-              </p>
-            </div>
+            <NoCoverage q={q} lat={lat!} lng={lng!} radius={radius} />
           ) : (
-            <SearchResults
-              results={search.results}
-              center={{ lat: lat!, lng: lng! }}
-              qty={qty}
-              productSlug={product}
-            />
+            <>
+              <BestPriceCard results={search.results} qty={qty} product={product} />
+              <SearchResults
+                results={search.results}
+                center={{ lat: lat!, lng: lng! }}
+                qty={qty}
+                productSlug={product}
+              />
+            </>
           )}
         </>
       )}
+    </div>
+  );
+}
+
+/** Hero summary: the best deal nearby — the thing the visitor came for. */
+function BestPriceCard({
+  results,
+  qty,
+  product,
+}: {
+  results: Awaited<ReturnType<typeof searchStores>>["results"];
+  qty: number;
+  product: string;
+}) {
+  const priced = results.filter((r) => r.effective.perCanCents !== null);
+  if (priced.length === 0) return null;
+  const best = [...priced].sort(
+    (a, b) => a.effective.perCanCents! - b.effective.perCanCents!
+  )[0];
+  const prices = priced.map((r) => r.effective.perCanCents!);
+  const max = Math.max(...prices);
+  const spread = max - best.effective.perCanCents!;
+
+  return (
+    <Link
+      href={`/stores/${best.id}?product=${product}`}
+      className="mt-5 block rounded-2xl border border-teal-200 bg-gradient-to-r from-teal-50 to-emerald-50 p-5 hover:border-teal-400 transition"
+    >
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <p className="text-xs font-medium uppercase tracking-wide text-teal-700">
+            Best price nearby{qty > 1 ? ` (buying ${qty})` : ""}
+          </p>
+          <p className="mt-1 text-lg font-semibold text-stone-900">
+            {best.name}
+            {best.isDemo && (
+              <span className="ml-2 align-middle rounded bg-amber-100 text-amber-800 text-[10px] font-medium px-1.5 py-0.5 uppercase">demo data</span>
+            )}
+          </p>
+          <p className="text-sm text-stone-500">
+            {best.address} · {best.distanceMiles} mi
+            {best.effective.usedDeal && " · multi-can deal applied"}
+          </p>
+        </div>
+        <div className="text-right">
+          <div className="text-3xl font-semibold text-teal-700">
+            {formatCents(best.effective.perCanCents)}
+            <span className="text-sm font-normal text-stone-500">/can</span>
+          </div>
+          {spread > 0 && priced.length > 1 && (
+            <div className="text-xs text-stone-500">
+              up to {formatCents(spread)} cheaper than nearby stores
+            </div>
+          )}
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+/** Honest empty state + demand capture. */
+async function NoCoverage({
+  q,
+  lat,
+  lng,
+  radius,
+}: {
+  q: string;
+  lat: number;
+  lng: number;
+  radius: number;
+}) {
+  const zipFromQuery = q.match(/^(\d{5})(-\d{4})?$/)?.[1] ?? null;
+  const zip = zipFromQuery ?? nearestZip(lat, lng)?.zip ?? null;
+  const requestCount = zip
+    ? await prisma.coverageRequest.count({ where: { zip } })
+    : 0;
+
+  return (
+    <div className="mt-10 max-w-xl mx-auto rounded-xl border border-stone-200 bg-white p-6 text-center">
+      <h2 className="font-medium text-stone-900">No coverage here yet</h2>
+      <p className="mt-2 text-sm text-stone-600">
+        We don’t track any stores within {radius} miles of this location. Our
+        pilot area is Chicago, IL. We never guess or invent prices for stores
+        we haven’t covered — try widening the radius or searching a Chicago
+        ZIP like 60614.
+      </p>
+      <CoverageRequestButton zip={zip} lat={lat} lng={lng} initialCount={requestCount} />
     </div>
   );
 }

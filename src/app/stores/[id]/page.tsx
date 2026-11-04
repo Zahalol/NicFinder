@@ -1,11 +1,12 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { getSettings } from "@/lib/settings";
 import { selectLatestPrice } from "@/lib/prices";
 import { formatCents } from "@/lib/money";
 import { DemoBadge } from "@/components/badges";
+import { BackLink } from "@/components/BackLink";
+import { SaveStoreButton } from "@/components/SaveStoreButton";
 import { ContributePanel } from "./ContributePanel";
 import { Comments } from "./Comments";
 
@@ -47,6 +48,13 @@ export default async function StorePage({
 
   if (!store || store.status !== "ACTIVE") notFound();
 
+  const saved = user
+    ? (await prisma.savedStore.findFirst({
+        where: { userId: user.id, storeId: store.id },
+        select: { id: true },
+      })) !== null
+    : false;
+
   const latestByLine = productLines.map((line) => ({
     line,
     latest: selectLatestPrice(
@@ -62,14 +70,13 @@ export default async function StorePage({
 
   return (
     <div className="py-6 max-w-3xl mx-auto">
-      <Link href="/search?q=60614" className="text-sm text-stone-500 hover:text-stone-900">
-        ← Back to search
-      </Link>
+      <BackLink fallback="/search?q=60614">← Back to search</BackLink>
 
       <div className="mt-3 flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-semibold text-stone-900 flex items-center gap-2">
             {store.name} {store.isDemo && <DemoBadge />}
+            <SaveStoreButton storeId={store.id} initialSaved={saved} signedIn={Boolean(user)} />
           </h1>
           <p className="text-stone-500 mt-1">
             {store.address}

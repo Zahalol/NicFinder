@@ -15,7 +15,9 @@ build/
 .env*.local
 
 # database (local SQLite lives in prisma/, generated at setup)
+# (legacy sqlite files)
 prisma/*.db
+# (legacy sqlite files)
 prisma/*.db-journal
 
 # geocode cache

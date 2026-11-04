@@ -1,6 +1,29 @@
 # Progress
 
-_Last updated: 2026-11-04 (session: initial build)._
+_Last updated: 2026-11-04 (enhancement pass, same day)._
+
+## Enhancement pass ✅ (second block)
+
+- [x] **PostgreSQL migration** (Replit-ready): fresh init migration, test
+      harness on a dedicated `nicfinder_test` DB, PG transaction-abort fix
+      (`createMany skipDuplicates`), docs updated
+- [x] **Replit prep**: `.replit` (Autoscale build/run), `/api/health`,
+      Replit Auth provider (`REPLIT_AUTH_ENABLED` header-trust model),
+      `scripts/maintenance.mjs` for Scheduled Deployments, `REPLIT.md`
+- [x] **Coverage requests**: guest+member demand capture on no-coverage
+      states, hashed-IP dedupe, /admin/coverage demand ranking
+- [x] **Best-price-nearby hero card** on search results
+- [x] **Watchlist**: save/unsave stores, account watchlist with latest prices
+- [x] **SEO**: /zyn-prices/[zip] landing pages, sitemap.xml, robots.txt,
+      and age gate converted from redirect to overlay so pages stay
+      crawlable
+- [x] **Admin analytics**: per-ZIP price dispersion ranges, freshness
+      buckets, weekly contribution bars
+- [x] **UX polish**: loading skeletons, error + 404 pages, metadata/OG
+      template, mobile search-bar overflow fix, back-link fix
+- [x] **Verification**: 53 vitest + 35-check e2e smoke + lint + typecheck +
+      prod build all green; e2e now kills its process group and fails fast
+      on stale ports
 
 ## Status: MVP complete and verified ✅
 

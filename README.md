@@ -14,19 +14,34 @@ application (`ELEVENLABS_CALLING_RESEARCH.md` covers that future workstream).
 
 ## Quick start
 
-Requires Node 20+ (tested on 22). No paid services or API keys needed.
+Requires Node 20+ (tested on 22) and a PostgreSQL database. No paid
+services or API keys needed.
+
+**Database setup (pick one):**
+
+- **Docker (easiest locally):**
+  ```bash
+  docker run --name nicfinder-pg -e POSTGRES_USER=nicfinder -e POSTGRES_PASSWORD=nicfinder_dev -e POSTGRES_DB=nicfinder -p 5432:5432 -d postgres:16
+  ```
+- **Shared cloud DB:** point `DATABASE_URL` at your Replit/Neon database
+  (see `REPLIT.md`) — no local install at all.
+- **Native Postgres:** create a `nicfinder` database and matching user.
+
+**App setup:**
 
 ```bash
 npm install
-cp .env.example .env          # defaults work for local dev; set SESSION_SECRET
-npx prisma generate           # generate the Prisma client
-npx prisma migrate deploy     # creates prisma/dev.db (SQLite)
+cp .env.example .env          # set SESSION_SECRET and DATABASE_URL
+npx prisma generate
+npx prisma migrate deploy
 npm run db:seed               # product lines, demo users, Chicago store directory
 npm run dev                   # http://localhost:3000
 ```
 
 Then search **60614** (the Chicago pilot area). Demo accounts are listed in
 `DEMO_GUIDE.md` (admin: `admin@example.com` / `admin-demo-password`).
+**Deploying on Replit:** see `REPLIT.md` (database, secrets, Replit Auth
+SSO, Autoscale deployment, scheduled maintenance).
 
 ## Commands
 
@@ -55,6 +70,7 @@ Then search **60614** (the Chicago pilot area). Demo accounts are listed in
 
 | File | Contents |
 | --- | --- |
+| `REPLIT.md` | Replit deployment guide (DB, SSO, Autoscale, cron) |
 | `PRODUCT_REQUIREMENTS.md` | Scope, user flows, edge cases |
 | `ARCHITECTURE.md` | Data model, latest-price policy, security, Postgres path |
 | `IMPORT_CONTRACT.md` | CSV/XLSX schema, aliases, validation, idempotency |

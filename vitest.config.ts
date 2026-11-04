@@ -6,8 +6,10 @@ export default defineConfig({
     environment: "node",
     globalSetup: "./tests/global-setup.ts",
     env: {
-      // Relative to prisma/schema.prisma — tests run on an isolated DB.
-      DATABASE_URL: "file:./test.db",
+      // Tests run on an isolated Postgres database (reset in global-setup).
+      DATABASE_URL:
+        process.env.TEST_DATABASE_URL ??
+        "postgresql://nicfinder:nicfinder_dev@localhost:5432/nicfinder_test",
       SESSION_SECRET: "test-secret",
       NOMINATIM_ENABLED: "false",
     },

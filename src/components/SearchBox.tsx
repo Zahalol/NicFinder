@@ -44,12 +44,12 @@ export function SearchBox({
         onChange={(e) => setQ(e.target.value)}
         autoFocus={autoFocus}
         placeholder="ZIP code or address (e.g. 60614)"
-        className="flex-1 rounded-xl border border-stone-300 bg-white px-4 py-3 text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+        className="flex-1 min-w-0 rounded-xl border border-stone-300 bg-white px-4 py-3 text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
         aria-label="Search by ZIP code or address"
       />
       <button
         type="submit"
-        className="rounded-xl bg-teal-600 text-white px-5 py-3 font-medium hover:bg-teal-700"
+        className="shrink-0 rounded-xl bg-teal-600 text-white px-4 sm:px-5 py-3 font-medium hover:bg-teal-700"
       >
         Search
       </button>
@@ -58,7 +58,7 @@ export function SearchBox({
         onClick={useMyLocation}
         title="Use my location"
         aria-label="Use my location"
-        className="rounded-xl border border-stone-300 bg-white px-3 text-stone-600 hover:bg-stone-50"
+        className="shrink-0 rounded-xl border border-stone-300 bg-white px-3 text-stone-600 hover:bg-stone-50"
       >
         {locating ? "…" : "📍"}
       </button>

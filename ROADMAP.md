@@ -1,12 +1,17 @@
 # Roadmap (post-MVP, prioritized)
 
+## Done since v1
+- ~~Postgres migration~~ ✅ (Replit-ready; see REPLIT.md)
+- ~~Deploy prep~~ ✅ (.replit, health check, Replit Auth, maintenance job)
+- ~~Coverage-demand capture~~ ✅ · ~~watchlist~~ ✅ · ~~SEO ZIP pages +
+  sitemap~~ ✅ · ~~best-price card~~ ✅ · ~~admin analytics~~ ✅
+
 ## Now → pilot hardening
-1. **Deploy** (Vercel/Fly + managed Postgres): swap datasource, PostGIS or
-   earthdistance index for radius queries, Redis-backed rate limiting,
-   real SESSION_SECRET/OAuth secrets, DEMO_MODE=false once real data lands.
+1. **Deploy on Replit** following REPLIT.md; set DEMO_MODE=false once real
+   data lands; attach custom domain.
 2. **Real Chicago data pass**: manual/community price collection for the 27
    directory stores to measure actual dispersion (business gate G1) before
-   any calling spend.
+   any calling spend. Use /admin/coverage demand to pick the next ZIPs.
 3. **Email**: verification + password reset via a transactional provider;
    deliverability work (SPF/DKIM/DMARC — the notes' spam concern).
 4. **Store hours/brand metadata** enrichment (OSM Overpass is free).

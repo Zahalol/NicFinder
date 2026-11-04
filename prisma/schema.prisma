@@ -1,14 +1,13 @@
 // NicFinder data model.
-// SQLite for local dev; the schema avoids SQLite-only features so the
-// migration path to PostgreSQL is mechanical (see ARCHITECTURE.md).
-// Prices are stored as integer cents (SQLite has no DECIMAL type).
+// PostgreSQL (Replit's built-in database is Postgres/Neon; local dev uses
+// a local Postgres — see README). Prices are stored as integer cents.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -43,6 +42,7 @@ model Store {
   comments      Comment[]
   duplicatesA   DuplicateCandidate[] @relation("DupA")
   duplicatesB   DuplicateCandidate[] @relation("DupB")
+  savedBy       SavedStore[]
 
   @@index([latitude, longitude])
   @@index([zip])
@@ -238,6 +238,8 @@ model User {
   // scrypt hash; null for OAuth-only accounts
   passwordHash  String?
   googleId      String?  @unique
+  // Replit Auth identity (set when signing in via Replit-hosted SSO)
+  replitId      String?  @unique
   displayName   String
   // USER | MODERATOR | ADMIN
   role          String   @default("USER")
@@ -257,6 +259,39 @@ model User {
   importBatches ImportBatch[]
   moderationActions ModerationAction[] @relation("ModActor")
   auditEvents   AuditEvent[]
+  savedStores   SavedStore[]
+  coverageRequests CoverageRequest[]
+}
+
+// A user's watchlist entry.
+model SavedStore {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  storeId   String
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, storeId])
+  @@index([userId])
+}
+
+// "I want prices in this area" — demand signal for coverage planning.
+model CoverageRequest {
+  id        String   @id @default(cuid())
+  zip       String
+  city      String?
+  state     String?
+  latitude  Float?
+  longitude Float?
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  // sha256(ip + daily salt) for guest dedupe/rate limiting; never raw IPs
+  ipHash    String?
+  createdAt DateTime @default(now())
+
+  @@index([zip])
+  @@index([createdAt])
 }
 
 model AuthSession {
