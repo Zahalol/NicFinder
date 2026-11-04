@@ -65,3 +65,23 @@ export function memoryRateLimit(
   buckets.set(key, arr);
   return true;
 }
+
+/**
+ * Check-only variant: true = under the limit. Pair with memoryRateRecord to
+ * count only the attempts that matter (e.g. FAILED logins — counting
+ * successes would let an attacker lock a victim out of their own account by
+ * hammering the email).
+ */
+export function memoryRateCheck(key: string, max: number, windowMs: number): boolean {
+  const now = Date.now();
+  sweep(now);
+  const arr = (buckets.get(key) ?? []).filter((t) => now - t < windowMs);
+  buckets.set(key, arr);
+  return arr.length < max;
+}
+
+export function memoryRateRecord(key: string): void {
+  const arr = buckets.get(key) ?? [];
+  arr.push(Date.now());
+  buckets.set(key, arr);
+}

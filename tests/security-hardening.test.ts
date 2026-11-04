@@ -98,6 +98,31 @@ describe("publishDispute is publish-once", () => {
     expect(after!.reputation).toBe(5);
   });
 
+  it("an outdated proposal cannot shadow a NEWER observation", async () => {
+    const { zyn, store, proposal } = await setupProposal();
+    // A fresh price arrives AFTER the proposal was opened (import/admin).
+    await prisma.priceObservation.create({
+      data: {
+        storeId: store.id,
+        productLineId: zyn.id,
+        priceCents: 629,
+        observedAt: new Date(Date.now() + 1000),
+        sourceType: "ADMIN",
+      },
+    });
+
+    expect(await publishDispute(proposal.id, "corroborated")).toBe(false);
+
+    const c = await prisma.contribution.findUnique({ where: { id: proposal.id } });
+    expect(c!.status).toBe("REJECTED"); // resolved as outdated, no publish
+    const active = await prisma.priceObservation.findMany({
+      where: { storeId: store.id, status: "ACTIVE" },
+      orderBy: { observedAt: "desc" },
+    });
+    expect(active[0].priceCents).toBe(629); // newer price survives
+    expect(active.some((o) => o.priceCents === 699)).toBe(false);
+  });
+
   it("a published contribution cannot be re-resolved", async () => {
     const { proposal } = await setupProposal();
     await publishDispute(proposal.id, "corroborated");
@@ -225,6 +250,105 @@ describe("import batch lifecycle is transition-once", () => {
     await commitBatch(batchId);
     await reverseBatch(batchId, "test reverse");
     await expect(reverseBatch(batchId, "again")).rejects.toBeInstanceOf(BatchStateError);
+  });
+});
+
+describe("reverse + re-import recovers cleanly (no retired-store matching)", () => {
+  beforeEach(async () => {
+    await resetDb();
+    await seedProductLines();
+  });
+
+  it("after a reversal, re-importing attaches evidence to NEW ACTIVE stores", async () => {
+    const buf = fs.readFileSync(SAMPLE_CSV);
+    const parsed = parseCsv(buf.toString("utf-8"));
+    const { mapping } = autoMapHeaders(parsed.headers);
+    const preview = async () =>
+      createPreviewBatch({
+        filename: "sample-import.csv",
+        contentHash: computeContentHash(buf),
+        fileType: "csv",
+        mapping,
+        rows: await validateRows(parsed.rows, mapping),
+      });
+
+    const first = await preview();
+    await commitBatch(first);
+    await reverseBatch(first, "bad data");
+    const retired = await prisma.store.count({ where: { status: "RETIRED" } });
+    expect(retired).toBeGreaterThan(0);
+
+    // The corrected (here: identical) file re-imports fresh.
+    const second = await preview();
+    const counts = await commitBatch(second);
+    expect(counts.accepted).toBeGreaterThan(0);
+
+    // Every live observation hangs off an ACTIVE store — nothing attached
+    // to the retired ghosts, and no observation is lost to them.
+    const activeObs = await prisma.priceObservation.findMany({
+      where: { status: "ACTIVE" },
+      include: { store: { select: { status: true } } },
+    });
+    expect(activeObs.length).toBeGreaterThan(0);
+    for (const o of activeObs) expect(o.store.status).toBe("ACTIVE");
+  });
+});
+
+describe("deal field bounds", () => {
+  beforeEach(async () => {
+    await resetDb();
+    await seedProductLines();
+  });
+
+  const validateOne = async (row: Record<string, unknown>) => {
+    const mapping = Object.fromEntries(
+      Object.keys(row).map((k) => [k, k])
+    ) as Parameters<typeof validateRows>[1];
+    return (await validateRows([row], mapping))[0];
+  };
+
+  const base = {
+    store_name: "Deal Mart",
+    address: "77 Deal St",
+    observed_at: "2026-11-01",
+    product_line: "zyn",
+    price_usd: "6.49",
+  };
+
+  it("accepts a FUTURE deal expiry (deals must actually expire)", async () => {
+    const r = await validateOne({
+      ...base,
+      deal_min_qty: 5,
+      deal_price_per_can_usd: "5.99",
+      deal_expires_at: "2026-12-31",
+    });
+    expect(r.outcome).toBe("ACCEPTED");
+    expect(r.deal?.expiresAt).toBeInstanceOf(Date);
+    expect(r.issues.some((i) => i.code === "BAD_DEAL_EXPIRY")).toBe(false);
+  });
+
+  it("rejects implausible expiry, zero-dollar deals, and absurd quantities", async () => {
+    const badExpiry = await validateOne({
+      ...base,
+      deal_min_qty: 5,
+      deal_price_per_can_usd: "5.99",
+      deal_expires_at: "2099-01-01",
+    });
+    expect(badExpiry.outcome).toBe("REJECTED");
+
+    const freeDeal = await validateOne({
+      ...base,
+      deal_min_qty: 5,
+      deal_price_per_can_usd: "0.00",
+    });
+    expect(freeDeal.outcome).toBe("REJECTED");
+
+    const hugeQty = await validateOne({
+      ...base,
+      deal_min_qty: 10_000_000_000,
+      deal_price_per_can_usd: "5.99",
+    });
+    expect(hugeQty.outcome).toBe("REJECTED");
   });
 });
 

@@ -60,6 +60,17 @@ export async function GET(req: NextRequest) {
     if (!user) {
       const byEmail = await prisma.user.findUnique({ where: { email } });
       if (byEmail) {
+        // PRE-HIJACK GUARD: never auto-link into a password account. Local
+        // signups don't verify email ownership, so an attacker could have
+        // registered victim@gmail.com + their own password first; silently
+        // linking would put both parties in one shared account. Password
+        // accounts must sign in with their password (an explicit signed-in
+        // "connect Google" flow can be added later).
+        if (byEmail.passwordHash) {
+          return NextResponse.redirect(
+            new URL("/login?error=email-has-password-account", req.url)
+          );
+        }
         user = await prisma.user.update({
           where: { id: byEmail.id },
           data: { googleId: info.sub },

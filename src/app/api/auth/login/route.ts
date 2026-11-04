@@ -6,7 +6,7 @@ import {
   sessionCookieOptions,
   SESSION_COOKIE,
 } from "@/lib/auth";
-import { memoryRateLimit } from "@/lib/rate-limit";
+import { memoryRateLimit, memoryRateCheck, memoryRateRecord } from "@/lib/rate-limit";
 
 // A valid-format scrypt hash of a throwaway password, used only to equalize
 // response timing when the account does not exist (never matches real input).
@@ -24,8 +24,11 @@ export async function POST(req: NextRequest) {
   const password = String(body?.password ?? "");
 
   // Per-account limiter: the IP key alone is defeated by rotating
-  // X-Forwarded-For, so also cap attempts against a single email.
-  if (email && !memoryRateLimit(`login:email:${email}`, 10, 900_000)) {
+  // X-Forwarded-For, so also cap attempts against a single email. Only
+  // FAILED attempts count (recorded below) — otherwise an attacker could
+  // lock the real owner out by burning the quota with garbage passwords
+  // while the owner's own successful logins also counted against it.
+  if (email && !memoryRateCheck(`login:email:${email}`, 10, 900_000)) {
     return NextResponse.json({ error: "Too many attempts — try later." }, { status: 429 });
   }
 
@@ -38,9 +41,13 @@ export async function POST(req: NextRequest) {
     // Equalize timing with the real-password path: verify against a fixed
     // dummy hash so "account exists" is not inferable from response time.
     await verifyPassword(password, DUMMY_HASH);
+    if (email) memoryRateRecord(`login:email:${email}`);
     return generic;
   }
-  if (!(await verifyPassword(password, user.passwordHash))) return generic;
+  if (!(await verifyPassword(password, user.passwordHash))) {
+    memoryRateRecord(`login:email:${email}`);
+    return generic;
+  }
   if (user.status !== "ACTIVE")
     return NextResponse.json({ error: "This account is suspended." }, { status: 403 });
 

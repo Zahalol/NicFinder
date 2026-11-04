@@ -16,6 +16,13 @@ export async function POST(req: NextRequest) {
       const c = await prisma.contribution.findUnique({ where: { id: targetId } });
       if (!c || !["PENDING", "CORROBORATING"].includes(c.status))
         return NextResponse.json({ error: "Contribution not reviewable." }, { status: 409 });
+      // Review exists precisely so one person can't unilaterally publish a
+      // flagged change — approving your own proposal would defeat it.
+      if (c.userId === user.id)
+        return NextResponse.json(
+          { error: "You can’t approve your own contribution — another moderator must review it." },
+          { status: 400 }
+        );
       const published = await publishDispute(c.id, "moderator", user.id);
       if (!published)
         return NextResponse.json(
@@ -62,16 +69,27 @@ export async function POST(req: NextRequest) {
     if (action === "HIDE_COMMENT" || action === "RESTORE_COMMENT") {
       const comment = await prisma.comment.findUnique({ where: { id: targetId } });
       if (!comment) return NextResponse.json({ error: "Comment not found." }, { status: 404 });
-      await prisma.$transaction([
-        prisma.comment.update({
-          where: { id: targetId },
+      // State-gated: hide only VISIBLE, restore only HIDDEN. In particular a
+      // comment the author DELETED must never be made public again by a
+      // moderator "restore".
+      const fromStatus = action === "HIDE_COMMENT" ? "VISIBLE" : "HIDDEN";
+      const changed = await prisma.$transaction(async (tx) => {
+        const res = await tx.comment.updateMany({
+          where: { id: targetId, status: fromStatus },
           data: { status: action === "HIDE_COMMENT" ? "HIDDEN" : "VISIBLE", reportCount: 0 },
-        }),
+        });
+        if (res.count === 0) return false;
         // Clear the report records too: a restored comment starts with a
         // clean slate, otherwise the old reporters still count toward the
         // auto-hide threshold on the very next report.
-        prisma.commentReport.deleteMany({ where: { commentId: targetId } }),
-      ]);
+        await tx.commentReport.deleteMany({ where: { commentId: targetId } });
+        return true;
+      });
+      if (!changed)
+        return NextResponse.json(
+          { error: `Comment is not ${fromStatus.toLowerCase()} — nothing to ${action === "HIDE_COMMENT" ? "hide" : "restore"}.` },
+          { status: 409 }
+        );
       await prisma.moderationAction.create({
         data: { actorId: user.id, action, targetType: "comment", targetId, reason: reason || action },
       });
@@ -101,10 +119,17 @@ export async function POST(req: NextRequest) {
       if (!target) return NextResponse.json({ error: "User not found." }, { status: 404 });
       if (target.role === "ADMIN")
         return NextResponse.json({ error: "Cannot suspend an admin." }, { status: 400 });
-      await prisma.user.update({
-        where: { id: targetId },
+      // State-gated so repeated SUSPEND calls can't stack -15 penalties.
+      const fromUserStatus = action === "SUSPEND_USER" ? "ACTIVE" : "SUSPENDED";
+      const flipped = await prisma.user.updateMany({
+        where: { id: targetId, status: fromUserStatus },
         data: { status: action === "SUSPEND_USER" ? "SUSPENDED" : "ACTIVE" },
       });
+      if (flipped.count === 0)
+        return NextResponse.json(
+          { error: `User is not ${fromUserStatus.toLowerCase()}.` },
+          { status: 409 }
+        );
       if (action === "SUSPEND_USER") {
         await prisma.authSession.deleteMany({ where: { userId: targetId } });
         await addReputation(targetId, REP_DELTAS.ABUSE_PENALTY, "ABUSE_PENALTY", { type: "admin", id: user.id });

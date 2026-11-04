@@ -26,6 +26,21 @@ async function main() {
     where: { expiresAt: { lt: now } },
   });
 
+  // Community proposals that never gathered corroboration go stale: left
+  // open forever, a months-old price could still publish later and shadow
+  // newer evidence (publishDispute also guards this at publish time).
+  const expiredProposals = await prisma.contribution.updateMany({
+    where: {
+      status: "CORROBORATING",
+      createdAt: { lt: new Date(now.getTime() - 21 * 86400_000) },
+    },
+    data: {
+      status: "REJECTED",
+      reviewNote: "Expired: no corroboration within 21 days.",
+      resolvedAt: now,
+    },
+  });
+
   // Reputation reconciliation: User.reputation is a cached sum of the
   // append-only ReputationEvent ledger. Fix any drift (bugs, manual DB
   // edits) and report it — repeated drift would indicate a code path that
@@ -70,6 +85,7 @@ async function main() {
       ranAt: now.toISOString(),
       dealsExpired: expired.count,
       sessionsPurged: purgedSessions.count,
+      proposalsExpired: expiredProposals.count,
       reputationDriftFixed,
       reputationUnledgered,
       activeObservations: activeObs,

@@ -8,10 +8,13 @@ export function AuthForm({
   mode,
   googleEnabled,
   replitEnabled = false,
+  notice,
 }: {
   mode: "login" | "signup";
   googleEnabled: boolean;
   replitEnabled?: boolean;
+  /** Server-provided message (e.g. an OAuth redirect error). */
+  notice?: string;
 }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -49,6 +52,15 @@ export function AuthForm({
       <p className="mt-2 text-sm text-stone-500 text-center">
         Accounts are for confirming and correcting prices — browsing is always free.
       </p>
+
+      {notice && (
+        <p
+          role="alert"
+          className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900"
+        >
+          {notice}
+        </p>
+      )}
 
       <form onSubmit={submit} className="mt-6 space-y-3">
         {mode === "signup" && (

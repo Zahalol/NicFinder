@@ -112,8 +112,18 @@ function parseDate(v: string | null): Date | null {
   if (!v) return null;
   const d = new Date(v);
   if (Number.isNaN(d.getTime())) return null;
-  // Reject absurd dates
+  // Reject absurd dates (observations cannot come from the future)
   if (d.getFullYear() < 2000 || d.getTime() > Date.now() + 86400_000) return null;
+  return d;
+}
+
+/** Deal expiry dates are legitimately in the future (bounded at 5 years). */
+function parseExpiryDate(v: string | null): Date | null {
+  if (!v) return null;
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return null;
+  if (d.getFullYear() < 2000 || d.getTime() > Date.now() + 5 * 365 * 86400_000)
+    return null;
   return d;
 }
 
@@ -158,21 +168,6 @@ export interface MatchContext {
 }
 
 export async function buildMatchContext(source?: string): Promise<MatchContext> {
-  const identities = await prisma.storeIdentity.findMany({
-    select: { kind: true, value: true, storeId: true, source: true },
-  });
-  const byExternalId = new Map<string, string>();
-  const byPhone = new Map<string, string[]>();
-  const byAddress = new Map<string, string[]>();
-  for (const i of identities) {
-    if (i.kind === "EXTERNAL_ID" && (!source || i.source === source || !i.source)) {
-      byExternalId.set(i.value, i.storeId);
-    } else if (i.kind === "PHONE") {
-      byPhone.set(i.value, [...(byPhone.get(i.value) ?? []), i.storeId]);
-    } else if (i.kind === "ADDRESS") {
-      byAddress.set(i.value, [...(byAddress.get(i.value) ?? []), i.storeId]);
-    }
-  }
   const stores = await prisma.store.findMany({
     where: { status: "ACTIVE" },
     select: {
@@ -185,6 +180,27 @@ export async function buildMatchContext(source?: string): Promise<MatchContext> 
       status: true,
     },
   });
+  // Only ACTIVE stores may be matched. Identities of RETIRED/MERGED stores
+  // must not resolve: after a reverse (which retires the stores a batch
+  // created but keeps their identities), re-importing the corrected file
+  // would otherwise attach every observation to invisible retired stores.
+  const activeIds = new Set(stores.map((s) => s.id));
+  const identities = await prisma.storeIdentity.findMany({
+    select: { kind: true, value: true, storeId: true, source: true },
+  });
+  const byExternalId = new Map<string, string>();
+  const byPhone = new Map<string, string[]>();
+  const byAddress = new Map<string, string[]>();
+  for (const i of identities) {
+    if (!activeIds.has(i.storeId)) continue;
+    if (i.kind === "EXTERNAL_ID" && (!source || i.source === source || !i.source)) {
+      byExternalId.set(i.value, i.storeId);
+    } else if (i.kind === "PHONE") {
+      byPhone.set(i.value, [...(byPhone.get(i.value) ?? []), i.storeId]);
+    } else if (i.kind === "ADDRESS") {
+      byAddress.set(i.value, [...(byAddress.get(i.value) ?? []), i.storeId]);
+    }
+  }
   return { byExternalId, byPhone, byAddress, stores };
 }
 
@@ -397,16 +413,27 @@ export async function validateRows(
     if (hasDealField) {
       const dealPrice = parsePriceToCents(c.deal_price_per_can_usd);
       const dealDiscount = parsePriceToCents(c.deal_discount_per_can_usd);
-      if (c.deal_min_qty === null || c.deal_min_qty < 2 || !Number.isInteger(c.deal_min_qty)) {
-        issues.push({ code: "BAD_DEAL_QTY", field: "deal_min_qty", message: "Deal requires an integer deal_min_qty >= 2" });
+      if (
+        c.deal_min_qty === null ||
+        c.deal_min_qty < 2 ||
+        c.deal_min_qty > 100 ||
+        !Number.isInteger(c.deal_min_qty)
+      ) {
+        issues.push({ code: "BAD_DEAL_QTY", field: "deal_min_qty", message: "Deal requires an integer deal_min_qty between 2 and 100" });
       } else if (dealPrice === null && dealDiscount === null) {
         issues.push({ code: "BAD_DEAL_PRICE", message: "Deal requires deal_price_per_can_usd or deal_discount_per_can_usd" });
       } else if (dealPrice !== null && dealDiscount !== null) {
         issues.push({ code: "DEAL_CONFLICT", message: "Provide either deal price or deal discount, not both" });
+      } else if (dealPrice !== null && (dealPrice < 100 || dealPrice > 2500)) {
+        // Same sanity window as regular prices: $0 deals would top every
+        // price sort; huge values overflow Int.
+        issues.push({ code: "BAD_DEAL_PRICE", field: "deal_price_per_can_usd", message: `Deal price ${dealPrice}¢ outside sanity range $1.00–$25.00` });
+      } else if (dealDiscount !== null && (dealDiscount < 1 || dealDiscount > 2400)) {
+        issues.push({ code: "BAD_DEAL_PRICE", field: "deal_discount_per_can_usd", message: `Deal discount ${dealDiscount}¢ outside sanity range $0.01–$24.00` });
       } else {
-        const expiresAt = parseDate(c.deal_expires_at);
+        const expiresAt = parseExpiryDate(c.deal_expires_at);
         if (c.deal_expires_at !== null && expiresAt === null)
-          issues.push({ code: "BAD_DEAL_EXPIRY", field: "deal_expires_at", message: "Unparseable deal_expires_at" });
+          issues.push({ code: "BAD_DEAL_EXPIRY", field: "deal_expires_at", message: "Unparseable/implausible deal_expires_at" });
         deal = {
           minQty: c.deal_min_qty,
           pricePerCanCents: dealPrice,
@@ -420,7 +447,7 @@ export async function validateRows(
 
     // --- outcome determination
     const fatal = issues.some((x) =>
-      ["BAD_PRICE", "BAD_DATE", "MISSING_DATE", "NO_STORE_IDENTITY", "BAD_COORDS", "BAD_CURRENCY", "UNKNOWN_PRODUCT", "BAD_AVAILABILITY", "BAD_CONFIDENCE", "BAD_DEAL_QTY", "BAD_DEAL_PRICE", "DEAL_CONFLICT", "FIELD_TOO_LONG"].includes(x.code)
+      ["BAD_PRICE", "BAD_DATE", "MISSING_DATE", "NO_STORE_IDENTITY", "BAD_COORDS", "BAD_CURRENCY", "UNKNOWN_PRODUCT", "BAD_AVAILABILITY", "BAD_CONFIDENCE", "BAD_DEAL_QTY", "BAD_DEAL_PRICE", "DEAL_CONFLICT", "BAD_DEAL_EXPIRY", "FIELD_TOO_LONG"].includes(x.code)
     );
 
     let outcome: RowOutcome;
@@ -964,6 +991,12 @@ export async function reverseBatch(
         });
         if (createdByBatch > 0) {
           await tx.store.update({ where: { id: storeId }, data: { status: "RETIRED" } });
+          // Identities are a matching index, not evidence: leaving a retired
+          // store's identities in place would (a) let future imports match
+          // the invisible store (before the ACTIVE filter) and (b) block the
+          // replacement store's identical identities via skipDuplicates, so
+          // every re-import would create yet another unmatched store.
+          await tx.storeIdentity.deleteMany({ where: { storeId } });
         }
       }
     }

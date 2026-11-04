@@ -54,6 +54,14 @@ export async function POST(
           { error: "That price is no longer current — refresh the page." },
           { status: 409 }
         );
+      // The claimed product line must be the observation's own — a mismatched
+      // line previously sidestepped the per-lineage reconfirm cooldown and
+      // wrote mis-attributed contributions.
+      if (obs.productLineId !== productLineId)
+        return NextResponse.json(
+          { error: "Product line doesn’t match that price — refresh the page." },
+          { status: 400 }
+        );
 
       // Confirming your own community observation is self-confirmation.
       if (obs.contributionId) {

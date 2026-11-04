@@ -46,6 +46,104 @@ defense-in-depth, availability), **Low** (hygiene).
 
 ---
 
+## 2026-11-04 — Wave 10: independent-audit response (15 findings triaged)
+
+A second, independent read-only audit (subagent) reviewed the whole codebase
+and reported 15 new findings. All were verified; 13 fixed, 2 recorded as
+accepted/known limitations.
+
+### H-8 (High) Re-import after reversal attached prices to RETIRED stores
+- `buildMatchContext` indexed identities of ALL stores while matching only
+  checked identity hits — after reversing a bad import (stores → RETIRED),
+  re-uploading the corrected file matched every row to the retired ghosts:
+  commit "succeeded", the public site showed nothing. **Fix**: identity index
+  filtered to ACTIVE stores, and reversal deletes the retired stores'
+  identities (a matching index, not evidence) so the replacement store can
+  own them. Regression test: commit → reverse → re-import leaves every
+  ACTIVE observation on an ACTIVE store.
+
+### H-9 (High) Google sign-in auto-linked into unverified password accounts
+- Account pre-hijack: signup never proves email ownership, so an attacker
+  could register victim@gmail.com with their own password; the victim's
+  later "Sign in with Google" landed them in the attacker's account (shared
+  credentials, visible watchlist/email). **Fix**: OAuth never auto-links
+  into an account that has a password — the user is told to sign in with
+  their password (explicit linking can come later). OAuth error codes are
+  now actually shown on /login (they were silently dropped).
+
+### M-18 (Medium) Stale proposals could overwrite newer prices
+- CORROBORATING proposals never expired; publishing one superseded ALL
+  active observations including newer ones (and honestly back-dating the new
+  observation made the store show "no recent price" if old enough).
+  **Fix**: `publishDispute` refuses when any ACTIVE observation is newer
+  than the proposal (resolves it REJECTED/"outdated", no penalty), and
+  maintenance expires CORROBORATING proposals older than 21 days. Tested.
+
+### M-19 (Medium) Deal expiry dates silently dropped → deals never expired
+- `parseDate` rejects future dates (right for observations, wrong for
+  expiries): every real `deal_expires_at` parsed to null and the deal
+  imported as permanent — the bundled sample file reproduced it. **Fix**:
+  dedicated expiry parser (future OK, ≤5 years); unparseable expiry is now
+  fatal for the row. Tested.
+
+### M-20 (Medium) Store merge had no state checks or atomic claim
+- Chained candidates could merge evidence INTO an already-merged (hidden)
+  store; two staff resolving the same pair concurrently with opposite keeps
+  made both stores vanish. **Fix**: candidate claimed OPEN→resolved
+  atomically inside the transaction; both stores must still be ACTIVE or the
+  merge aborts 409.
+
+### M-21 (Medium) Numeric overflow 500s / poisoned batches
+- Unbounded prices overflowed Postgres Int (`proposedPrice: "30000000"` →
+  500; one bad deal row failed the whole commit transaction forever), and $0
+  deals would top every price sort. **Fix**: `parsePriceToCents` hard-caps
+  at $100k; deal price/discount get sanity windows; `deal_min_qty` bounded
+  2–100. Tested (money + import suites).
+
+### M-22 (Medium) Remap raced commit; CONFIRM product-line mismatch;
+### moderator self-approval; restore/suspend state gaps
+- Remap now claims PREVIEW conditionally first (409 if committed).
+- CONFIRM requires the observation to belong to the claimed product line
+  (mismatch previously bypassed the reconfirm cooldown).
+- Moderators can no longer approve their own contributions.
+- RESTORE_COMMENT only works on HIDDEN comments (never author-DELETED
+  ones); SUSPEND/REINSTATE are state-gated so repeated suspends can't stack
+  −15 penalties.
+
+### M-23 (Medium) Nominatim throttle broke under concurrency
+- The 1/sec slot was recorded after the sleep, so N concurrent geocodes
+  fired together (risking an OSM ban that would kill address search).
+  **Fix**: slot reserved before sleeping.
+
+### M-24 (Medium) Store page hid current prices behind a 50-row window
+- Latest-per-line was derived from the newest 50 observations across ALL
+  lines; a frequently-imported line pushed a rarer line's current price out
+  (page showed "no recent price" and blocked confirmations while search
+  still showed it). **Fix**: dedicated per-line ACTIVE query (take 10).
+
+### L-7 (Low) Per-email login limiter counted successes
+- 10 requests with a victim's email locked out their real login. **Fix**:
+  only FAILED attempts count toward the per-email cap.
+
+### L-8 (Low) XLSX guard
+- Sheets over 50k rows / 200 columns are rejected before cell
+  materialization. The decompression itself (exceljs inflates in memory) is
+  an **accepted risk**: the endpoint is staff-only, capped at 5 MB
+  compressed. A streaming parser would be the real fix if imports ever open
+  to non-staff.
+
+### Known limitation (recorded, not changed — product decision)
+- **Sybil corroboration**: three throwaway accounts (proposer + 2) can
+  publish an in-bounds price; signups are free. Mitigations today: sanity
+  bounds, ±50% guardrail, per-IP+per-email signup limits, append-only
+  history, moderator review of drastic changes, and the new stale/newer
+  guards. Real fixes (email verification, corroborator minimum account age,
+  phone verification) change the product and are for the owner to choose.
+- `StoreIdentity @@unique([kind,value,source])` doesn't dedupe NULL-source
+  rows (Postgres NULLs are distinct) — harmless duplicate index rows only.
+
+---
+
 ## 2026-11-04 — Wave 9: request-size guard, contribution-flow regression tests
 
 ### M-17 (Medium) No request body size limit on API routes

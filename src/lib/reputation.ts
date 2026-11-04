@@ -191,6 +191,26 @@ export async function publishDispute(
       },
       include: { verifications: true },
     });
+
+    // Staleness guard: a proposal observes the price AT ITS CREATION TIME.
+    // If a newer observation has arrived since (fresh import, admin entry,
+    // another community price), publishing would supersede newer evidence
+    // with older — refuse and resolve the proposal as outdated instead.
+    const newest = superseded.reduce(
+      (max, o) => Math.max(max, o.observedAt.getTime()),
+      0
+    );
+    if (newest > c.createdAt.getTime()) {
+      await tx.contribution.update({
+        where: { id: c.id },
+        data: {
+          status: "REJECTED",
+          reviewNote: "Outdated: a newer price observation arrived before this proposal was confirmed.",
+          reviewedById: moderatorId,
+        },
+      });
+      return false;
+    }
     await tx.priceObservation.updateMany({
       where: {
         storeId: c.storeId,
