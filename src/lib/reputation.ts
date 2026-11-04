@@ -117,18 +117,29 @@ export function confirmationWeight(
 }
 
 /**
+ * How a publish attempt ended:
+ *  - "published": the price went live.
+ *  - "already-resolved": another request published/rejected it first.
+ *  - "outdated": a newer observation arrived since the proposal was opened;
+ *    it was resolved REJECTED without publishing.
+ *  - "pending" (corroboration only): threshold not reached yet.
+ */
+export type PublishOutcome = "published" | "already-resolved" | "outdated";
+
+/**
  * Count independent corroborations for a CORROBORATING contribution and
  * publish it when the threshold is met. "Independent": distinct users other
- * than the proposer. Returns true if published.
+ * than the proposer.
  */
 export async function maybePublishCorroborated(
   contributionId: string,
   settings: AppSettings
-): Promise<boolean> {
+): Promise<PublishOutcome | "pending"> {
   const contribution = await prisma.contribution.findUnique({
     where: { id: contributionId },
   });
-  if (!contribution || contribution.status !== "CORROBORATING") return false;
+  if (!contribution || contribution.status !== "CORROBORATING")
+    return "already-resolved";
 
   // Corroborations are CONFIRM contributions that target this proposal.
   const corroborators = await prisma.contribution.findMany({
@@ -142,7 +153,7 @@ export async function maybePublishCorroborated(
     distinct: ["userId"],
   });
 
-  if (corroborators.length < settings.corroborationsRequired) return false;
+  if (corroborators.length < settings.corroborationsRequired) return "pending";
 
   return publishDispute(contribution.id, "corroborated");
 }
@@ -153,7 +164,7 @@ export async function maybePublishCorroborated(
  *
  * Concurrency-safe: the contribution row is atomically claimed
  * (PENDING/CORROBORATING → PUBLISHED) inside the transaction. If another
- * request already published or rejected it, this returns false and changes
+ * request already resolved it, this returns "already-resolved" and changes
  * nothing — concurrent corroborations cannot double-publish or double-award
  * reputation.
  */
@@ -161,8 +172,8 @@ export async function publishDispute(
   contributionId: string,
   how: "auto" | "corroborated" | "moderator",
   moderatorId?: string
-): Promise<boolean> {
-  const published = await prisma.$transaction(async (tx) => {
+): Promise<PublishOutcome> {
+  const outcome = await prisma.$transaction<PublishOutcome>(async (tx) => {
     const c = await tx.contribution.findUniqueOrThrow({
       where: { id: contributionId },
     });
@@ -181,7 +192,7 @@ export async function publishDispute(
         reviewedById: moderatorId,
       },
     });
-    if (claimed.count === 0) return false;
+    if (claimed.count === 0) return "already-resolved";
 
     const superseded = await tx.priceObservation.findMany({
       where: {
@@ -209,7 +220,7 @@ export async function publishDispute(
           reviewedById: moderatorId,
         },
       });
-      return false;
+      return "outdated";
     }
     await tx.priceObservation.updateMany({
       where: {
@@ -259,9 +270,9 @@ export async function publishDispute(
       { type: "contribution", id: c.id },
       tx
     );
-    return true;
+    return "published";
   });
-  if (published) {
+  if (outcome === "published") {
     await audit("PRICE_PUBLISHED", {
       targetType: "contribution",
       targetId: contributionId,
@@ -269,5 +280,5 @@ export async function publishDispute(
       userId: moderatorId ?? null,
     });
   }
-  return published;
+  return outcome;
 }

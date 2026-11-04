@@ -59,8 +59,8 @@ describe("publishDispute is publish-once", () => {
   it("second sequential publish is a no-op (no duplicate observation / reputation)", async () => {
     const { store, proposer, proposal } = await setupProposal();
 
-    expect(await publishDispute(proposal.id, "corroborated")).toBe(true);
-    expect(await publishDispute(proposal.id, "corroborated")).toBe(false);
+    expect(await publishDispute(proposal.id, "corroborated")).toBe("published");
+    expect(await publishDispute(proposal.id, "corroborated")).toBe("already-resolved");
 
     const activeObs = await prisma.priceObservation.findMany({
       where: { storeId: store.id, status: "ACTIVE" },
@@ -86,7 +86,7 @@ describe("publishDispute is publish-once", () => {
       publishDispute(proposal.id, "corroborated"),
     ]);
     const published = results.filter(
-      (r) => r.status === "fulfilled" && r.value === true
+      (r) => r.status === "fulfilled" && r.value === "published"
     );
     expect(published).toHaveLength(1);
 
@@ -111,7 +111,7 @@ describe("publishDispute is publish-once", () => {
       },
     });
 
-    expect(await publishDispute(proposal.id, "corroborated")).toBe(false);
+    expect(await publishDispute(proposal.id, "corroborated")).toBe("outdated");
 
     const c = await prisma.contribution.findUnique({ where: { id: proposal.id } });
     expect(c!.status).toBe("REJECTED"); // resolved as outdated, no publish
@@ -129,7 +129,7 @@ describe("publishDispute is publish-once", () => {
     const c = await prisma.contribution.findUnique({ where: { id: proposal.id } });
     expect(c!.status).toBe("PUBLISHED");
     // publishing again (e.g. moderator approving a stale queue entry) is refused
-    expect(await publishDispute(proposal.id, "moderator", "mod-id")).toBe(false);
+    expect(await publishDispute(proposal.id, "moderator", "mod-id")).toBe("already-resolved");
   });
 });
 
@@ -187,10 +187,12 @@ describe("import batch lifecycle is transition-once", () => {
   it("multiple rows describing the same NEW store create ONE store", async () => {
     const rows = [
       { store_name: "Dup Mart", address: "500 W Same St", city: "Chicago", observed_at: "2026-11-01", product_line: "zyn", price_usd: "6.49" },
-      { store_name: "Dup Mart", address: "500 W Same St", city: "Chicago", observed_at: "2026-11-02", product_line: "zyn", price_usd: "6.99" },
+      // Second row adds a phone the first row didn't carry — it must land
+      // in StoreIdentity so future imports keyed on it match this store.
+      { store_name: "Dup Mart", address: "500 W Same St", city: "Chicago", phone: "3125559999", observed_at: "2026-11-02", product_line: "zyn", price_usd: "6.99" },
     ];
     const mapping = Object.fromEntries(
-      Object.keys(rows[0]).map((k) => [k, k])
+      [...new Set(rows.flatMap((r) => Object.keys(r)))].map((k) => [k, k])
     ) as Parameters<typeof validateRows>[1];
     const validated = await validateRows(rows as Record<string, unknown>[], mapping);
     const batchId = await createPreviewBatch({
@@ -210,6 +212,11 @@ describe("import batch lifecycle is transition-once", () => {
     });
     expect(obs).toHaveLength(2);
     expect(obs.map((o) => o.priceCents)).toEqual([649, 699]);
+
+    const phoneIdent = await prisma.storeIdentity.findFirst({
+      where: { storeId: stores[0].id, kind: "PHONE", value: "+13125559999" },
+    });
+    expect(phoneIdent).not.toBeNull();
   });
 
   it("concurrent commits of two identical-content batches apply the data once", async () => {

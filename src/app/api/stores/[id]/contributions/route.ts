@@ -194,12 +194,17 @@ export async function POST(
             comment: body?.comment ? cleanText(body.comment, 500) || null : null,
           },
         });
-        const published = await maybePublishCorroborated(openProposal.id, settings);
+        const outcome = await maybePublishCorroborated(openProposal.id, settings);
         return NextResponse.json({
           ok: true,
-          message: published
-            ? "Thanks — enough members agree; the price has been updated."
-            : "Thanks — your report matches a pending one. It needs one more confirmation.",
+          message:
+            outcome === "published"
+              ? "Thanks — enough members agree; the price has been updated."
+              : outcome === "outdated"
+                ? "Thanks — a newer price was posted in the meantime, so that pending report was archived. Submit again if the shelf price still differs."
+                : outcome === "pending"
+                  ? "Thanks — your report matches a pending one. It needs one more confirmation."
+                  : "Thanks — that report was just resolved. Refresh to see the current price.",
         });
       }
       if (openProposal && openProposal.userId === user.id) {
@@ -236,10 +241,13 @@ export async function POST(
       });
 
       if (decision.action === "AUTO_PUBLISH") {
-        await publishDispute(contribution.id, "auto");
+        const outcome = await publishDispute(contribution.id, "auto");
         return NextResponse.json({
           ok: true,
-          message: "Price updated — thanks! (You’re a trusted contributor.)",
+          message:
+            outcome === "published"
+              ? "Price updated — thanks! (You’re a trusted contributor.)"
+              : "Thanks — a newer price observation arrived just before yours, so it wasn’t applied. Refresh to see the current price.",
         });
       }
       if (decision.action === "CORROBORATE") {

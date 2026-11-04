@@ -665,6 +665,16 @@ export async function commitBatch(
       };
       groups.push(group);
     } else {
+      // Accumulate identities the group's first row didn't carry (e.g. the
+      // phone appears only on a later row) — otherwise future imports keyed
+      // on that identity would miss this store and create a duplicate.
+      const have = new Set(group.identities.map((x) => `${x.kind}:${x.value}`));
+      if (c.external_store_id && !have.has(`EXTERNAL_ID:${c.external_store_id}`))
+        group.identities.push({ kind: "EXTERNAL_ID", value: c.external_store_id, source });
+      if (phone && !have.has(`PHONE:${phone}`))
+        group.identities.push({ kind: "PHONE", value: phone, source: null });
+      if (addr && !have.has(`ADDRESS:${addr}`))
+        group.identities.push({ kind: "ADDRESS", value: addr, source: null });
       validated[i] = {
         ...row,
         issues: [

@@ -116,7 +116,7 @@ describe("corroboration & publication flows (acceptance 10, 11)", () => {
         status: "PUBLISHED",
       },
     });
-    expect(await maybePublishCorroborated(proposal.id, S)).toBe(false);
+    expect(await maybePublishCorroborated(proposal.id, S)).toBe("pending");
 
     // One independent corroborator (threshold is 2): still unpublished.
     await prisma.contribution.create({
@@ -129,7 +129,7 @@ describe("corroboration & publication flows (acceptance 10, 11)", () => {
         status: "PUBLISHED",
       },
     });
-    expect(await maybePublishCorroborated(proposal.id, S)).toBe(false);
+    expect(await maybePublishCorroborated(proposal.id, S)).toBe("pending");
 
     // Duplicate submission by the SAME corroborator must not help (acceptance 11).
     await prisma.contribution.create({
@@ -142,7 +142,7 @@ describe("corroboration & publication flows (acceptance 10, 11)", () => {
         status: "PUBLISHED",
       },
     });
-    expect(await maybePublishCorroborated(proposal.id, S)).toBe(false);
+    expect(await maybePublishCorroborated(proposal.id, S)).toBe("pending");
 
     // Second independent corroborator → publish.
     const c2 = await makeUser({ email: "c2@x.com" });
@@ -156,7 +156,7 @@ describe("corroboration & publication flows (acceptance 10, 11)", () => {
         status: "PUBLISHED",
       },
     });
-    expect(await maybePublishCorroborated(proposal.id, S)).toBe(true);
+    expect(await maybePublishCorroborated(proposal.id, S)).toBe("published");
 
     // Old observation superseded; new COMMUNITY observation active; rep awarded.
     const oldObs = await prisma.priceObservation.findUnique({ where: { id: obs.id } });

@@ -22,7 +22,9 @@ export default async function LoginPage({
   searchParams: Promise<{ error?: string }>;
 }) {
   const { error } = await searchParams;
-  const notice = error ? ERROR_MESSAGES[error] ?? "Sign-in failed — please try again." : undefined;
+  // Only KNOWN codes render a banner — a stray/crafted ?error= value must
+  // not make a fresh page claim a sign-in failure that never happened.
+  const notice = error ? ERROR_MESSAGES[error] : undefined;
   return (
     <AuthForm
       mode="login"

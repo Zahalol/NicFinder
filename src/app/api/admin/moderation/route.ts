@@ -23,10 +23,15 @@ export async function POST(req: NextRequest) {
           { error: "You can’t approve your own contribution — another moderator must review it." },
           { status: 400 }
         );
-      const published = await publishDispute(c.id, "moderator", user.id);
-      if (!published)
+      const outcome = await publishDispute(c.id, "moderator", user.id);
+      if (outcome !== "published")
         return NextResponse.json(
-          { error: "Contribution was already resolved by someone else." },
+          {
+            error:
+              outcome === "outdated"
+                ? "Not published: a newer price observation exists — the proposal was resolved as outdated."
+                : "Contribution was already resolved by someone else.",
+          },
           { status: 409 }
         );
       await prisma.moderationAction.create({

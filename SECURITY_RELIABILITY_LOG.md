@@ -46,6 +46,29 @@ defense-in-depth, availability), **Low** (hygiene).
 
 ---
 
+## 2026-11-04 — Wave 11: self-review of this session's own changes
+
+A high-effort code review of the whole branch diff (2e3de05..HEAD) surfaced
+6 regressions/gaps in this session's own work; all fixed:
+
+- `publishDispute`/`maybePublishCorroborated` now return a typed outcome
+  (`published` / `already-resolved` / `outdated` / `pending`). The
+  AUTO_PUBLISH path previously told trusted users "Price updated — thanks!"
+  even when the new staleness guard had rejected the proposal; corroborators
+  were told a dead proposal "needs one more confirmation"; moderators got
+  "already resolved by someone else" for outdated rejections. All three
+  callers now report what actually happened.
+- In-batch new-store groups now accumulate identities from LATER rows (a
+  phone appearing only on row 2 was silently dropped, recreating the
+  duplicate-store problem one import later). Covered by test.
+- e2e contribution flake root-caused: the demo user's 6/hour contribution
+  cap persists across runs on a shared dev DB and is checked before
+  validation, so later checks saw 429. Section now tries several stores for
+  the contribute panel and accepts 429 as "the rate guard answered first".
+- /login no longer shows a failure banner for unknown ?error= values.
+
+---
+
 ## 2026-11-04 — Wave 10: independent-audit response (15 findings triaged)
 
 A second, independent read-only audit (subagent) reviewed the whole codebase
