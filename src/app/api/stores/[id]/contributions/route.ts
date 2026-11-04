@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { requireUser, AuthError } from "@/lib/auth";
 import { getSettings } from "@/lib/settings";
@@ -93,32 +94,43 @@ export async function POST(
         Date.now() - obs.observedAt.getTime() >
         settings.expireAfterDays * 86400_000;
 
-      await prisma.$transaction(async (tx) => {
-        const v = await tx.verification.create({
-          data: { observationId: obs.id, userId: user.id, verdict: "CONFIRM" },
+      try {
+        await prisma.$transaction(async (tx) => {
+          const v = await tx.verification.create({
+            data: { observationId: obs.id, userId: user.id, verdict: "CONFIRM" },
+          });
+          await tx.contribution.create({
+            data: {
+              userId: user.id,
+              storeId,
+              productLineId,
+              kind: "CONFIRM",
+              targetObservationId: obs.id,
+              status: "PUBLISHED",
+              resolvedAt: new Date(),
+            },
+          });
+          // Confirming expired/ancient data earns nothing.
+          if (!expired) {
+            await addReputation(
+              user.id,
+              REP_DELTAS.CONFIRM_ACCURATE,
+              "CONFIRM_ACCURATE",
+              { type: "verification", id: v.id },
+              tx
+            );
+          }
         });
-        await tx.contribution.create({
-          data: {
-            userId: user.id,
-            storeId,
-            productLineId,
-            kind: "CONFIRM",
-            targetObservationId: obs.id,
-            status: "PUBLISHED",
-            resolvedAt: new Date(),
-          },
-        });
-        // Confirming expired/ancient data earns nothing.
-        if (!expired) {
-          await addReputation(
-            user.id,
-            REP_DELTAS.CONFIRM_ACCURATE,
-            "CONFIRM_ACCURATE",
-            { type: "verification", id: v.id },
-            tx
+      } catch (e) {
+        // The pre-check above races with concurrent double-submits; the
+        // unique (observationId, userId) constraint is the real guard.
+        if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002")
+          return NextResponse.json(
+            { error: "You already weighed in on this price." },
+            { status: 409 }
           );
-        }
-      });
+        throw e;
+      }
       return NextResponse.json({ ok: true, message: "Thanks — confirmation recorded." });
     }
 

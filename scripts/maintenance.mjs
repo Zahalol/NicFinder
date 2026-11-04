@@ -7,7 +7,9 @@
 //   2. Deletes expired auth sessions (they are dead credentials, not
 //      evidence — leaving them accumulates rows forever; getUserByToken
 //      also rejects them individually, this is the bulk cleanup).
-//   3. Reports data-freshness counts (for logs/alerting).
+//   3. Reconciles cached User.reputation against the ReputationEvent ledger
+//      (the sum is the source of truth; drift is corrected and reported).
+//   4. Reports data-freshness counts (for logs/alerting).
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
@@ -24,6 +26,35 @@ async function main() {
     where: { expiresAt: { lt: now } },
   });
 
+  // Reputation reconciliation: User.reputation is a cached sum of the
+  // append-only ReputationEvent ledger. Fix any drift (bugs, manual DB
+  // edits) and report it — repeated drift would indicate a code path that
+  // updates one side without the other.
+  const ledger = await prisma.reputationEvent.groupBy({
+    by: ["userId"],
+    _sum: { delta: true },
+  });
+  const ledgerByUser = new Map(ledger.map((l) => [l.userId, l._sum.delta ?? 0]));
+  const users = await prisma.user.findMany({ select: { id: true, reputation: true } });
+  let reputationDriftFixed = 0;
+  let reputationUnledgered = 0;
+  for (const u of users) {
+    if (!ledgerByUser.has(u.id)) {
+      // No ledger events at all (e.g. pre-ledger seeded baselines): report,
+      // never overwrite — zeroing these would destroy legitimate grants.
+      if (u.reputation !== 0) reputationUnledgered++;
+      continue;
+    }
+    const expected = ledgerByUser.get(u.id) ?? 0;
+    if (u.reputation !== expected) {
+      await prisma.user.update({ where: { id: u.id }, data: { reputation: expected } });
+      reputationDriftFixed++;
+      console.error(
+        `reputation drift: user ${u.id} cached=${u.reputation} ledger=${expected} (fixed)`
+      );
+    }
+  }
+
   const staleCutoff = new Date(now.getTime() - 21 * 86400_000);
   const [activeObs, staleObs, openReviews, coverageRequests] = await Promise.all([
     prisma.priceObservation.count({ where: { status: "ACTIVE" } }),
@@ -39,6 +70,8 @@ async function main() {
       ranAt: now.toISOString(),
       dealsExpired: expired.count,
       sessionsPurged: purgedSessions.count,
+      reputationDriftFixed,
+      reputationUnledgered,
       activeObservations: activeObs,
       staleObservations: staleObs,
       openReviewItems: openReviews,

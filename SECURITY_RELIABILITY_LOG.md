@@ -46,6 +46,39 @@ defense-in-depth, availability), **Low** (hygiene).
 
 ---
 
+## 2026-11-04 — Wave 5: search truncation accuracy, reputation ledger, race polish
+
+### M-13 (Medium) Radius search truncated in arbitrary order at scale
+- **Finding (benchmarked)**: `searchStores` fetched bounding-box stores with
+  `take: 500` and *no ordering* — beyond 500 stores in a box, the subset kept
+  was arbitrary (insertion order), so the nearest or cheapest store could be
+  silently missing from results. Invisible in the 35-store pilot; wrong at
+  scale. (Benchmark: 5k stores / 15k observations → ~65 ms query, so speed
+  was fine; the problem was which 500 got kept.)
+- **Fix**: two-phase fetch — coordinates only for the box, exact-radius
+  filter + nearest-500 cap in JS, then full observation/deal data for just
+  those stores. Truncation is now deterministic and nearest-first, and
+  out-of-radius corner stores no longer load observations at all.
+
+### M-14 (Medium) Reputation cache could drift from its ledger unnoticed
+- **Finding**: `User.reputation` is a cached sum of the append-only
+  `ReputationEvent` ledger; nothing ever verified the cache. Drift (from a
+  bug or manual edit) would silently change trust decisions (rep ≥ 50
+  auto-publishes price changes).
+- **Fix**: maintenance job reconciles cache against ledger sums and reports
+  `reputationDriftFixed`. Users with **no ledger events** are reported
+  (`reputationUnledgered`) but never overwritten — protecting pre-ledger
+  baselines. Seed now writes matching `SEED_GRANT` ledger entries for the
+  demo users' starting reputations (idempotent).
+
+### L-4 (Low) Concurrent double-CONFIRM returned 500
+- **Finding**: the "already weighed in" pre-check races with itself; the
+  unique (observationId, userId) constraint then surfaced as a generic 500.
+- **Fix**: P2002 from the confirm transaction maps to the same 409 message
+  as the pre-check.
+
+---
+
 ## 2026-11-04 — Wave 4: import engine at scale, CSV injection, duplicate stores
 
 ### H-5 (High) Multiple rows for the same NEW store created duplicate stores
