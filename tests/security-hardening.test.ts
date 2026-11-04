@@ -458,6 +458,55 @@ describe("import field-length bounds", () => {
   });
 });
 
+describe("import validation never throws on garbage (fuzz)", () => {
+  beforeEach(async () => {
+    await resetDb();
+    await seedProductLines();
+  });
+
+  it("classifies 200 adversarial rows without crashing", async () => {
+    const junkPool: unknown[] = [
+      null, undefined, "", " ", 0, -1, 1e300, -1e300, NaN, Infinity, -Infinity,
+      "NaN", "null", "undefined", "'; DROP TABLE stores;--", "=HYPERLINK(\"x\")",
+      "\u0000\u0001\u0002", "💀".repeat(50), "a".repeat(5000), "9".repeat(400),
+      "-5.99", "5.999", "1e9", "0x41", "2026-13-45", "not-a-date",
+      "99999-01-01", { nested: "object" }, [1, 2, 3], true, false,
+      "+1312555", "312", "90", "-91", "181", "-200",
+    ];
+    const fields = [
+      "external_store_id", "store_name", "address", "city", "state", "zip",
+      "latitude", "longitude", "phone", "observed_at", "product_line",
+      "price_usd", "currency", "tax_included", "availability", "confidence",
+      "deal_min_qty", "deal_price_per_can_usd", "deal_discount_per_can_usd",
+      "deal_applies_above_min_qty", "deal_conditions", "deal_expires_at",
+      "notes",
+    ];
+    // Deterministic pseudo-random so failures are reproducible.
+    let seed = 42;
+    const rand = () => (seed = (seed * 1103515245 + 12345) % 2 ** 31) / 2 ** 31;
+    const rows: Record<string, unknown>[] = [];
+    for (let i = 0; i < 200; i++) {
+      const row: Record<string, unknown> = {};
+      for (const f of fields) {
+        if (rand() < 0.7) row[f] = junkPool[Math.floor(rand() * junkPool.length)];
+      }
+      rows.push(row);
+    }
+    const mapping = Object.fromEntries(fields.map((f) => [f, f])) as Parameters<
+      typeof validateRows
+    >[1];
+
+    const validated = await validateRows(rows, mapping);
+    expect(validated).toHaveLength(200);
+    const valid = new Set(["ACCEPTED", "UPDATED", "SKIPPED_DUPLICATE", "FLAGGED", "REJECTED"]);
+    for (const r of validated) {
+      expect(valid.has(r.outcome)).toBe(true);
+      // Issues must serialize (they go into the DB as JSON verbatim).
+      expect(() => JSON.stringify(r.issues)).not.toThrow();
+    }
+  });
+});
+
 describe("cleanText", () => {
   it("strips NUL and control characters (Postgres text rejects \\0)", () => {
     expect(cleanText("a\u0000b", 100)).toBe("ab");
