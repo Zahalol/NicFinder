@@ -12,7 +12,7 @@ Status: `todo` | `in-progress` | `done` | `blocked` | `rejected`.
 | 5 | Mobile UX audit: search → nearest → price readability; loading/empty/error states; keyboard support | Med-High | M | Med | Subjective | done (first pass) |
 | 6 | Pluggable rate-limiter storage abstraction (memory default, Postgres-backed option) | Med — deploy readiness | M | High | Over-engineering | done |
 | 7 | Price history sparkline / freshness visualization on store page (no implied trends on sparse data) | Med | M | Med | Misleading viz if careless | done |
-| 8 | Two-store side-by-side comparison | Med | M | Med | UI clutter | todo |
+| 8 | Two-store side-by-side comparison | Med | M | Med | UI clutter | done |
 | 9 | Value-of-trip calculator (5-can savings vs added distance, stated assumptions) | Med | S-M | Med | Invented costs — keep assumptions explicit | done |
 | 10 | Import contract fuzz tests (malformed CSV/XLSX, huge files, weird encodings, CRLF, BOM) | Med — robustness | S-M | High | None | done |
 | 11 | Price reliability score (age + source + corroboration + disputes), transparent formula | Med | M | Med | False precision | done |

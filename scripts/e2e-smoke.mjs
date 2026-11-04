@@ -217,6 +217,24 @@ try {
     body2.includes("Sample Mart Alpha") || uploadResult.counts.accepted === 0
   );
 
+  // Two-store comparison: pick two stores from the list, open /compare.
+  await page.goto(`${BASE}/search?q=60614&radius=5`);
+  const storeHrefs = await page
+    .locator('a[href^="/stores/"]')
+    .evaluateAll((els) => els.map((e) => e.getAttribute("href")));
+  const storeIds = [...new Set(storeHrefs.map((h) => h.split("/")[2]?.split("?")[0]))].filter(Boolean);
+  if (storeIds.length >= 2) {
+    await page.goto(`${BASE}/compare?a=${storeIds[0]}&b=${storeIds[1]}&qty=5`);
+    const compareBody = await page.textContent("body");
+    check(
+      "compare page renders both stores",
+      compareBody.includes("Compare stores") && compareBody.includes("5 cans of regular ZYN")
+    );
+  } else {
+    check("compare page renders both stores", false, "fewer than 2 stores in search results");
+  }
+
+  await page.goto(`${BASE}/search?q=60614&radius=5`);
   await page.locator("button", { hasText: "Map" }).first().click();
   await page.waitForTimeout(1500);
   check("map container renders", (await page.locator(".leaflet-container").count()) > 0);

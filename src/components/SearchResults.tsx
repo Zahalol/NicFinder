@@ -28,6 +28,19 @@ export function SearchResults({
 }) {
   const [view, setView] = useState<"list" | "map">("list");
   const [pricedOnly, setPricedOnly] = useState(false);
+  // Two-store comparison picker (max 2; picking a third swaps the oldest out).
+  const [compareIds, setCompareIds] = useState<string[]>([]);
+  function toggleCompare(id: string) {
+    setCompareIds((prev) =>
+      prev.includes(id)
+        ? prev.filter((x) => x !== id)
+        : [...prev.slice(-1), id].slice(-2)
+    );
+  }
+  const compareHref =
+    compareIds.length === 2
+      ? `/compare?a=${compareIds[0]}&b=${compareIds[1]}&qty=${Math.max(qty, 1)}&lat=${center.lat}&lng=${center.lng}`
+      : null;
   const tripValues = useMemo(
     () => computeTripValues(results.map(toComparable)),
     [results]
@@ -148,7 +161,24 @@ export function SearchResults({
                       </div>
                     )}
                   </div>
-                  <PriceBadge result={r} qty={qty} />
+                  <div className="flex flex-col items-end gap-1.5 shrink-0">
+                    <PriceBadge result={r} qty={qty} />
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        toggleCompare(r.id);
+                      }}
+                      aria-pressed={compareIds.includes(r.id)}
+                      className={`rounded border px-1.5 py-0.5 text-[11px] ${
+                        compareIds.includes(r.id)
+                          ? "border-teal-600 bg-teal-600 text-white"
+                          : "border-stone-200 bg-white text-stone-400 hover:text-stone-600 hover:border-stone-300"
+                      }`}
+                    >
+                      {compareIds.includes(r.id) ? "✓ comparing" : "compare"}
+                    </button>
+                  </div>
                 </div>
               </Link>
             </li>
@@ -161,6 +191,31 @@ export function SearchResults({
           nearest store with a definite price. Distances are straight-line;
           fuel and time aren’t estimated.
         </p>
+      )}
+      {compareIds.length > 0 && (
+        <div className="sticky bottom-3 z-30 mt-4 flex justify-center">
+          <div className="flex items-center gap-3 rounded-full border border-stone-300 bg-white/95 px-4 py-2 text-sm shadow-lg backdrop-blur">
+            {compareHref ? (
+              <>
+                <span className="text-stone-600">2 stores selected</span>
+                <Link
+                  href={compareHref}
+                  className="rounded-full bg-teal-600 px-3 py-1 font-medium text-white hover:bg-teal-700"
+                >
+                  Compare side-by-side
+                </Link>
+              </>
+            ) : (
+              <span className="text-stone-500">Pick one more store to compare</span>
+            )}
+            <button
+              onClick={() => setCompareIds([])}
+              className="text-xs text-stone-400 underline hover:text-stone-600"
+            >
+              clear
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
