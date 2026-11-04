@@ -85,10 +85,20 @@ manually in the preview UI. All optional unless marked required.
    coordinates within 75 m with name similarity. Multiple plausible
    candidates → `FLAGGED`, never guessed. New stores created near existing
    ones also open a **duplicate candidate** for admin review.
+   **In-batch dedupe:** several rows describing the same *new* store (same
+   identity, e.g. two observation dates or two product lines) create ONE
+   store; later rows carry an informational `NEW_STORE_SHARED` issue and
+   attach their observations to it.
 4. **Idempotency:** the file's SHA-256 is stored; re-committing an identical
-   file applies nothing. Independently, each row carries a content hash, so
-   the same observation arriving in two different files is also skipped.
-   Verification counts are never inflated by re-imports.
+   file applies nothing (commits of the same content serialize on a
+   Postgres advisory lock, so even concurrent commits apply once).
+   Independently, each row carries a content hash, so the same observation
+   arriving in two different files is also skipped. Verification counts are
+   never inflated by re-imports.
+   **Field bounds:** free-text fields have hard length limits (store name
+   120, address 200, city 80, notes 1000, conditions 500, …); exceeding one
+   rejects the row with `FIELD_TOO_LONG`. The error-report CSV neutralizes
+   leading formula characters (OWASP CSV injection).
 5. **Append-only history:** observations are never overwritten. "Latest
    price" is computed (see `ARCHITECTURE.md`). **Reversal** of a committed
    batch invalidates (not deletes) its observations/deals and retires
