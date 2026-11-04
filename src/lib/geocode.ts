@@ -31,7 +31,8 @@ function loadZipIndex(): Map<string, ZipRow> {
   const file = path.join(process.cwd(), "src", "data", "zip-centroids.csv");
   const text = fs.readFileSync(file, "utf-8");
   const map = new Map<string, ZipRow>();
-  const lines = text.split("\n");
+  // Tolerate CRLF: on Windows, git's autocrlf may rewrite the dataset.
+  const lines = text.split(/\r?\n/);
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i];
     if (!line) continue;

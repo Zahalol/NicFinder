@@ -1,0 +1,4 @@
+# Keep the bundled geo dataset byte-identical on every platform
+# (Windows autocrlf would otherwise rewrite it to CRLF).
+src/data/zip-centroids.csv -text
+sample-data/*.csv text eol=lf
