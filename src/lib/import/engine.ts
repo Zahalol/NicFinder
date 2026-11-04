@@ -14,8 +14,6 @@ import {
   AVAILABILITY_VALUES,
   parseBool,
 } from "./contract";
-import type { Prisma } from "@prisma/client";
-
 export interface RowIssue {
   code: string;
   field?: string;
