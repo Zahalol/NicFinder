@@ -238,6 +238,44 @@ async function main() {
     }
   }
 
+  // --- Synthetic price history for a few demo stores (drives the store-page
+  // sparkline). Older observations are stored as SUPERSEDED — they were
+  // replaced by the newer seeded price above. Idempotent: skipped when the
+  // store already has more than one ZYN observation.
+  const DEMO_HISTORY: Array<{ street: string; zip: string; series: Array<{ cents: number; days: number }> }> = [
+    // Gentle decline toward today's 649
+    { street: "100 Example Ave", zip: "60614", series: [{ cents: 729, days: 88 }, { cents: 699, days: 61 }, { cents: 699, days: 40 }, { cents: 679, days: 21 }] },
+    // Stable then a drop to today's 559
+    { street: "500 Example Pl", zip: "60622", series: [{ cents: 599, days: 75 }, { cents: 599, days: 47 }, { cents: 589, days: 26 }] },
+    // Creeping up to today's 729
+    { street: "300 Example Blvd", zip: "60657", series: [{ cents: 679, days: 83 }, { cents: 699, days: 52 }, { cents: 719, days: 28 }] },
+  ];
+  for (const h of DEMO_HISTORY) {
+    const identity = await prisma.storeIdentity.findFirst({
+      where: { kind: "ADDRESS", value: normalizeAddressSeed(`${h.street} chicago il ${h.zip}`) },
+    });
+    if (!identity) continue;
+    const zynCount = await prisma.priceObservation.count({
+      where: { storeId: identity.storeId, productLineId: zyn.id },
+    });
+    if (zynCount > 1) continue; // history already seeded
+    await prisma.priceObservation.createMany({
+      data: h.series.map((p) => ({
+        storeId: identity.storeId,
+        productLineId: zyn.id,
+        priceCents: p.cents,
+        taxIncluded: false,
+        availability: "IN_STOCK",
+        observedAt: daysAgo(p.days),
+        sourceType: "ADMIN" as const,
+        status: "SUPERSEDED" as const,
+        confidence: 1,
+        notes: "Synthetic demonstration price history (seeded, fictional store).",
+      })),
+      skipDuplicates: true,
+    });
+  }
+
   // --- Demo community activity on demo store #1
   const demo1Identity = await prisma.storeIdentity.findFirst({
     where: { kind: "ADDRESS", value: normalizeAddressSeed("100 Example Ave chicago il 60614") },

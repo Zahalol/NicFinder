@@ -48,3 +48,34 @@ all above the fold; directory section collapses/expands.
 **Commit.** See git log ("Cycle 1").
 
 **Recommendation: Keep.** Pure presentation; large mobile usability win.
+
+---
+
+## Cycle 2 — Price-history sparkline + trend on store pages
+
+**Problem.** Price history existed only as a table of rows; nothing showed a
+shopper whether a store's price is rising, falling, or steady — a core
+"should I trust / wait / go now" signal.
+
+**What changed.**
+- `src/components/PriceSparkline.tsx`: new dependency-free, server-rendered
+  SVG sparkline (line + soft area fill + per-observation dots, newest dot
+  emphasized) and a pure `trendSummary()` helper.
+- `src/app/stores/[id]/page.tsx`: each product-line card now plots every
+  recorded observation (active + superseded) from the last 180 days when
+  there are ≥2 points, with a plain-language trend line, e.g.
+  "▾ down $0.80 over 3 mo of reports" (green for down, amber for up).
+- `prisma/seed.ts`: 3 demo stores get a short synthetic ZYN history
+  (SUPERSEDED rows, clearly marked "Synthetic demonstration price history",
+  idempotent guard) so the feature is demonstrable; real stores untouched.
+- `tests/sparkline.test.ts`: unit tests for `trendSummary` (ordering,
+  same-day null, flat series, rise/fall). Suite now 57 tests.
+
+**Why selected.** Price-history visualization was a stated product priority;
+zero client JS (SVG is server-rendered), additive, no backend risk.
+
+**Testing.** 57 vitest green, typecheck/lint clean; mobile screenshot shows
+the declining-price sparkline + trend caption on Demo Fuel Stop #1.
+
+**Recommendation: Keep.** Small, honest (plots only real recorded
+observations), reads instantly.

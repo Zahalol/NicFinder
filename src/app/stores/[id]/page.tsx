@@ -5,12 +5,35 @@ import { getSettings } from "@/lib/settings";
 import { selectLatestPrice } from "@/lib/prices";
 import { formatCents } from "@/lib/money";
 import { DemoBadge } from "@/components/badges";
+import { PriceSparkline, trendSummary, type SparkPoint } from "@/components/PriceSparkline";
 import { BackLink } from "@/components/BackLink";
 import { SaveStoreButton } from "@/components/SaveStoreButton";
 import { ContributePanel } from "./ContributePanel";
 import { Comments } from "./Comments";
 
 export const dynamic = "force-dynamic";
+
+function TrendLine({ history }: { history: SparkPoint[] }) {
+  const trend = trendSummary(history);
+  if (!trend) return null;
+  const { deltaCents, days } = trend;
+  const span = days >= 30 ? `${Math.round(days / 30)} mo` : `${days}d`;
+  return (
+    <p className="mt-1 text-xs text-stone-500">
+      {deltaCents === 0 ? (
+        <>Steady over the last {span} of reports</>
+      ) : deltaCents < 0 ? (
+        <span className="text-emerald-700">
+          ▾ down {formatCents(-deltaCents)} over {span} of reports
+        </span>
+      ) : (
+        <span className="text-amber-700">
+          ▴ up {formatCents(deltaCents)} over {span} of reports
+        </span>
+      )}
+    </p>
+  );
+}
 
 export default async function StorePage({
   params,
@@ -55,12 +78,19 @@ export default async function StorePage({
       })) !== null
     : false;
 
+  const HISTORY_WINDOW_DAYS = 180;
+  const historyCutoff = Date.now() - HISTORY_WINDOW_DAYS * 86400_000;
   const latestByLine = productLines.map((line) => ({
     line,
     latest: selectLatestPrice(
       store.observations.filter((o) => o.productLineId === line.id && o.status === "ACTIVE"),
       settings
     ),
+    // History sparkline: every recorded observation (active or superseded)
+    // for this line in the window — the honest trajectory of reports.
+    history: store.observations
+      .filter((o) => o.productLineId === line.id && o.observedAt.getTime() >= historyCutoff)
+      .map((o): SparkPoint => ({ t: o.observedAt.getTime(), cents: o.priceCents })),
   }));
 
   const mapsUrl =
@@ -100,7 +130,7 @@ export default async function StorePage({
 
       {/* Current prices per product line */}
       <div className="mt-6 grid sm:grid-cols-2 gap-4">
-        {latestByLine.map(({ line, latest }) => (
+        {latestByLine.map(({ line, latest, history }) => (
           <div key={line.id} className="rounded-xl border border-stone-200 bg-white p-5">
             <h2 className="text-sm font-medium text-stone-500">{line.name}</h2>
             {latest ? (
@@ -135,6 +165,12 @@ export default async function StorePage({
                     <span className="text-red-600"> · reported out of stock</span>
                   )}
                 </p>
+                {history.length >= 2 && (
+                  <div className="mt-3 border-t border-stone-100 pt-2">
+                    <PriceSparkline points={history} />
+                    <TrendLine history={history} />
+                  </div>
+                )}
               </>
             ) : (
               <div className="mt-1">
