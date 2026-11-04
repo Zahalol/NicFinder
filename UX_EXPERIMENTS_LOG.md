@@ -529,3 +529,23 @@ input, variant validity, regional ranking, and never echoing the input
 
 **Recommendation: Keep.** Honest recovery: suggestions are real places,
 clearly offered as alternatives.
+
+---
+
+## Cycle 20 — Desktop split view: list + sticky map side by side
+
+**Problem.** Desktop showed either the list or the map (a mobile pattern
+stretched wide); every serious map-based comparison product (GasBuddy,
+Zillow) pairs a scrolling list with a persistent map.
+
+**What changed.** On ≥1024px screens, `SearchResults` renders the list and
+a sticky full-height map side by side (420px column) with no toggle; the
+map pans/zooms while the list scrolls. Mobile keeps the List/Map toggle
+unchanged. SSR renders the mobile layout; desktop upgrades on hydration via
+`matchMedia` (and responds to live resizes).
+
+**Testing.** 1400px screenshots show the split with price chips on the map
+and the map pinned while scrolled; 390px still shows the toggle; typecheck/
+lint/72 tests green.
+
+**Recommendation: Keep.**

@@ -203,6 +203,18 @@ export function SearchResults({
     }
   }, [view]);
 
+  // EXPERIMENT (Cycle 20): on large screens show list + map side by side
+  // (no toggle). SSR renders the mobile toggle layout; desktop upgrades on
+  // hydration via matchMedia.
+  const [isDesktop, setIsDesktop] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const update = () => setIsDesktop(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
   const priced = results.filter((r) => r.latest);
   const unpriced = results.filter((r) => !r.latest);
 
@@ -218,41 +230,8 @@ export function SearchResults({
   // "we list these stores but have no prices yet" view, not a hidden one.
   const showGrouped = priced.length > 0 && unpriced.length > 0;
 
-  return (
-    <div className="mt-5">
-      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
-        <p className="text-sm text-stone-500">
-          {priced.length > 0
-            ? `${priced.length} store${priced.length === 1 ? "" : "s"} with reported prices`
-            : `${results.length} store${results.length === 1 ? "" : "s"} nearby`}
-          {showGrouped && (
-            <span className="text-stone-400"> · {unpriced.length} more without</span>
-          )}
-        </p>
-        <div className="inline-flex rounded-lg border border-stone-300 dark:border-stone-700 overflow-hidden text-sm">
-          <button
-            onClick={() => setView("list")}
-            aria-pressed={view === "list"}
-            className={`px-4 py-1.5 ${view === "list" ? "bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900" : "bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-400"}`}
-          >
-            List
-          </button>
-          <button
-            onClick={() => setView("map")}
-            aria-pressed={view === "map"}
-            className={`px-4 py-1.5 ${view === "map" ? "bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900" : "bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-400"}`}
-          >
-            Map
-          </button>
-        </div>
-      </div>
-
-      {view === "map" ? (
-        <div ref={mapWrapRef} className="mt-4 h-[55vh] min-h-[360px] scroll-mt-20">
-          <StoreMap results={results} center={center} qty={qty} productSlug={productSlug} />
-        </div>
-      ) : (
-        <>
+  const listContent = (
+    <>
           <ul className="mt-4 space-y-3">
             {(showGrouped ? priced : results).map((r) => (
               <li key={r.id}>
@@ -339,7 +318,63 @@ export function SearchResults({
               )}
             </div>
           )}
-        </>
+    </>
+  );
+
+  const header = (
+    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+      <p className="text-sm text-stone-500">
+        {priced.length > 0
+          ? `${priced.length} store${priced.length === 1 ? "" : "s"} with reported prices`
+          : `${results.length} store${results.length === 1 ? "" : "s"} nearby`}
+        {showGrouped && (
+          <span className="text-stone-400"> · {unpriced.length} more without</span>
+        )}
+      </p>
+      {!isDesktop && (
+        <div className="inline-flex rounded-lg border border-stone-300 dark:border-stone-700 overflow-hidden text-sm">
+          <button
+            onClick={() => setView("list")}
+            aria-pressed={view === "list"}
+            className={`px-4 py-1.5 ${view === "list" ? "bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900" : "bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-400"}`}
+          >
+            List
+          </button>
+          <button
+            onClick={() => setView("map")}
+            aria-pressed={view === "map"}
+            className={`px-4 py-1.5 ${view === "map" ? "bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900" : "bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-400"}`}
+          >
+            Map
+          </button>
+        </div>
+      )}
+    </div>
+  );
+
+  if (isDesktop) {
+    return (
+      <div className="mt-5">
+        {header}
+        <div className="mt-4 grid grid-cols-[minmax(0,1fr)_420px] gap-5 items-start">
+          <div>{listContent}</div>
+          <div className="sticky top-20 h-[calc(100vh-7.5rem)] min-h-[420px]">
+            <StoreMap results={results} center={center} qty={qty} productSlug={productSlug} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-5">
+      {header}
+      {view === "map" ? (
+        <div ref={mapWrapRef} className="mt-4 h-[55vh] min-h-[360px] scroll-mt-20">
+          <StoreMap results={results} center={center} qty={qty} productSlug={productSlug} />
+        </div>
+      ) : (
+        listContent
       )}
     </div>
   );
