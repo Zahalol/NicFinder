@@ -4,6 +4,7 @@ import { requireUser, AuthError } from "@/lib/auth";
 import { getSettings } from "@/lib/settings";
 import { parsePriceToCents } from "@/lib/money";
 import { countRecentContributions } from "@/lib/rate-limit";
+import { parseOptionalQty } from "@/lib/validate";
 import { selectLatestPrice } from "@/lib/prices";
 import {
   decideDispute,
@@ -127,6 +128,15 @@ export async function POST(
       if (priceCents === null)
         return NextResponse.json({ error: "Enter a valid price like 6.49." }, { status: 400 });
 
+      // proposedQty is optional but must be a sane integer when present —
+      // unvalidated Number() here used to accept negatives and crash on NaN.
+      const proposedQty = parseOptionalQty(body?.proposedQty);
+      if (proposedQty === undefined)
+        return NextResponse.json(
+          { error: "Quantity must be a whole number between 1 and 100." },
+          { status: 400 }
+        );
+
       const activeObs = await prisma.priceObservation.findMany({
         where: { storeId, productLineId, status: "ACTIVE" },
         include: { verifications: true },
@@ -194,7 +204,7 @@ export async function POST(
           productLineId,
           kind: "DISPUTE",
           proposedPriceCents: priceCents,
-          proposedQty: body?.proposedQty ? Number(body.proposedQty) : null,
+          proposedQty,
           comment: body?.comment ? String(body.comment).slice(0, 500) : null,
           status:
             decision.action === "AUTO_PUBLISH"

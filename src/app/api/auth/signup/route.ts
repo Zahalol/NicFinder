@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import {
   hashPassword,
@@ -32,14 +33,26 @@ export async function POST(req: NextRequest) {
   if (existing)
     return NextResponse.json({ error: "An account with that email already exists." }, { status: 409 });
 
-  const user = await prisma.user.create({
-    data: {
-      email,
-      passwordHash: await hashPassword(password),
-      displayName,
-      ageConfirmedAt: new Date(),
-    },
-  });
+  // The findUnique check above races with concurrent signups; the unique
+  // constraint is the real guard — map its violation to the same 409.
+  let user;
+  try {
+    user = await prisma.user.create({
+      data: {
+        email,
+        passwordHash: await hashPassword(password),
+        displayName,
+        ageConfirmedAt: new Date(),
+      },
+    });
+  } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002")
+      return NextResponse.json(
+        { error: "An account with that email already exists." },
+        { status: 409 }
+      );
+    throw e;
+  }
 
   const { token, expiresAt } = await createSession(user.id, {
     ip,

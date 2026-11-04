@@ -261,6 +261,7 @@ model User {
   auditEvents   AuditEvent[]
   savedStores   SavedStore[]
   coverageRequests CoverageRequest[]
+  commentReports CommentReport[]
 }
 
 // A user's watchlist entry.
@@ -383,11 +384,28 @@ model Comment {
   body      String
   // VISIBLE | HIDDEN (moderated) | DELETED (by author)
   status    String   @default("VISIBLE")
+  // Cached count of DISTINCT reporters (CommentReport is the source of truth).
   reportCount Int    @default(0)
   createdAt DateTime @default(now())
   editedAt  DateTime?
 
+  reports   CommentReport[]
+
   @@index([storeId, status, createdAt])
+}
+
+// One report per user per comment — prevents a single account from
+// auto-hiding any comment by reporting it repeatedly.
+model CommentReport {
+  id        String   @id @default(cuid())
+  commentId String
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([commentId, userId])
+  @@index([commentId])
 }
 
 model ModerationAction {

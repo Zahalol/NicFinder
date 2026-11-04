@@ -144,24 +144,44 @@ export async function maybePublishCorroborated(
 
   if (corroborators.length < settings.corroborationsRequired) return false;
 
-  await publishDispute(contribution.id, "corroborated");
-  return true;
+  return publishDispute(contribution.id, "corroborated");
 }
 
 /**
  * Publish a dispute: supersede the current ACTIVE observation for that
  * store+product and create the new COMMUNITY observation.
+ *
+ * Concurrency-safe: the contribution row is atomically claimed
+ * (PENDING/CORROBORATING → PUBLISHED) inside the transaction. If another
+ * request already published or rejected it, this returns false and changes
+ * nothing — concurrent corroborations cannot double-publish or double-award
+ * reputation.
  */
 export async function publishDispute(
   contributionId: string,
   how: "auto" | "corroborated" | "moderator",
   moderatorId?: string
-): Promise<void> {
-  await prisma.$transaction(async (tx) => {
+): Promise<boolean> {
+  const published = await prisma.$transaction(async (tx) => {
     const c = await tx.contribution.findUniqueOrThrow({
       where: { id: contributionId },
     });
     if (c.proposedPriceCents === null) throw new Error("No proposed price");
+
+    // Atomic claim: only one caller can move the row out of a publishable
+    // state. Concurrent callers block on the row lock, then match 0 rows.
+    const claimed = await tx.contribution.updateMany({
+      where: {
+        id: contributionId,
+        status: { in: ["PENDING", "CORROBORATING"] },
+      },
+      data: {
+        status: "PUBLISHED",
+        resolvedAt: new Date(),
+        reviewedById: moderatorId,
+      },
+    });
+    if (claimed.count === 0) return false;
 
     const superseded = await tx.priceObservation.findMany({
       where: {
@@ -212,15 +232,6 @@ export async function publishDispute(
       },
     });
 
-    await tx.contribution.update({
-      where: { id: c.id },
-      data: {
-        status: "PUBLISHED",
-        resolvedAt: new Date(),
-        reviewedById: moderatorId,
-      },
-    });
-
     await addReputation(
       c.userId,
       REP_DELTAS.REPLACEMENT_PUBLISHED,
@@ -228,11 +239,15 @@ export async function publishDispute(
       { type: "contribution", id: c.id },
       tx
     );
+    return true;
   });
-  await audit("PRICE_PUBLISHED", {
-    targetType: "contribution",
-    targetId: contributionId,
-    detail: { how },
-    userId: moderatorId ?? null,
-  });
+  if (published) {
+    await audit("PRICE_PUBLISHED", {
+      targetType: "contribution",
+      targetId: contributionId,
+      detail: { how },
+      userId: moderatorId ?? null,
+    });
+  }
+  return published;
 }

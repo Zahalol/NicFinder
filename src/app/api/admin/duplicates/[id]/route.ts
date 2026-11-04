@@ -42,6 +42,15 @@ export async function POST(
         await tx.quantityDeal.updateMany({ where: { storeId: mergeId }, data: { storeId: keepId } });
         await tx.contribution.updateMany({ where: { storeId: mergeId }, data: { storeId: keepId } });
         await tx.comment.updateMany({ where: { storeId: mergeId }, data: { storeId: keepId } });
+        // Watchlists follow the surviving store (dedupe on the unique pair).
+        const saved = await tx.savedStore.findMany({ where: { storeId: mergeId } });
+        if (saved.length) {
+          await tx.savedStore.createMany({
+            data: saved.map((s) => ({ userId: s.userId, storeId: keepId })),
+            skipDuplicates: true,
+          });
+          await tx.savedStore.deleteMany({ where: { storeId: mergeId } });
+        }
         const identities = await tx.storeIdentity.findMany({ where: { storeId: mergeId } });
         await tx.storeIdentity.deleteMany({ where: { storeId: mergeId } });
         if (identities.length) {

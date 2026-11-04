@@ -10,13 +10,19 @@ import { memoryRateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0] ?? "local";
-  if (!memoryRateLimit(`login:${ip}`, 20, 900_000)) {
+  if (!memoryRateLimit(`login:ip:${ip}`, 20, 900_000)) {
     return NextResponse.json({ error: "Too many attempts — try later." }, { status: 429 });
   }
 
   const body = await req.json().catch(() => null);
   const email = String(body?.email ?? "").trim().toLowerCase();
   const password = String(body?.password ?? "");
+
+  // Per-account limiter: the IP key alone is defeated by rotating
+  // X-Forwarded-For, so also cap attempts against a single email.
+  if (email && !memoryRateLimit(`login:email:${email}`, 10, 900_000)) {
+    return NextResponse.json({ error: "Too many attempts — try later." }, { status: 429 });
+  }
 
   const user = await prisma.user.findUnique({ where: { email } });
   const generic = NextResponse.json(

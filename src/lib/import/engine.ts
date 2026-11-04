@@ -20,6 +20,9 @@ export interface RowIssue {
   message: string;
 }
 
+/** A batch was in the wrong lifecycle state for the requested operation. */
+export class BatchStateError extends Error {}
+
 export type RowOutcome =
   | "ACCEPTED"
   | "UPDATED"
@@ -526,7 +529,8 @@ export async function commitBatch(
     where: { id: batchId },
     include: { rows: { orderBy: { rowNumber: "asc" } } },
   });
-  if (batch.status !== "PREVIEW") throw new Error(`Batch is ${batch.status}, not PREVIEW`);
+  if (batch.status !== "PREVIEW")
+    throw new BatchStateError(`Batch is ${batch.status}, not PREVIEW`);
 
   // Idempotency: identical file already committed → nothing to do.
   const prior = await prisma.importBatch.findFirst({
@@ -548,6 +552,16 @@ export async function commitBatch(
 
   await prisma.$transaction(
     async (tx) => {
+      // Atomic claim: PREVIEW → COMMITTED exactly once. A concurrent commit
+      // of the same batch blocks on the row lock, then matches 0 rows and
+      // aborts instead of double-creating stores/observations.
+      const claimed = await tx.importBatch.updateMany({
+        where: { id: batch.id, status: "PREVIEW" },
+        data: { status: "COMMITTED", committedAt: new Date() },
+      });
+      if (claimed.count === 0)
+        throw new BatchStateError("Batch was already committed or reversed.");
+
       for (let i = 0; i < validated.length; i++) {
         const row = validated[i];
         const dbRow = batch.rows[i];
@@ -692,8 +706,6 @@ export async function commitBatch(
       await tx.importBatch.update({
         where: { id: batch.id },
         data: {
-          status: "COMMITTED",
-          committedAt: new Date(),
           totalRows: counts.total,
           acceptedRows: counts.accepted,
           updatedRows: counts.updated,
@@ -729,10 +741,24 @@ export async function reverseBatch(
     where: { id: batchId },
     include: { rows: true },
   });
-  if (batch.status !== "COMMITTED") throw new Error(`Batch is ${batch.status}, not COMMITTED`);
+  if (batch.status !== "COMMITTED")
+    throw new BatchStateError(`Batch is ${batch.status}, not COMMITTED`);
   const rowIds = batch.rows.map((r) => r.id);
 
   await prisma.$transaction(async (tx) => {
+    // Atomic claim: COMMITTED → REVERSED exactly once (see commitBatch).
+    const claimed = await tx.importBatch.updateMany({
+      where: { id: batchId, status: "COMMITTED" },
+      data: {
+        status: "REVERSED",
+        reversedAt: new Date(),
+        reversedById: userId,
+        reverseReason: reason,
+      },
+    });
+    if (claimed.count === 0)
+      throw new BatchStateError("Batch was already reversed.");
+
     await tx.priceObservation.updateMany({
       where: { importRowId: { in: rowIds } },
       data: { status: "INVALIDATED", invalidReason: `Import reversed: ${reason}` },
@@ -763,10 +789,6 @@ export async function reverseBatch(
         }
       }
     }
-    await tx.importBatch.update({
-      where: { id: batchId },
-      data: { status: "REVERSED", reversedAt: new Date(), reversedById: userId, reverseReason: reason },
-    });
   });
 
   await audit("IMPORT_REVERSED", {

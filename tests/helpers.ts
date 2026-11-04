@@ -3,6 +3,9 @@ import { prisma } from "@/lib/db";
 /** Wipe all data (order matters for FK constraints). */
 export async function resetDb() {
   await prisma.$transaction([
+    prisma.commentReport.deleteMany(),
+    prisma.savedStore.deleteMany(),
+    prisma.coverageRequest.deleteMany(),
     prisma.verification.deleteMany(),
     prisma.reputationEvent.deleteMany(),
     prisma.moderationAction.deleteMany(),

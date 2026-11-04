@@ -1,31 +1,24 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { prisma } from "@/lib/db";
 import { requireUser, AuthError } from "@/lib/auth";
 import { getSettings } from "@/lib/settings";
+import { reportComment } from "@/lib/comments";
 
 export async function POST(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await requireUser();
+    const user = await requireUser();
     const { id } = await params;
     const settings = await getSettings();
-    const comment = await prisma.comment.findUnique({ where: { id } });
-    if (!comment || comment.status !== "VISIBLE")
-      return NextResponse.json({ error: "Comment not found." }, { status: 404 });
-
-    const updated = await prisma.comment.update({
-      where: { id },
-      data: { reportCount: { increment: 1 } },
-    });
-    if (updated.reportCount >= settings.autoHideReportCount) {
-      await prisma.comment.update({ where: { id }, data: { status: "HIDDEN" } });
-    }
-    return NextResponse.json({ ok: true });
+    const result = await reportComment(id, user.id, settings);
+    if (!result.ok)
+      return NextResponse.json({ error: result.error }, { status: result.status });
+    return NextResponse.json({ ok: true, already: result.already });
   } catch (e) {
     if (e instanceof AuthError)
       return NextResponse.json({ error: e.message }, { status: e.status });
+    console.error(e);
     return NextResponse.json({ error: "Server error." }, { status: 500 });
   }
 }
