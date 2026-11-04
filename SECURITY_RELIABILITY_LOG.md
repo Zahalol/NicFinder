@@ -46,6 +46,29 @@ defense-in-depth, availability), **Low** (hygiene).
 
 ---
 
+## 2026-11-04 — Wave 9: request-size guard, contribution-flow regression tests
+
+### M-17 (Medium) No request body size limit on API routes
+- **Finding**: App Router route handlers buffer the whole body on
+  `req.json()` with no size limit — a multi-megabyte POST to any JSON
+  endpoint was unbounded memory pressure (no auth needed on login/signup/
+  coverage-requests).
+- **Fix**: `src/middleware.ts` rejects non-GET `/api` requests over 64 KB
+  with 413 (8 MB for the admin import upload, which legitimately carries a
+  5 MB file). Content-Length-based, so it's a first line of defense;
+  per-field caps remain downstream.
+
+### T-1 (Tests) The contribution API route had no end-to-end coverage
+- The reputation/corroboration logic was tested at lib level, but the route
+  (auth, validation, dedupe responses) wasn't exercised. e2e now logs in as
+  the demo member and drives `POST /api/stores/[id]/contributions`:
+  invalid qty → 400, dispute recorded → 200 (or 429 once the hourly cap is
+  hit on repeated local runs — the guard working is also a pass), same-user
+  re-proposal → 409, unknown kind → 400. Random per-run price keeps the
+  section idempotent against a reused dev database.
+
+---
+
 ## 2026-11-04 — Wave 8: OAuth account takeover, NUL-byte robustness
 
 ### H-7 (High) Google OAuth linked accounts without checking email_verified

@@ -239,6 +239,65 @@ try {
     check(`${path2} renders`, (await page.locator(`text=${marker}`).count()) > 0);
   }
 
+  // 7. Community contribution flow through the real API (as a demo user)
+  console.log("Contribution flow…");
+  const newbieLogin = await page.evaluate(async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
+    const r = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: "newbie@example.com", password: "newbie-demo-password" }),
+    });
+    return r.status;
+  });
+  check("demo member login succeeds", newbieLogin === 200, `(got ${newbieLogin})`);
+
+  // Find a demo store + product line via the store page's contribute panel data:
+  // use the first product line id embedded in the page's select options.
+  await page.goto(`${BASE}/stores/${storeId}`);
+  const productLineId = await page
+    .locator('select[aria-label="Product line"] option')
+    .first()
+    .getAttribute("value")
+    .catch(() => null);
+  if (productLineId) {
+    // A fresh price each run keeps this section idempotent against the same
+    // dev DB (otherwise the previous run's open proposal answers first).
+    const price = (5 + Math.floor(Math.random() * 300) / 100).toFixed(2);
+    const disputeChecks = await page.evaluate(
+      async ({ sid, plid, price: p }) => {
+        const post = async (payload) => {
+          const r = await fetch(`/api/stores/${sid}/contributions`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          return r.status;
+        };
+        const badQty = await post({ kind: "DISPUTE", productLineId: plid, proposedPrice: p, proposedQty: -3 });
+        const ok = await post({ kind: "DISPUTE", productLineId: plid, proposedPrice: p });
+        const dupe = await post({ kind: "DISPUTE", productLineId: plid, proposedPrice: p });
+        const badKind = await post({ kind: "NONSENSE", productLineId: plid });
+        return { badQty, ok, dupe, badKind };
+      },
+      { sid: storeId, plid: productLineId, price }
+    );
+    check("dispute with invalid qty rejected (400)", disputeChecks.badQty === 400);
+    // 429 = the demo user's hourly cap (hit after many local re-runs) — the
+    // guard working is also a pass.
+    check(
+      "dispute recorded for corroboration (200, or 429 rate-capped)",
+      disputeChecks.ok === 200 || disputeChecks.ok === 429,
+      `(got ${disputeChecks.ok})`
+    );
+    if (disputeChecks.ok === 200) {
+      check("same user re-proposing is rejected (409)", disputeChecks.dupe === 409, `(got ${disputeChecks.dupe})`);
+    }
+    check("unknown contribution kind rejected (400)", disputeChecks.badKind === 400);
+  } else {
+    check("contribute panel exposes product lines", false);
+  }
+
   console.log(failures === 0 ? "\nAll smoke checks passed." : `\n${failures} smoke check(s) FAILED.`);
 } catch (e) {
   failures++;
