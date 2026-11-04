@@ -56,7 +56,9 @@ describe("import engine (acceptance tests 6–8, 13)", () => {
 
     // Stores created; flagged/rejected rows created no observations.
     const stores = await prisma.store.count();
-    expect(stores).toBe(7); // FIC-001..006 (Beta counted once) + FIC-004 availability row
+    // FIC-001..006 — Beta's two rows (zyn + ultra) share ONE store thanks to
+    // in-batch identity dedupe (they used to create a duplicate store each).
+    expect(stores).toBe(6);
     const obs = await prisma.priceObservation.count();
     expect(obs).toBe(6); // rows 2,3(ultra),4,5,6(deal row),7(defaulted) — row FIC-004 has no price
 
@@ -200,7 +202,7 @@ describe("import engine (acceptance tests 6–8, 13)", () => {
     expect(batch!.status).toBe("REVERSED");
     // Stores created solely by this batch are retired, not deleted.
     expect(await prisma.store.count({ where: { status: "RETIRED" } })).toBeGreaterThan(0);
-    expect(await prisma.store.count()).toBe(7);
+    expect(await prisma.store.count()).toBe(6);
   });
 
   it("rejects malformed prices/coords and quarantines them (acceptance 7)", async () => {

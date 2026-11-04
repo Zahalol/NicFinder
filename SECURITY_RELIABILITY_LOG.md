@@ -46,6 +46,52 @@ defense-in-depth, availability), **Low** (hygiene).
 
 ---
 
+## 2026-11-04 — Wave 4: import engine at scale, CSV injection, duplicate stores
+
+### H-5 (High) Multiple rows for the same NEW store created duplicate stores
+- **Finding**: the import match context is built once, before any in-batch
+  creations, so a file with several rows for one *new* store (e.g. regular +
+  Ultra prices, or two observation dates) created one store **per row**. The
+  bundled sample file itself triggered it (FIC-002 Beta existed twice), and a
+  prior test had baked the duplicate in as expected behavior ("7 stores").
+- **Fix**: commit now plans in-batch identity groups (external id → phone →
+  address, layered like matchStore): one store per real-world identity, with
+  every row's observations attached to it; later rows get an informational
+  `NEW_STORE_SHARED` issue. Test updated to the correct count plus a new
+  dedicated regression test (same new store, two rows → 1 store, 2
+  observations).
+
+### H-6 (High) 10k-row import commit exceeded its own transaction timeout
+- **Finding (benchmarked)**: committing a 10,000-row CSV (the documented max)
+  took **47.3s on localhost Postgres** — per-row awaits issued ~40k queries
+  inside a 60s-timeout transaction. On any networked database (Replit/Neon,
+  1–5ms RTT) it would blow the timeout and fail the whole import after doing
+  the work.
+- **Fix**: bulk writes — chunked `createMany` for stores (pre-generated ids),
+  identities, observations and deals; one coordinate snapshot for
+  duplicate-candidate detection instead of a query per new store; import-row
+  outcomes updated via a `VALUES` join per 400-row chunk ($executeRaw with
+  bound parameters). **Result: 47.3s → 3.4s (14×)** on the same benchmark;
+  semantics preserved (idempotency, flagged/rejected not applied, enrichment,
+  reversal, duplicate flags incl. new-vs-new).
+- **Benchmark**: scratchpad script, 10k generated rows, test database.
+
+### M-11 (Medium) CSV formula injection in the import error report
+- **Finding**: `/api/admin/imports/[id]/errors` embeds raw cell values from
+  uploaded files; a value like `=HYPERLINK(...)` would execute as a formula
+  when a staff member opens the report in Excel/Sheets.
+- **Fix**: `csvCell` (src/lib/validate.ts) neutralizes leading `= + - @`/tab/CR
+  with an apostrophe per OWASP guidance, plus standard quoting. Unit tested.
+
+### M-12 (Medium) Unbounded text fields in imports and manual store entry
+- **Finding**: imported `store_name`/`address`/`notes`/etc. and admin manual
+  store fields had no length limits — stored and rendered verbatim (storage
+  abuse, layout breakage).
+- **Fix**: per-field length limits in import validation (fatal
+  `FIELD_TOO_LONG` issue, tested) and caps on the manual store entry route.
+
+---
+
 ## 2026-11-04 — Wave 3: timing oracle, settings cache, toolchain advisories
 
 ### M-10 (Medium) Login response time revealed whether an account exists

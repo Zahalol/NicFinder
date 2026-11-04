@@ -2,7 +2,8 @@
 // reverse. Append-only: committing creates observations; reversing
 // invalidates them (never deletes).
 
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
+import { Prisma } from "@prisma/client";
 import { prisma } from "../db";
 import { parsePriceToCents } from "../money";
 import { normalizePhone, normalizeAddress, nameSimilarity, splitUsAddress } from "../normalize";
@@ -341,6 +342,31 @@ export async function validateRows(
     if (c.currency && c.currency !== "USD")
       issues.push({ code: "BAD_CURRENCY", field: "currency", message: `Only USD supported (got ${c.currency})` });
 
+    // Field-length bounds: imported text lands in the DB and on pages
+    // verbatim; unbounded values are a storage/rendering abuse vector.
+    const LENGTH_LIMITS: [keyof CanonicalRow, number][] = [
+      ["store_name", 120],
+      ["address", 200],
+      ["city", 80],
+      ["state", 2],
+      ["phone", 40],
+      ["external_store_id", 80],
+      ["notes", 1000],
+      ["deal_conditions", 500],
+      ["strength", 40],
+      ["flavor", 60],
+      ["can_size", 40],
+    ];
+    for (const [field, max] of LENGTH_LIMITS) {
+      const v = c[field];
+      if (typeof v === "string" && v.length > max)
+        issues.push({
+          code: "FIELD_TOO_LONG",
+          field: String(field),
+          message: `${String(field)} exceeds ${max} characters (got ${v.length})`,
+        });
+    }
+
     let productLineId: string | null = null;
     if (c.product_line) {
       productLineId = slugById.get(c.product_line) ?? null;
@@ -394,7 +420,7 @@ export async function validateRows(
 
     // --- outcome determination
     const fatal = issues.some((x) =>
-      ["BAD_PRICE", "BAD_DATE", "MISSING_DATE", "NO_STORE_IDENTITY", "BAD_COORDS", "BAD_CURRENCY", "UNKNOWN_PRODUCT", "BAD_AVAILABILITY", "BAD_CONFIDENCE", "BAD_DEAL_QTY", "BAD_DEAL_PRICE", "DEAL_CONFLICT"].includes(x.code)
+      ["BAD_PRICE", "BAD_DATE", "MISSING_DATE", "NO_STORE_IDENTITY", "BAD_COORDS", "BAD_CURRENCY", "UNKNOWN_PRODUCT", "BAD_AVAILABILITY", "BAD_CONFIDENCE", "BAD_DEAL_QTY", "BAD_DEAL_PRICE", "DEAL_CONFLICT", "FIELD_TOO_LONG"].includes(x.code)
     );
 
     let outcome: RowOutcome;
@@ -550,6 +576,89 @@ export async function commitBatch(
 
   const source = opts.source ?? "import";
 
+  // ---- Plan the batch (pure; the atomic claim inside the transaction still
+  // guarantees exactly-once application). Two goals:
+  //  1. In-batch store dedupe: several rows can describe the same NEW store
+  //     (e.g. two observation dates). Rows sharing an identity (external id,
+  //     phone, address — layered like matchStore) get ONE store, not one per
+  //     row (previously each row created a duplicate store).
+  //  2. Bulk writes: per-row awaits made a 10k-row commit take ~47s against
+  //     local Postgres (benchmarked) — past the transaction timeout on any
+  //     networked database. Stores/identities/observations/deals are created
+  //     with chunked createMany; import rows update via one VALUES join per
+  //     chunk.
+  interface NewStoreGroup {
+    id: string; // pre-generated so bulk inserts need no RETURNING
+    canonical: CanonicalRow;
+    flagNearDuplicates: boolean;
+    identities: { kind: string; value: string; source: string | null }[];
+  }
+
+  const identToGroup = new Map<string, NewStoreGroup>();
+  const groups: NewStoreGroup[] = [];
+  const rowStoreId = new Map<number, string>(); // validated index -> storeId
+
+  for (let i = 0; i < validated.length; i++) {
+    const row = validated[i];
+    if (row.matchedStoreId) {
+      rowStoreId.set(i, row.matchedStoreId);
+      continue;
+    }
+    if (row.outcome !== "ACCEPTED") continue;
+    const c = row.canonical;
+    const phone = normalizePhone(c.phone);
+    const addr = normalizeAddress(c.address);
+    const keys: string[] = [];
+    if (c.external_store_id) keys.push(`x:${c.external_store_id}`);
+    if (phone) keys.push(`p:${phone}`);
+    if (addr) keys.push(`a:${addr}`);
+    if (!keys.length && c.store_name)
+      keys.push(`n:${c.store_name.toLowerCase().trim()}`);
+
+    let group: NewStoreGroup | null = null;
+    for (const k of keys) {
+      const hit = identToGroup.get(k);
+      if (hit) {
+        group = hit;
+        break;
+      }
+    }
+    if (!group) {
+      const identities: NewStoreGroup["identities"] = [];
+      if (c.external_store_id)
+        identities.push({ kind: "EXTERNAL_ID", value: c.external_store_id, source });
+      if (phone) identities.push({ kind: "PHONE", value: phone, source: null });
+      if (addr) identities.push({ kind: "ADDRESS", value: addr, source: null });
+      group = {
+        id: randomUUID(),
+        canonical: c,
+        flagNearDuplicates:
+          row.matchKind === "new" && c.latitude !== null && c.longitude !== null,
+        identities,
+      };
+      groups.push(group);
+    } else {
+      validated[i] = {
+        ...row,
+        issues: [
+          ...row.issues,
+          {
+            code: "NEW_STORE_SHARED",
+            message: "Attached to a store created earlier in this file (same identity)",
+          },
+        ],
+      };
+    }
+    for (const k of keys) identToGroup.set(k, group);
+    rowStoreId.set(i, group.id);
+  }
+
+  const chunks = <T,>(arr: T[], n: number): T[][] => {
+    const out: T[][] = [];
+    for (let i = 0; i < arr.length; i += n) out.push(arr.slice(i, i + n));
+    return out;
+  };
+
   await prisma.$transaction(
     async (tx) => {
       // Atomic claim: PREVIEW → COMMITTED exactly once. A concurrent commit
@@ -562,17 +671,14 @@ export async function commitBatch(
       if (claimed.count === 0)
         throw new BatchStateError("Batch was already committed or reversed.");
 
-      for (let i = 0; i < validated.length; i++) {
-        const row = validated[i];
-        const dbRow = batch.rows[i];
-        let storeId = row.matchedStoreId;
-
-        if (row.outcome === "ACCEPTED" && !storeId) {
-          // Create a new store
-          const c = row.canonical;
-          const parts = c.address ? splitUsAddress(c.address) : null;
-          const store = await tx.store.create({
-            data: {
+      // 1. New stores (bulk).
+      for (const part of chunks(groups, 500)) {
+        await tx.store.createMany({
+          data: part.map((g) => {
+            const c = g.canonical;
+            const parts = c.address ? splitUsAddress(c.address) : null;
+            return {
+              id: g.id,
               name: c.store_name ?? "Unknown store",
               address: parts?.street ?? c.address,
               city: c.city ?? parts?.city,
@@ -581,125 +687,168 @@ export async function commitBatch(
               latitude: c.latitude,
               longitude: c.longitude,
               phone: normalizePhone(c.phone),
-            },
-          });
-          storeId = store.id;
-          // Identities for future matching
-          const identities: { kind: string; value: string; source: string | null }[] = [];
-          if (c.external_store_id)
-            identities.push({ kind: "EXTERNAL_ID", value: c.external_store_id, source });
-          const phone = normalizePhone(c.phone);
-          if (phone) identities.push({ kind: "PHONE", value: phone, source: null });
-          const addr = normalizeAddress(c.address);
-          if (addr) identities.push({ kind: "ADDRESS", value: addr, source: null });
-          // skipDuplicates (ON CONFLICT DO NOTHING) — a colliding identity
-          // already maps elsewhere; never abort the batch transaction.
-          if (identities.length) {
-            await tx.storeIdentity.createMany({
-              data: identities.map((ident) => ({ storeId: storeId!, ...ident })),
-              skipDuplicates: true,
-            });
-          }
-          // Possible-duplicate flag when created near existing stores
-          if (row.matchKind === "new" && c.latitude !== null && c.longitude !== null) {
-            const near = await tx.store.findMany({
-              where: {
-                id: { not: storeId },
-                status: "ACTIVE",
-                latitude: { gte: c.latitude - 0.001, lte: c.latitude + 0.001 },
-                longitude: { gte: c.longitude - 0.0015, lte: c.longitude + 0.0015 },
-              },
-              select: { id: true },
-              take: 3,
-            });
-            if (near.length) {
-              await tx.duplicateCandidate.createMany({
-                data: near.map((n) => {
-                  const [a, b] = [storeId!, n.id].sort();
-                  return { storeAId: a, storeBId: b, reason: "Created within ~100m of an existing store", score: 0.5 };
-                }),
-                skipDuplicates: true,
+            };
+          }),
+        });
+      }
+
+      // 2. Identities for future matching (bulk; skipDuplicates = a colliding
+      //    identity already maps elsewhere; never abort the batch).
+      const identRows = groups.flatMap((g) =>
+        g.identities.map((ident) => ({ storeId: g.id, ...ident }))
+      );
+      for (const part of chunks(identRows, 1000)) {
+        await tx.storeIdentity.createMany({ data: part, skipDuplicates: true });
+      }
+
+      // 3. Possible-duplicate flags for stores created near existing ones
+      //    (single coordinate snapshot instead of one query per new store;
+      //    earlier-created stores in this batch are visible to later ones,
+      //    matching the previous sequential behavior).
+      if (groups.some((g) => g.flagNearDuplicates)) {
+        const existing = await tx.store.findMany({
+          where: {
+            status: "ACTIVE",
+            id: { notIn: groups.map((g) => g.id) },
+            latitude: { not: null },
+            longitude: { not: null },
+          },
+          select: { id: true, latitude: true, longitude: true },
+        });
+        const known = existing.map((s) => ({
+          id: s.id,
+          lat: s.latitude!,
+          lng: s.longitude!,
+        }));
+        const dupPairs = new Map<string, { storeAId: string; storeBId: string; reason: string; score: number }>();
+        for (const g of groups) {
+          const { latitude: lat, longitude: lng } = g.canonical;
+          if (g.flagNearDuplicates && lat !== null && lng !== null) {
+            const near = known
+              .filter(
+                (s) =>
+                  s.id !== g.id &&
+                  Math.abs(s.lat - lat) <= 0.001 &&
+                  Math.abs(s.lng - lng) <= 0.0015
+              )
+              .slice(0, 3);
+            for (const n of near) {
+              const [a, b] = [g.id, n.id].sort();
+              dupPairs.set(`${a}|${b}`, {
+                storeAId: a,
+                storeBId: b,
+                reason: "Created within ~100m of an existing store",
+                score: 0.5,
               });
             }
           }
-        } else if (row.outcome === "UPDATED" && storeId) {
-          // Enrich store with any newly supplied fields (never blank out).
-          const c = row.canonical;
-          const data: Record<string, unknown> = {};
-          if (c.latitude !== null) data.latitude = c.latitude;
-          if (c.longitude !== null) data.longitude = c.longitude;
-          const phone = normalizePhone(c.phone);
-          if (phone) data.phone = phone;
-          if (Object.keys(data).length)
-            await tx.store.update({ where: { id: storeId }, data });
-          if (c.external_store_id) {
-            await tx.storeIdentity.createMany({
-              data: [{ storeId, kind: "EXTERNAL_ID", value: c.external_store_id, source }],
-              skipDuplicates: true,
-            });
-          }
+          if (lat !== null && lng !== null) known.push({ id: g.id, lat, lng });
         }
-
-        // Create observation + deal for applied rows with a price
-        if ((row.outcome === "ACCEPTED" || row.outcome === "UPDATED") && storeId) {
-          const c = row.canonical;
-          if (row.priceCents !== null && row.observedAt && row.productLineId) {
-            const defaulted = row.issues.some((x) => x.code === "PRODUCT_DEFAULTED");
-            await tx.priceObservation.create({
-              data: {
-                storeId,
-                productLineId: row.productLineId,
-                priceCents: row.priceCents,
-                taxIncluded: c.tax_included,
-                availability: AVAILABILITY_VALUES[c.availability?.toLowerCase().trim() ?? ""] ?? "UNKNOWN",
-                strength: c.strength,
-                flavor: c.flavor,
-                canSize: c.can_size,
-                observedAt: row.observedAt,
-                sourceType: "IMPORT",
-                confidence: defaulted ? Math.min(c.confidence ?? 0.6, 0.6) : c.confidence,
-                importRowId: dbRow.id,
-                externalCallId: c.call_id,
-                notes: defaulted
-                  ? [c.notes, "Product line not specified in source; attached to regular line."].filter(Boolean).join(" ")
-                  : c.notes,
-              },
-            });
-          } else if (row.observedAt && row.productLineId && c.availability) {
-            // Availability-only rows (e.g. "not carried") still record evidence.
-            const avail = AVAILABILITY_VALUES[c.availability.toLowerCase().trim()];
-            if (avail && avail !== "UNKNOWN") {
-              // No price — we record nothing in PriceObservation (priceCents is
-              // required); availability-only facts live in notes/audit for MVP.
-            }
-          }
-          if (row.deal && row.observedAt && row.productLineId) {
-            await tx.quantityDeal.create({
-              data: {
-                storeId,
-                productLineId: row.productLineId,
-                minQty: row.deal.minQty,
-                pricePerCanCents: row.deal.pricePerCanCents,
-                discountPerCanCents: row.deal.discountPerCanCents,
-                appliesAboveMinQty: row.deal.appliesAboveMinQty,
-                conditions: row.deal.conditions,
-                expiresAt: row.deal.expiresAt,
-                observedAt: row.observedAt,
-                sourceType: "IMPORT",
-                importRowId: dbRow.id,
-              },
-            });
-          }
+        for (const part of chunks([...dupPairs.values()], 1000)) {
+          await tx.duplicateCandidate.createMany({ data: part, skipDuplicates: true });
         }
+      }
 
-        await tx.importRow.update({
-          where: { id: dbRow.id },
-          data: {
-            outcome: row.outcome,
-            issuesJson: JSON.stringify(row.issues),
-            matchedStoreId: storeId ?? row.matchedStoreId,
-          },
-        });
+      // 4. Enrich matched stores with newly supplied fields (never blank out).
+      //    Per-row updates: enrichment data is sparse in practice.
+      for (let i = 0; i < validated.length; i++) {
+        const row = validated[i];
+        const storeId = row.matchedStoreId;
+        if (row.outcome !== "UPDATED" || !storeId) continue;
+        const c = row.canonical;
+        const data: Record<string, unknown> = {};
+        if (c.latitude !== null) data.latitude = c.latitude;
+        if (c.longitude !== null) data.longitude = c.longitude;
+        const phone = normalizePhone(c.phone);
+        if (phone) data.phone = phone;
+        if (Object.keys(data).length)
+          await tx.store.update({ where: { id: storeId }, data });
+        if (c.external_store_id) {
+          await tx.storeIdentity.createMany({
+            data: [{ storeId, kind: "EXTERNAL_ID", value: c.external_store_id, source }],
+            skipDuplicates: true,
+          });
+        }
+      }
+
+      // 5. Observations + deals for applied rows with a price (bulk).
+      //    Availability-only rows (no price) record nothing in
+      //    PriceObservation (priceCents is required) — unchanged from before.
+      const obsData: Prisma.PriceObservationCreateManyInput[] = [];
+      const dealData: Prisma.QuantityDealCreateManyInput[] = [];
+      for (let i = 0; i < validated.length; i++) {
+        const row = validated[i];
+        const dbRow = batch.rows[i];
+        const storeId = rowStoreId.get(i);
+        if ((row.outcome !== "ACCEPTED" && row.outcome !== "UPDATED") || !storeId) continue;
+        const c = row.canonical;
+        if (row.priceCents !== null && row.observedAt && row.productLineId) {
+          const defaulted = row.issues.some((x) => x.code === "PRODUCT_DEFAULTED");
+          obsData.push({
+            storeId,
+            productLineId: row.productLineId,
+            priceCents: row.priceCents,
+            taxIncluded: c.tax_included,
+            availability:
+              AVAILABILITY_VALUES[c.availability?.toLowerCase().trim() ?? ""] ?? "UNKNOWN",
+            strength: c.strength,
+            flavor: c.flavor,
+            canSize: c.can_size,
+            observedAt: row.observedAt,
+            sourceType: "IMPORT",
+            confidence: defaulted ? Math.min(c.confidence ?? 0.6, 0.6) : c.confidence,
+            importRowId: dbRow.id,
+            externalCallId: c.call_id,
+            notes: defaulted
+              ? [c.notes, "Product line not specified in source; attached to regular line."].filter(Boolean).join(" ")
+              : c.notes,
+          });
+        }
+        if (row.deal && row.observedAt && row.productLineId) {
+          dealData.push({
+            storeId,
+            productLineId: row.productLineId,
+            minQty: row.deal.minQty,
+            pricePerCanCents: row.deal.pricePerCanCents,
+            discountPerCanCents: row.deal.discountPerCanCents,
+            appliesAboveMinQty: row.deal.appliesAboveMinQty,
+            conditions: row.deal.conditions,
+            expiresAt: row.deal.expiresAt,
+            observedAt: row.observedAt,
+            sourceType: "IMPORT",
+            importRowId: dbRow.id,
+          });
+        }
+      }
+      for (const part of chunks(obsData, 1000)) {
+        await tx.priceObservation.createMany({ data: part });
+      }
+      for (const part of chunks(dealData, 1000)) {
+        await tx.quantityDeal.createMany({ data: part });
+      }
+
+      // 6. Import-row outcomes (batched VALUES join instead of one UPDATE
+      //    per row — the dominant cost at 10k rows).
+      const rowUpdates = validated.map((row, i) => ({
+        id: batch.rows[i].id,
+        outcome: row.outcome,
+        issues: JSON.stringify(row.issues),
+        storeId: rowStoreId.get(i) ?? row.matchedStoreId ?? null,
+      }));
+      for (const part of chunks(rowUpdates, 400)) {
+        await tx.$executeRaw(Prisma.sql`
+          UPDATE "ImportRow" AS r
+          SET "outcome" = d."outcome",
+              "issuesJson" = d."issuesJson",
+              "matchedStoreId" = d."matchedStoreId"
+          FROM (VALUES ${Prisma.join(
+            part.map(
+              (u) =>
+                Prisma.sql`(${u.id}::text, ${u.outcome}::text, ${u.issues}::text, ${u.storeId}::text)`
+            )
+          )}) AS d("id", "outcome", "issuesJson", "matchedStoreId")
+          WHERE r."id" = d."id"
+        `);
       }
 
       const counts = countOutcomes(validated);

@@ -2,11 +2,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { withStaff } from "@/lib/admin-api";
 import { prisma } from "@/lib/db";
-
-function csvEscape(v: unknown): string {
-  const s = String(v ?? "");
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-}
+import { csvCell as csvEscape } from "@/lib/validate";
 
 export async function GET(
   _req: NextRequest,

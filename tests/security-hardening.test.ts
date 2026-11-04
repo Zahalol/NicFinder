@@ -10,7 +10,7 @@ import { resetDb, seedProductLines, makeUser } from "./helpers";
 import { DEFAULT_SETTINGS } from "@/lib/settings";
 import { publishDispute } from "@/lib/reputation";
 import { reportComment } from "@/lib/comments";
-import { parseOptionalQty } from "@/lib/validate";
+import { parseOptionalQty, csvCell } from "@/lib/validate";
 import {
   validateRows,
   createPreviewBatch,
@@ -159,6 +159,34 @@ describe("import batch lifecycle is transition-once", () => {
     }
   });
 
+  it("multiple rows describing the same NEW store create ONE store", async () => {
+    const rows = [
+      { store_name: "Dup Mart", address: "500 W Same St", city: "Chicago", observed_at: "2026-11-01", product_line: "zyn", price_usd: "6.49" },
+      { store_name: "Dup Mart", address: "500 W Same St", city: "Chicago", observed_at: "2026-11-02", product_line: "zyn", price_usd: "6.99" },
+    ];
+    const mapping = Object.fromEntries(
+      Object.keys(rows[0]).map((k) => [k, k])
+    ) as Parameters<typeof validateRows>[1];
+    const validated = await validateRows(rows as Record<string, unknown>[], mapping);
+    const batchId = await createPreviewBatch({
+      filename: "dup-store.csv",
+      contentHash: computeContentHash(Buffer.from(JSON.stringify(rows))),
+      fileType: "csv",
+      mapping,
+      rows: validated,
+    });
+    await commitBatch(batchId);
+
+    const stores = await prisma.store.findMany({ where: { name: "Dup Mart" } });
+    expect(stores).toHaveLength(1);
+    const obs = await prisma.priceObservation.findMany({
+      where: { storeId: stores[0].id },
+      orderBy: { observedAt: "asc" },
+    });
+    expect(obs).toHaveLength(2);
+    expect(obs.map((o) => o.priceCents)).toEqual([649, 699]);
+  });
+
   it("double reverse throws BatchStateError", async () => {
     const batchId = await previewSampleBatch();
     await commitBatch(batchId);
@@ -220,6 +248,49 @@ describe("comment reports are per-user deduped", () => {
     const res = await reportComment(comment.id, reporter.id, S);
     expect(res.ok).toBe(false);
     if (!res.ok) expect(res.status).toBe(404);
+  });
+});
+
+describe("csvCell — formula-injection-safe CSV encoding", () => {
+  it("neutralizes leading formula characters", () => {
+    expect(csvCell("=HYPERLINK(evil)")).toBe("'=HYPERLINK(evil)");
+    expect(csvCell("+1+1")).toBe("'+1+1");
+    expect(csvCell("-2")).toBe("'-2");
+    expect(csvCell("@cmd")).toBe("'@cmd");
+  });
+  it("quotes separators and preserves ordinary values", () => {
+    expect(csvCell('say "hi", ok')).toBe('"say ""hi"", ok"');
+    expect(csvCell("plain")).toBe("plain");
+    expect(csvCell(6.49)).toBe("6.49");
+    expect(csvCell(null)).toBe("");
+  });
+  it("quotes injected-then-separator combinations", () => {
+    expect(csvCell("=1,2")).toBe("\"'=1,2\"");
+  });
+});
+
+describe("import field-length bounds", () => {
+  beforeEach(async () => {
+    await resetDb();
+    await seedProductLines();
+  });
+
+  it("rejects rows with absurdly long fields", async () => {
+    const rows = [
+      {
+        store_name: "A".repeat(500),
+        address: "1 Main St",
+        observed_at: "2026-11-01",
+        product_line: "zyn",
+        price_usd: "6.49",
+      },
+    ];
+    const mapping = Object.fromEntries(
+      Object.keys(rows[0]).map((k) => [k, k])
+    ) as Parameters<typeof validateRows>[1];
+    const validated = await validateRows(rows as Record<string, unknown>[], mapping);
+    expect(validated[0].outcome).toBe("REJECTED");
+    expect(validated[0].issues.some((i) => i.code === "FIELD_TOO_LONG")).toBe(true);
   });
 });
 
