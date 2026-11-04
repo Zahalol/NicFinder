@@ -3,6 +3,32 @@
 Maintained by the dedicated security/reliability session. Each entry records a
 finding, its severity, the change made, tests, and the commit. Newest first.
 
+## Session summary (2026-11-04/05, branch `claude/focused-darwin-yetm48`)
+
+- **~35 findings fixed** across 12 waves: 2 account-takeover paths (OAuth
+  pre-hijack + unverified-email linking), a moderation bypass (single-user
+  comment hiding), 6 concurrency races (publish/reject/commit/reverse/remap/
+  merge now claim state transitions atomically; identical-file commits
+  serialize on an advisory lock), import-engine correctness (retired-store
+  matching, in-batch duplicate stores, dropped deal expiries, Int overflows),
+  a 14× import-commit speedup (47.3s → 3.4s @ 10k rows, benchmarked), search
+  truncation accuracy, per-page admin auth, rate-limit hardening (per-email,
+  failed-only, memory-bounded), security headers, CSV-injection-safe exports,
+  NUL-byte hygiene, request body caps, age-gate keyboard bypass, timing
+  oracle, stale-proposal shadowing, and more — details in the waves below.
+- **Tests 53 → 80** (+ e2e 35 → 39 checks), including concurrency,
+  reverse-reimport, staleness, and a 200-row adversarial fuzz of the import
+  validator. **CI added** (GitHub Actions: lint, typecheck, tests, build on
+  a Postgres 16 service).
+- **Two independent audits ran**: a subagent audit (15 findings → 13 fixed,
+  2 recorded) and a high-effort self-review of this branch's own diff
+  (6 findings → 6 fixed).
+- **Open items for the owner** (product decisions, deliberately not coded):
+  sybil-resistant corroboration (email/phone verification or corroborator
+  account-age minimums), next 16 / prisma 7 majors for the remaining
+  transitive advisories, streaming XLSX parsing if imports ever open beyond
+  staff, out-of-process rate limiting before horizontal scaling.
+
 Severity scale: **Critical** (exploitable now, data loss/compromise),
 **High** (realistic abuse or data corruption), **Medium** (hardening,
 defense-in-depth, availability), **Low** (hygiene).
