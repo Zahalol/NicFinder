@@ -187,6 +187,39 @@ describe("import batch lifecycle is transition-once", () => {
     expect(obs.map((o) => o.priceCents)).toEqual([649, 699]);
   });
 
+  it("concurrent commits of two identical-content batches apply the data once", async () => {
+    const buf = fs.readFileSync(SAMPLE_CSV);
+    const parsed = parseCsv(buf.toString("utf-8"));
+    const { mapping } = autoMapHeaders(parsed.headers);
+    const makeBatch = async () =>
+      createPreviewBatch({
+        filename: "same-content.csv",
+        contentHash: computeContentHash(buf),
+        fileType: "csv",
+        mapping,
+        rows: await validateRows(parsed.rows, mapping),
+      });
+    const [a, b] = [await makeBatch(), await makeBatch()];
+
+    const results = await Promise.allSettled([commitBatch(a), commitBatch(b)]);
+    expect(results.every((r) => r.status === "fulfilled")).toBe(true);
+
+    const batches = await prisma.importBatch.findMany({ where: { id: { in: [a, b] } } });
+    expect(batches.every((x) => x.status === "COMMITTED")).toBe(true);
+    const applied = batches.map((x) => x.acceptedRows + x.updatedRows).sort((x, y) => x - y);
+    expect(applied[0]).toBe(0); // loser skipped everything
+    expect(applied[1]).toBeGreaterThan(0); // winner applied once
+
+    // No duplicated observations: each distinct rowHash produced at most one.
+    const obsCount = await prisma.priceObservation.count();
+    const winner = batches.find((x) => x.acceptedRows + x.updatedRows > 0)!;
+    expect(obsCount).toBe(
+      await prisma.priceObservation.count({
+        where: { importRow: { batchId: winner.id } },
+      })
+    );
+  });
+
   it("double reverse throws BatchStateError", async () => {
     const batchId = await previewSampleBatch();
     await commitBatch(batchId);

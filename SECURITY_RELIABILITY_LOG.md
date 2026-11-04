@@ -46,6 +46,28 @@ defense-in-depth, availability), **Low** (hygiene).
 
 ---
 
+## 2026-11-04 — Wave 7: identical-file commit race, hot-query indexes
+
+### M-16 (Medium) Concurrent commits of identical files applied data twice
+- **Finding**: cross-import dedupe (row hashes) and the "identical file
+  already committed" check both read only *committed* state — two different
+  preview batches of the same file, committed concurrently, both passed and
+  applied every observation twice.
+- **Fix**: commits serialize per content hash via a transaction-scoped
+  Postgres advisory lock (`pg_advisory_xact_lock(hashtext(contentHash))`);
+  after acquiring it, the loser re-checks and commits with all applied rows
+  marked `SKIPPED_DUPLICATE` — the same outcome the sequential path already
+  produced. Test: concurrent identical-content commits → both COMMITTED, one
+  applied, one fully skipped, zero duplicate observations.
+
+### P-2 (Performance) Missing indexes on hot per-request queries
+- CoverageRequest.ipHash (guest dedupe + daily cap: two filtered counts per
+  guest request → table scans), AuthSession.expiresAt (bulk purge),
+  Comment(userId, createdAt) (per-user rate-limit count). Migration
+  `20261104231103_hot_query_indexes`.
+
+---
+
 ## 2026-11-04 — Wave 6: age-gate integrity & accessibility
 
 ### M-15 (Medium) Keyboard users could bypass the 21+ age gate

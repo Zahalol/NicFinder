@@ -293,6 +293,8 @@ model CoverageRequest {
 
   @@index([zip])
   @@index([createdAt])
+  // Guest dedupe/daily-cap queries filter by ipHash on every request.
+  @@index([ipHash])
 }
 
 model AuthSession {
@@ -307,6 +309,8 @@ model AuthSession {
   userAgent String?
 
   @@index([userId])
+  // Maintenance purges expired sessions in bulk.
+  @@index([expiresAt])
 }
 
 // A community submission: either confirming the displayed price or proposing
@@ -392,6 +396,8 @@ model Comment {
   reports   CommentReport[]
 
   @@index([storeId, status, createdAt])
+  // Per-user hourly rate-limit count.
+  @@index([userId, createdAt])
 }
 
 // One report per user per comment — prevents a single account from

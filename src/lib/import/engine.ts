@@ -671,6 +671,35 @@ export async function commitBatch(
       if (claimed.count === 0)
         throw new BatchStateError("Batch was already committed or reversed.");
 
+      // Identical-content TOCTOU: two DIFFERENT preview batches of the same
+      // file, committed concurrently, both pass the cross-import dedupe
+      // (which only sees already-committed rows). Serialize commits per
+      // content hash with a transaction-scoped advisory lock, then re-check:
+      // the loser commits with all applied rows marked duplicate — the same
+      // outcome the sequential path produces.
+      await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${batch.contentHash}))::text`;
+      const priorInTx = await tx.importBatch.findFirst({
+        where: { contentHash: batch.contentHash, status: "COMMITTED", id: { not: batch.id } },
+        select: { id: true },
+      });
+      if (priorInTx) {
+        for (let i = 0; i < validated.length; i++) {
+          const r = validated[i];
+          if (r.outcome === "ACCEPTED" || r.outcome === "UPDATED") {
+            validated[i] = {
+              ...r,
+              outcome: "SKIPPED_DUPLICATE",
+              issues: [
+                ...r.issues,
+                { code: "DUPLICATE_BATCH", message: "Identical file already committed" },
+              ],
+            };
+          }
+        }
+        groups.length = 0;
+        rowStoreId.clear();
+      }
+
       // 1. New stores (bulk).
       for (const part of chunks(groups, 500)) {
         await tx.store.createMany({
