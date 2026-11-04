@@ -16,6 +16,8 @@ src/
     import/       contract.ts (schema+aliases) · parse.ts (csv/xlsx) · engine.ts
     auth.ts prices.ts deals.ts reputation.ts search.ts geocode.ts geo.ts
     normalize.ts money.ts settings.ts rate-limit.ts audit.ts admin-api.ts
+    flags.ts deal-reports.ts comments.ts notifications.ts reliability.ts
+    trip-value.ts duplicates.ts
   data/zip-centroids.csv   41k US ZIPs (GeoNames CC BY 4.0)
 prisma/           schema, migrations, seed
 tests/            vitest suites (isolated prisma/test.db)
@@ -31,13 +33,20 @@ scripts/          e2e-smoke.mjs, make-sample-xlsx.mjs
 - **PriceObservation** — *append-only evidence log*. Status:
   `ACTIVE | SUPERSEDED | INVALIDATED | PENDING`. Never deleted; reversals
   and moderation only change status, preserving traceability. Price stored
-  as **integer cents** (SQLite lacks DECIMAL; avoids float money).
+  as **integer cents**; `priceCents` is **nullable** for availability-only
+  observations ("not carried"/"out of stock" with no price — a price is
+  never invented, and `selectLatestPrice` ignores price-less rows while
+  `selectLatestAvailability` surfaces the newest explicit stock signal).
 - **QuantityDeal** — min qty + (per-can price XOR per-can discount) +
   `appliesAboveMinQty` (nullable = unknown, UI refuses to extrapolate).
 - **ImportBatch / ImportRow** — file hash, mapping used, per-row raw JSON,
   row hash, outcome, issues. The batch is the unit of commit/reversal.
 - **User / AuthSession / Contribution / Verification / ReputationEvent /
-  Comment / ModerationAction / AuditEvent / Setting / GeocodeCache.**
+  Comment / CommentReport / ModerationAction / AuditEvent / Setting /
+  GeocodeCache / Notification / RateLimitEvent / SavedStore /
+  CoverageRequest.** Contribution kinds: `CONFIRM | DISPUTE |
+  FLAG_OBSERVATION | FLAG_DEAL | REPORT_DEAL` (see
+  COMMUNITY_REPUTATION.md).
 
 ### Latest-price policy (`src/lib/prices.ts`)
 

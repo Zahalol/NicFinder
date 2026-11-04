@@ -6,6 +6,25 @@
 - ~~Coverage-demand capture~~ ✅ · ~~watchlist~~ ✅ · ~~SEO ZIP pages +
   sitemap~~ ✅ · ~~best-price card~~ ✅ · ~~admin analytics~~ ✅
 
+### Done in the 2026-11-04/05 autonomous session (see AUTONOMOUS_WORKLOG.md)
+- ~~/admin/coverage page~~ ✅ (was lost to a .gitignore bug, now fixed too)
+- ~~Availability-only observations~~ ✅ ("not carried"/"out of stock" without
+  invented prices, end to end: import → search → store page → ZIP pages)
+- ~~Observation-level dispute UI~~ ✅ (flags on any history row, moderated)
+- ~~Deal flags~~ ✅ (ended vs invalid) · ~~community deal reports~~ ✅
+- ~~In-app price alerts~~ ✅ (watchlist notifications; no email — in-app only)
+  + contributor resolution notices
+- ~~Reliability tiers~~ ✅ · ~~price-history sparkline~~ ✅ ·
+  ~~value-of-trip~~ ✅ · ~~two-store compare~~ ✅ · ~~nearby alternatives~~ ✅
+- ~~Security pass~~ ✅ (report dedupe, OAuth linking, error hygiene, rate-limit
+  cap) · ~~pluggable rate-limit storage~~ ✅ (RATE_LIMIT_BACKEND=db)
+- ~~Import fuzz hardening~~ ✅ · ~~10k-store search benchmark + nearest-500
+  correctness fix~~ ✅ · ~~duplicate-store scan~~ ✅ · ~~CSV price export~~ ✅
+- ~~/how-it-works~~ ✅ · ~~profile credibility~~ ✅ · ~~account settings
+  (password/display name/sign-out-everywhere)~~ ✅ · ~~comment editing~~ ✅
+- ~~store-page SEO + JSON-LD + share~~ ✅ · ~~PWA manifest~~ ✅ ·
+  ~~pilot-economics dashboard~~ ✅ · ~~audit-log viewer~~ ✅
+
 ## Now → pilot hardening
 1. **Deploy on Replit** following REPLIT.md; set DEMO_MODE=false once real
    data lands; attach custom domain.
@@ -15,11 +34,11 @@
 3. **Email**: verification + password reset via a transactional provider;
    deliverability work (SPF/DKIM/DMARC — the notes' spam concern).
 4. **Store hours/brand metadata** enrichment (OSM Overpass is free).
-5. **Observation-level dispute UI** on price history (today disputes target
-   the current price only).
+5. ~~Observation-level dispute UI~~ ✅ done (flags on price-history rows).
 
 ## Next
-6. **Price alerts** (email, opt-in) and saved home store list.
+6. **Price alerts** — in-app alerts ✅ done; email delivery still open
+   (needs the email provider from item 3).
 7. **Flavor/strength availability reports** as structured community data
    (schema fields already exist on observations).
 8. **Receipt photo evidence** (size/type-limited upload, EXIF stripping,
