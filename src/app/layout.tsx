@@ -3,6 +3,7 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import "./globals.css";
 import { getCurrentUser } from "@/lib/auth";
+import { unreadCount } from "@/lib/notifications";
 import { LogoutButton } from "@/components/LogoutButton";
 import { AgeGateOverlay } from "@/components/AgeGateOverlay";
 
@@ -32,6 +33,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   const user = await getCurrentUser().catch(() => null);
+  const unread = user ? await unreadCount(user.id).catch(() => 0) : 0;
   const demoMode = process.env.DEMO_MODE !== "false";
   const cookieStore = await cookies();
   const ageConfirmed = cookieStore.get("nf_age")?.value === "21plus";
@@ -59,6 +61,19 @@ export default async function RootLayout({
                       Admin
                     </Link>
                   )}
+                  <Link
+                    href="/account#notifications"
+                    className="relative text-stone-600 hover:text-stone-900"
+                    aria-label={`Notifications: ${unread} unread`}
+                    title={`${unread} unread notification${unread === 1 ? "" : "s"}`}
+                  >
+                    <span aria-hidden="true">🔔</span>
+                    {unread > 0 && (
+                      <span className="absolute -top-1.5 -right-2 min-w-[16px] rounded-full bg-teal-600 px-1 text-center text-[10px] font-semibold leading-4 text-white">
+                        {unread > 9 ? "9+" : unread}
+                      </span>
+                    )}
+                  </Link>
                   <Link href="/account" className="text-stone-600 hover:text-stone-900">
                     {user.displayName}
                   </Link>

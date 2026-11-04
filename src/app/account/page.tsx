@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { formatCents } from "@/lib/money";
 import { getSettings } from "@/lib/settings";
+import { NotificationsPanel } from "./NotificationsPanel";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Your account — NicFinder" };
@@ -13,7 +14,7 @@ export default async function AccountPage() {
   if (!user) redirect("/login");
   const settings = await getSettings();
 
-  const [contributions, repEvents, savedStores] = await Promise.all([
+  const [contributions, repEvents, savedStores, notifications] = await Promise.all([
     prisma.contribution.findMany({
       where: { userId: user.id },
       include: { store: { select: { id: true, name: true } } },
@@ -41,6 +42,11 @@ export default async function AccountPage() {
       },
       orderBy: { createdAt: "desc" },
       take: 100,
+    }),
+    prisma.notification.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: "desc" },
+      take: 20,
     }),
   ]);
 
@@ -71,6 +77,17 @@ export default async function AccountPage() {
           </div>
         </div>
       </div>
+
+      <NotificationsPanel
+        items={notifications.map((n) => ({
+          id: n.id,
+          title: n.title,
+          body: n.body,
+          url: n.url,
+          read: n.readAt !== null,
+          createdAt: n.createdAt.toISOString(),
+        }))}
+      />
 
       <h2 className="mt-8 font-medium text-stone-900">
         Your watchlist <span className="text-stone-400 font-normal">({savedStores.length})</span>

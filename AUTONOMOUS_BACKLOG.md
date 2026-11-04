@@ -20,7 +20,7 @@ Status: `todo` | `in-progress` | `done` | `blocked` | `rejected`.
 | 13 | Admin pilot economics dashboard (coverage, obs age, est. acquisition cost from configurable assumptions) | Low-Med | M | Low | Speculative | todo |
 | 14 | Benchmark search with 10k synthetic stores; index/queries as justified | Med | M | Med | Needs careful measurement | todo |
 | 15 | PWA manifest + basic offline shell | Low | S | Low | Complexity creep | todo |
-| 16 | In-app price-watch alerts (no email), building on watchlist | Med | M | Med | Needs notification UI | todo |
+| 16 | In-app price-watch alerts (no email), building on watchlist | Med | M | Med | Needs notification UI | done |
 | 17 | Admin duplicate-suggestion improvements (fuzzy name+geo matching quality) | Med | M | Med | — | todo |
 | 18 | Accessibility sweep: focus traps, aria on map/list toggle, contrast | Med | S-M | High | — | todo |
 | 19 | SEO store-page metadata + structured data review (21+ informational constraints) | Low-Med | S | Med | Legal care | todo |

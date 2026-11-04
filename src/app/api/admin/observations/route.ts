@@ -4,6 +4,7 @@ import { withStaff } from "@/lib/admin-api";
 import { prisma } from "@/lib/db";
 import { parsePriceToCents, isPriceSane } from "@/lib/money";
 import { audit } from "@/lib/audit";
+import { notifyPriceChange } from "@/lib/notifications";
 
 export async function POST(req: NextRequest) {
   return withStaff(async (user) => {
@@ -25,6 +26,12 @@ export async function POST(req: NextRequest) {
     if (Number.isNaN(observedAt.getTime()) || observedAt.getTime() > Date.now() + 86400_000)
       return NextResponse.json({ error: "Invalid observation date." }, { status: 400 });
 
+    const prev = await prisma.priceObservation.findFirst({
+      where: { storeId, productLineId, status: "ACTIVE", priceCents: { not: null } },
+      orderBy: { observedAt: "desc" },
+      select: { priceCents: true },
+    });
+
     const obs = await prisma.priceObservation.create({
       data: {
         storeId,
@@ -44,6 +51,14 @@ export async function POST(req: NextRequest) {
       targetType: "observation",
       targetId: obs.id,
       detail: { storeId, priceCents },
+    });
+    await notifyPriceChange({
+      storeId,
+      storeName: store.name,
+      productLineName: line.name,
+      newPriceCents: priceCents,
+      previousPriceCents: prev?.priceCents ?? null,
+      actorUserId: user.id,
     });
     return NextResponse.json({ ok: true, id: obs.id });
   });

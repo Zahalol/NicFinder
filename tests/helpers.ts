@@ -23,6 +23,7 @@ export async function resetDb() {
     prisma.setting.deleteMany(),
     prisma.geocodeCache.deleteMany(),
     prisma.rateLimitEvent.deleteMany(),
+    prisma.notification.deleteMany(),
   ]);
 }
 

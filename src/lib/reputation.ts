@@ -24,6 +24,7 @@
 import { prisma } from "./db";
 import type { AppSettings } from "./settings";
 import { audit } from "./audit";
+import { notifyPriceChange } from "./notifications";
 import type { Prisma } from "@prisma/client";
 
 export const REP_DELTAS = {
@@ -220,6 +221,26 @@ export async function publishDispute(
         reviewedById: moderatorId,
       },
     });
+
+    // Alert members who saved this store (in-app only; actor excluded).
+    const prevPriced = superseded
+      .filter((o) => o.priceCents !== null)
+      .sort((a, b) => b.observedAt.getTime() - a.observedAt.getTime())[0];
+    const [storeRow, lineRow] = await Promise.all([
+      tx.store.findUnique({ where: { id: c.storeId }, select: { name: true } }),
+      tx.productLine.findUnique({ where: { id: c.productLineId }, select: { name: true } }),
+    ]);
+    await notifyPriceChange(
+      {
+        storeId: c.storeId,
+        storeName: storeRow?.name ?? "A saved store",
+        productLineName: lineRow?.name ?? "price",
+        newPriceCents: c.proposedPriceCents,
+        previousPriceCents: prevPriced?.priceCents ?? null,
+        actorUserId: c.userId,
+      },
+      tx
+    );
 
     await addReputation(
       c.userId,

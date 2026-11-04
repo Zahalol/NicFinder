@@ -43,6 +43,7 @@ model Store {
   duplicatesA   DuplicateCandidate[] @relation("DupA")
   duplicatesB   DuplicateCandidate[] @relation("DupB")
   savedBy       SavedStore[]
+  notifications Notification[]
 
   @@index([latitude, longitude])
   @@index([zip])
@@ -264,6 +265,7 @@ model User {
   savedStores   SavedStore[]
   coverageRequests CoverageRequest[]
   commentReports CommentReport[]
+  notifications Notification[]
 }
 
 // A user's watchlist entry.
@@ -295,6 +297,26 @@ model CoverageRequest {
 
   @@index([zip])
   @@index([createdAt])
+}
+
+// In-app notifications (no email/external sending — that stays disabled
+// until configured and authorized). Currently: price changes at saved stores.
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // PRICE_CHANGE | (future kinds)
+  kind      String
+  storeId   String?
+  store     Store?    @relation(fields: [storeId], references: [id], onDelete: SetNull)
+  title     String
+  body      String?
+  url       String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, readAt])
+  @@index([userId, createdAt])
 }
 
 // Sliding-window rate-limit events for the "db" backend (multi-process

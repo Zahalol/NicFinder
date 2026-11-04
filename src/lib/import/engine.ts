@@ -8,6 +8,7 @@ import { parsePriceToCents } from "../money";
 import { normalizePhone, normalizeAddress, nameSimilarity, splitUsAddress } from "../normalize";
 import { metersBetween } from "../geo";
 import { audit } from "../audit";
+import { notifyPriceChange } from "../notifications";
 import {
   type CanonicalField,
   type CanonicalRow,
@@ -574,6 +575,20 @@ export async function commitBatch(
 
   const source = opts.source ?? "import";
 
+  // Price-watch alerts: stores anyone has saved, product-line names, and the
+  // displayed price before this batch, so imports can notify watchers too.
+  const watchedStoreIds = new Set(
+    (
+      await prisma.savedStore.findMany({ select: { storeId: true }, distinct: ["storeId"] })
+    ).map((w) => w.storeId)
+  );
+  const lineNames = new Map(
+    (await prisma.productLine.findMany({ select: { id: true, name: true } })).map((l) => [
+      l.id,
+      l.name,
+    ])
+  );
+
   await prisma.$transaction(
     async (tx) => {
       for (let i = 0; i < validated.length; i++) {
@@ -659,6 +674,34 @@ export async function commitBatch(
           const c = row.canonical;
           if (row.priceCents !== null && row.observedAt && row.productLineId) {
             const defaulted = row.issues.some((x) => x.code === "PRODUCT_DEFAULTED");
+            // Watchers of an existing store get an in-app alert when this
+            // batch changes its price (new stores can't be watched yet).
+            if (row.outcome === "UPDATED" && watchedStoreIds.has(storeId)) {
+              const prev = await tx.priceObservation.findFirst({
+                where: {
+                  storeId,
+                  productLineId: row.productLineId,
+                  status: "ACTIVE",
+                  priceCents: { not: null },
+                },
+                orderBy: { observedAt: "desc" },
+                select: { priceCents: true },
+              });
+              const storeRow = await tx.store.findUnique({
+                where: { id: storeId },
+                select: { name: true },
+              });
+              await notifyPriceChange(
+                {
+                  storeId,
+                  storeName: storeRow?.name ?? "A saved store",
+                  productLineName: lineNames.get(row.productLineId) ?? "price",
+                  newPriceCents: row.priceCents,
+                  previousPriceCents: prev?.priceCents ?? null,
+                },
+                tx
+              );
+            }
             await tx.priceObservation.create({
               data: {
                 storeId,
