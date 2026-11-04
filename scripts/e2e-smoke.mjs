@@ -226,7 +226,10 @@ try {
     body2.includes("Sample Mart Alpha") || uploadResult.counts.accepted === 0
   );
 
-  await page.locator("button", { hasText: "Map" }).first().click();
+  // Desktop (default viewport) shows the list+map split with no toggle;
+  // mobile widths keep a Map toggle. Handle both.
+  const mapToggle = page.locator("button", { hasText: "Map" });
+  if ((await mapToggle.count()) > 0) await mapToggle.first().click();
   await page.waitForTimeout(1500);
   check("map container renders", (await page.locator(".leaflet-container").count()) > 0);
 
