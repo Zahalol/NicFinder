@@ -9,6 +9,7 @@ import { DemoBadge, ReliabilityBadge } from "@/components/badges";
 import { assessReliability } from "@/lib/reliability";
 import { BackLink } from "@/components/BackLink";
 import { SaveStoreButton } from "@/components/SaveStoreButton";
+import { ShareButton } from "@/components/ShareButton";
 import { ContributePanel } from "./ContributePanel";
 import { Comments } from "./Comments";
 import { FlagObservationButton } from "./FlagObservationButton";
@@ -29,9 +30,12 @@ export async function generateMetadata({
   });
   if (!store || store.status !== "ACTIVE") return { title: "Store — NicFinder" };
   const place = [store.city, store.state].filter(Boolean).join(", ");
+  const title = `ZYN prices at ${store.name}${place ? ` — ${place}` : ""}`;
+  const description = `Reported ZYN nicotine pouch prices, deals and availability at ${store.name}${place ? ` in ${place}` : ""}. Community-verified observations with freshness and confidence shown. Adults 21+ — informational only, nothing is sold here.`;
   return {
-    title: `ZYN prices at ${store.name}${place ? ` — ${place}` : ""}`,
-    description: `Reported ZYN nicotine pouch prices, deals and availability at ${store.name}${place ? ` in ${place}` : ""}. Community-verified observations with freshness and confidence shown. Adults 21+ — informational only, nothing is sold here.`,
+    title,
+    description,
+    openGraph: { title, description, type: "website" },
     // Fictional demo stores must never be indexed as if they were real places.
     robots: store.isDemo ? { index: false, follow: false } : undefined,
   };
@@ -165,6 +169,7 @@ export default async function StorePage({
           <h1 className="text-2xl font-semibold text-stone-900 flex items-center gap-2">
             {store.name} {store.isDemo && <DemoBadge />}
             <SaveStoreButton storeId={store.id} initialSaved={saved} signedIn={Boolean(user)} />
+            <ShareButton title={`ZYN prices at ${store.name}`} />
           </h1>
           <p className="text-stone-500 mt-1">
             {store.address}
