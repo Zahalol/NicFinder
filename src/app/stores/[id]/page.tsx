@@ -36,7 +36,7 @@ function QtyCostTable({
   const anyUnknown = cells.some((c) => c.total === null);
 
   return (
-    <div className="mt-3 border-t border-stone-100 pt-2.5">
+    <div className="mt-3 border-t border-stone-100 dark:border-stone-800 pt-2.5">
       <p className="text-[10px] font-medium uppercase tracking-wider text-stone-400">
         What you&apos;d pay
       </p>
@@ -46,8 +46,8 @@ function QtyCostTable({
             key={qty}
             className={`rounded-lg border px-1 py-1.5 ${
               eff.usedDeal
-                ? "border-teal-200 bg-teal-50/60"
-                : "border-stone-150 bg-stone-50"
+                ? "border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-950/60"
+                : "border-stone-150 bg-stone-50 dark:bg-stone-900"
             }`}
           >
             <div className="text-[10px] text-stone-400">
@@ -55,7 +55,7 @@ function QtyCostTable({
             </div>
             {total !== null ? (
               <>
-                <div className="text-sm font-semibold text-stone-800">
+                <div className="text-sm font-semibold text-stone-800 dark:text-stone-200">
                   {formatCents(total)}
                 </div>
                 <div className="text-[10px] text-stone-500">
@@ -90,11 +90,11 @@ function TrendLine({ history }: { history: SparkPoint[] }) {
       {deltaCents === 0 ? (
         <>Steady over the last {span} of reports</>
       ) : deltaCents < 0 ? (
-        <span className="text-emerald-700">
+        <span className="text-emerald-700 dark:text-emerald-400">
           ▾ down {formatCents(-deltaCents)} over {span} of reports
         </span>
       ) : (
-        <span className="text-amber-700">
+        <span className="text-amber-700 dark:text-amber-400">
           ▴ up {formatCents(deltaCents)} over {span} of reports
         </span>
       )}
@@ -186,7 +186,7 @@ export default async function StorePage({
 
       <div className="mt-3 flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-semibold text-stone-900 flex items-center gap-2 flex-wrap">
+          <h1 className="text-2xl font-semibold text-stone-900 dark:text-stone-100 flex items-center gap-2 flex-wrap">
             {store.name} {store.isDemo && <DemoBadge />}
             <span className="inline-flex items-center gap-1.5">
               <SaveStoreButton storeId={store.id} initialSaved={saved} signedIn={Boolean(user)} />
@@ -199,7 +199,7 @@ export default async function StorePage({
             {store.state ? `, ${store.state}` : ""} {store.zip ?? ""}
           </p>
           {mapsUrl && (
-            <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-teal-700 underline">
+            <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-teal-700 dark:text-teal-400 underline">
               Directions / map
             </a>
           )}
@@ -207,7 +207,7 @@ export default async function StorePage({
       </div>
 
       {store.isDemo && (
-        <p className="mt-3 text-xs rounded-lg bg-amber-50 border border-amber-200 text-amber-800 p-3">
+        <p className="mt-3 text-xs rounded-lg bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-900 text-amber-800 dark:text-amber-300 p-3">
           This is a fictional demonstration store. All prices here are
           synthetic sample data.
         </p>
@@ -222,7 +222,7 @@ export default async function StorePage({
       {/* Current prices per product line */}
       <div className="mt-6 grid sm:grid-cols-2 gap-4">
         {latestByLine.map(({ line, latest, history, deal }) => (
-          <div key={line.id} className="rounded-xl border border-stone-200 bg-white p-5">
+          <div key={line.id} className="rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-5">
             <div className="flex items-center justify-between gap-2">
               <h2 className="text-sm font-medium text-stone-500">{line.name}</h2>
               {latest && (
@@ -240,7 +240,7 @@ export default async function StorePage({
             </div>
             {latest ? (
               <>
-                <div className="mt-1 text-3xl font-semibold text-stone-900">
+                <div className="mt-1 text-3xl font-semibold text-stone-900 dark:text-stone-100">
                   {formatCents(latest.observation.priceCents)}
                   <span className="text-sm font-normal text-stone-500"> /can</span>
                 </div>
@@ -254,7 +254,7 @@ export default async function StorePage({
                         ? "data import"
                         : "staff-entered"}
                   {latest.freshness === "stale" && (
-                    <span className="text-amber-600"> · {latest.ageDays}d old — may be outdated</span>
+                    <span className="text-amber-600 dark:text-amber-400"> · {latest.ageDays}d old — may be outdated</span>
                   )}
                 </p>
                 <p className="text-xs text-stone-500">
@@ -264,10 +264,10 @@ export default async function StorePage({
                       ? "Tax included"
                       : "Tax status unknown"}
                   {latest.confirmCount > 0 && (
-                    <span className="text-teal-700"> · ✓ confirmed by {latest.confirmCount}</span>
+                    <span className="text-teal-700 dark:text-teal-400"> · ✓ confirmed by {latest.confirmCount}</span>
                   )}
                   {latest.observation.availability === "OUT_OF_STOCK" && (
-                    <span className="text-red-600"> · reported out of stock</span>
+                    <span className="text-red-600 dark:text-red-400"> · reported out of stock</span>
                   )}
                 </p>
                 <p className="mt-1 text-[11px] text-stone-400">
@@ -281,7 +281,7 @@ export default async function StorePage({
                 </p>
                 <QtyCostTable regularCents={latest.observation.priceCents} deal={deal} />
                 {history.length >= 2 && (
-                  <div className="mt-3 border-t border-stone-100 pt-2">
+                  <div className="mt-3 border-t border-stone-100 dark:border-stone-800 pt-2">
                     <PriceSparkline points={history} />
                     <TrendLine history={history} />
                   </div>
@@ -303,11 +303,11 @@ export default async function StorePage({
 
       {/* Deals */}
       {store.deals.length > 0 && (
-        <div className="mt-4 rounded-xl border border-teal-200 bg-teal-50/50 p-5">
-          <h2 className="text-sm font-medium text-teal-900">Quantity deals</h2>
+        <div className="mt-4 rounded-xl border border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-950/50 p-5">
+          <h2 className="text-sm font-medium text-teal-900 dark:text-teal-200">Quantity deals</h2>
           <ul className="mt-2 space-y-2">
             {store.deals.map((d) => (
-              <li key={d.id} className="text-sm text-stone-700">
+              <li key={d.id} className="text-sm text-stone-700 dark:text-stone-300">
                 <strong>{d.productLine.name}:</strong> buy {d.minQty}+ —{" "}
                 {d.pricePerCanCents !== null
                   ? `${formatCents(d.pricePerCanCents)} per can`
@@ -344,13 +344,13 @@ export default async function StorePage({
 
       {/* Price history */}
       <div className="mt-8">
-        <h2 className="font-medium text-stone-900">Price history</h2>
+        <h2 className="font-medium text-stone-900 dark:text-stone-100">Price history</h2>
         {store.observations.length === 0 ? (
           <p className="mt-2 text-sm text-stone-500">No observations recorded.</p>
         ) : (
           <table className="mt-2 w-full text-sm">
             <thead>
-              <tr className="text-left text-xs text-stone-500 border-b border-stone-200">
+              <tr className="text-left text-xs text-stone-500 border-b border-stone-200 dark:border-stone-800">
                 <th className="py-1.5 pr-2">Observed</th>
                 <th className="py-1.5 pr-2">Product</th>
                 <th className="py-1.5 pr-2">Price</th>
@@ -360,7 +360,7 @@ export default async function StorePage({
             </thead>
             <tbody>
               {store.observations.map((o) => (
-                <tr key={o.id} className="border-b border-stone-100 text-stone-700">
+                <tr key={o.id} className="border-b border-stone-100 dark:border-stone-800 text-stone-700 dark:text-stone-300">
                   <td className="py-1.5 pr-2">{o.observedAt.toLocaleDateString()}</td>
                   <td className="py-1.5 pr-2">{o.productLine.name}</td>
                   <td className="py-1.5 pr-2 font-medium">{formatCents(o.priceCents)}</td>

@@ -37,8 +37,8 @@ export function SaveStoreButton({
       aria-pressed={saved}
       className={`rounded-xl border px-3 py-2 text-sm font-medium transition ${
         saved
-          ? "border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100"
-          : "border-stone-300 bg-white text-stone-600 hover:bg-stone-50"
+          ? "border-amber-300 bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 hover:bg-amber-100"
+          : "border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-800"
       } disabled:opacity-50`}
     >
       {saved ? "★ Saved" : "☆ Save"}

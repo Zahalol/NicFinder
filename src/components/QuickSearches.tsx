@@ -66,7 +66,7 @@ export function QuickSearches({
   }
 
   const chip =
-    "rounded-full border border-stone-300 bg-white px-3 py-1.5 text-sm text-stone-600 hover:border-teal-400 hover:text-teal-700 transition";
+    "rounded-full border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-900 px-3 py-1.5 text-sm text-stone-600 dark:text-stone-400 hover:border-teal-400 hover:text-teal-700 transition";
 
   return (
     <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
@@ -88,7 +88,7 @@ export function QuickSearches({
           ))}
           <button
             onClick={clearRecent}
-            className="text-xs text-stone-400 hover:text-stone-600 px-1"
+            className="text-xs text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 px-1"
             title="Clear recent searches (stored only on this device)"
           >
             clear

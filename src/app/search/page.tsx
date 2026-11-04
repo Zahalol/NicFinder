@@ -95,9 +95,9 @@ export default async function SearchPage({
       )}
 
       {geocodeFailed && (
-        <div className="mt-8 max-w-xl mx-auto rounded-xl border border-stone-200 bg-white p-6 text-center">
-          <h2 className="font-medium text-stone-900">We couldn’t locate “{q}”</h2>
-          <p className="mt-2 text-sm text-stone-600">
+        <div className="mt-8 max-w-xl mx-auto rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-6 text-center">
+          <h2 className="font-medium text-stone-900 dark:text-stone-100">We couldn’t locate “{q}”</h2>
+          <p className="mt-2 text-sm text-stone-600 dark:text-stone-400">
             Try a 5-digit ZIP code (ZIP search works even offline) or a fuller
             street address. Address lookup uses OpenStreetMap and may be
             briefly unavailable.
@@ -108,7 +108,7 @@ export default async function SearchPage({
       {hasLocation && search && (
         <>
           <p className="mt-4 text-sm text-stone-500">
-            Near <span className="text-stone-800 font-medium">{locationLabel ?? "selected point"}</span>
+            Near <span className="text-stone-800 dark:text-stone-200 font-medium">{locationLabel ?? "selected point"}</span>
             {approximate && <span className="text-stone-400"> (ZIP center)</span>}
           </p>
 
@@ -179,7 +179,7 @@ function FilterGroup({ label, children }: { label: string; children: React.React
       <p className="text-[10px] font-medium uppercase tracking-wider text-stone-400 mb-1">
         {label}
       </p>
-      <div className="inline-flex rounded-lg border border-stone-300 overflow-hidden bg-white">
+      <div className="inline-flex rounded-lg border border-stone-300 dark:border-stone-700 overflow-hidden bg-white dark:bg-stone-900">
         {children}
       </div>
     </div>
@@ -205,8 +205,8 @@ function FilterPill({
         active
           ? accent
             ? "bg-teal-600 text-white"
-            : "bg-stone-900 text-white"
-          : "bg-white text-stone-600 hover:bg-stone-50"
+            : "bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900"
+          : "bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-800"
       }`}
     >
       {children}
@@ -250,17 +250,17 @@ function BestPriceCard({
   return (
     <Link
       href={`/stores/${best.id}?product=${product}`}
-      className="mt-5 block rounded-2xl border border-teal-200 bg-gradient-to-r from-teal-50 to-emerald-50 p-5 hover:border-teal-400 transition"
+      className="mt-5 block rounded-2xl border border-teal-200 dark:border-teal-800 bg-gradient-to-r from-teal-50 to-emerald-50 dark:from-teal-950 dark:to-emerald-950 p-5 hover:border-teal-400 transition"
     >
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-teal-700">
+          <p className="text-xs font-medium uppercase tracking-wide text-teal-700 dark:text-teal-400">
             Best price nearby{qty > 1 ? ` (buying ${qty})` : ""}
           </p>
-          <p className="mt-1 text-lg font-semibold text-stone-900">
+          <p className="mt-1 text-lg font-semibold text-stone-900 dark:text-stone-100">
             {best.name}
             {best.isDemo && (
-              <span className="ml-2 align-middle rounded bg-amber-100 text-amber-800 text-[10px] font-medium px-1.5 py-0.5 uppercase">demo data</span>
+              <span className="ml-2 align-middle rounded bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 text-[10px] font-medium px-1.5 py-0.5 uppercase">demo data</span>
             )}
           </p>
           <p className="text-sm text-stone-500">
@@ -269,7 +269,7 @@ function BestPriceCard({
           </p>
         </div>
         <div className="text-right">
-          <div className="text-3xl font-semibold text-teal-700">
+          <div className="text-3xl font-semibold text-teal-700 dark:text-teal-400">
             {formatCents(best.effective.perCanCents)}
             <span className="text-sm font-normal text-stone-500">/can</span>
           </div>
@@ -282,19 +282,19 @@ function BestPriceCard({
       </div>
 
       {trip && (
-        <div className="mt-3 border-t border-teal-200/60 pt-2.5 text-xs text-stone-600 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
-          <span className="font-medium text-stone-700">Worth the trip?</span>
+        <div className="mt-3 border-t border-teal-200 dark:border-teal-800/60 pt-2.5 text-xs text-stone-600 dark:text-stone-400 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+          <span className="font-medium text-stone-700 dark:text-stone-300">Worth the trip?</span>
           <span>
             vs {nearest.name} ({nearest.distanceMiles} mi): save{" "}
-            <strong className="text-stone-800">{formatCents(trip.savingsCents)}</strong>
+            <strong className="text-stone-800 dark:text-stone-200">{formatCents(trip.savingsCents)}</strong>
             {qty > 1 ? ` on ${qty} cans` : ""} for +{trip.extraRoundTripMiles} mi round trip
             (≈{formatCents(trip.drivingCostCents)} driving
             <span className="text-stone-400">*</span>)
             {" — "}
             {trip.netCents > 0 ? (
-              <strong className="text-teal-700">worth the detour</strong>
+              <strong className="text-teal-700 dark:text-teal-400">worth the detour</strong>
             ) : (
-              <strong className="text-amber-700">the closer store may win</strong>
+              <strong className="text-amber-700 dark:text-amber-400">the closer store may win</strong>
             )}
           </span>
           <span className="w-full text-[10px] text-stone-400">
@@ -325,9 +325,9 @@ async function NoCoverage({
     : 0;
 
   return (
-    <div className="mt-10 max-w-xl mx-auto rounded-xl border border-stone-200 bg-white p-6 text-center">
-      <h2 className="font-medium text-stone-900">No coverage here yet</h2>
-      <p className="mt-2 text-sm text-stone-600">
+    <div className="mt-10 max-w-xl mx-auto rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-6 text-center">
+      <h2 className="font-medium text-stone-900 dark:text-stone-100">No coverage here yet</h2>
+      <p className="mt-2 text-sm text-stone-600 dark:text-stone-400">
         We don’t track any stores within {radius} miles of this location. Our
         pilot area is Chicago, IL. We never guess or invent prices for stores
         we haven’t covered — try widening the radius or searching a Chicago

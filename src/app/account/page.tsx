@@ -65,20 +65,20 @@ export default async function AccountPage() {
 
   return (
     <div className="py-8 max-w-2xl mx-auto">
-      <h1 className="text-2xl font-semibold text-stone-900">{user.displayName}</h1>
+      <h1 className="text-2xl font-semibold text-stone-900 dark:text-stone-100">{user.displayName}</h1>
       <p className="text-sm text-stone-500">{user.email} · member since {user.createdAt.toLocaleDateString()}</p>
 
       <div className="mt-5 grid grid-cols-2 sm:grid-cols-3 gap-3">
-        <div className="rounded-xl border border-stone-200 bg-white p-4">
-          <div className="text-2xl font-semibold text-stone-900">{user.reputation}</div>
+        <div className="rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-4">
+          <div className="text-2xl font-semibold text-stone-900 dark:text-stone-100">{user.reputation}</div>
           <div className="text-xs text-stone-500">reputation</div>
         </div>
-        <div className="rounded-xl border border-stone-200 bg-white p-4">
-          <div className="text-2xl font-semibold text-stone-900">{contributions.length}</div>
+        <div className="rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-4">
+          <div className="text-2xl font-semibold text-stone-900 dark:text-stone-100">{contributions.length}</div>
           <div className="text-xs text-stone-500">recent contributions</div>
         </div>
-        <div className="rounded-xl border border-stone-200 bg-white p-4">
-          <div className={`text-sm font-medium ${trusted ? "text-teal-700" : "text-stone-500"}`}>
+        <div className="rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-4">
+          <div className={`text-sm font-medium ${trusted ? "text-teal-700 dark:text-teal-400" : "text-stone-500"}`}>
             {trusted ? "Trusted contributor" : "Building trust"}
           </div>
           <div className="text-xs text-stone-500 mt-1">
@@ -89,12 +89,12 @@ export default async function AccountPage() {
         </div>
       </div>
 
-      <h2 className="mt-8 font-medium text-stone-900">
+      <h2 className="mt-8 font-medium text-stone-900 dark:text-stone-100">
         Your watchlist <span className="text-stone-400 font-normal">({savedStores.length})</span>
       </h2>
       {savedStores.length === 0 ? (
         <p className="mt-2 text-sm text-stone-500">
-          No saved stores yet — tap <span className="text-stone-700">☆ Save</span> on any store page
+          No saved stores yet — tap <span className="text-stone-700 dark:text-stone-300">☆ Save</span> on any store page
           to track it here.
         </p>
       ) : (
@@ -105,21 +105,21 @@ export default async function AccountPage() {
               <li key={saved.id}>
                 <Link
                   href={`/stores/${store.id}`}
-                  className={`block rounded-xl border bg-white p-3.5 hover:border-teal-400 hover:shadow-sm transition ${
-                    cheapest ? "border-teal-400 ring-1 ring-teal-400" : "border-stone-200"
+                  className={`block rounded-xl border bg-white dark:bg-stone-900 p-3.5 hover:border-teal-400 hover:shadow-sm transition ${
+                    cheapest ? "border-teal-400 ring-1 ring-teal-400" : "border-stone-200 dark:border-stone-800"
                   }`}
                 >
                   {cheapest && (
-                    <p className="text-[10px] font-medium uppercase tracking-wider text-teal-700 mb-1">
+                    <p className="text-[10px] font-medium uppercase tracking-wider text-teal-700 dark:text-teal-400 mb-1">
                       Cheapest on your watchlist
                     </p>
                   )}
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="font-medium text-stone-900 truncate">
+                      <p className="font-medium text-stone-900 dark:text-stone-100 truncate">
                         {store.name}
                         {store.isDemo && (
-                          <span className="ml-1.5 rounded bg-amber-100 text-amber-800 text-[9px] font-medium px-1 py-0.5 uppercase align-middle">
+                          <span className="ml-1.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 text-[9px] font-medium px-1 py-0.5 uppercase align-middle">
                             demo
                           </span>
                         )}
@@ -141,7 +141,7 @@ export default async function AccountPage() {
                     <div className="text-right shrink-0">
                       {latest ? (
                         <>
-                          <div className="text-lg font-semibold text-stone-900">
+                          <div className="text-lg font-semibold text-stone-900 dark:text-stone-100">
                             {formatCents(latest.observation.priceCents)}
                           </div>
                           <div className="text-[11px] text-stone-500">
@@ -150,7 +150,7 @@ export default async function AccountPage() {
                               ? "updated today"
                               : `${latest.ageDays}d ago`}
                             {latest.freshness === "stale" && (
-                              <span className="text-amber-600"> · may be outdated</span>
+                              <span className="text-amber-600 dark:text-amber-400"> · may be outdated</span>
                             )}
                           </div>
                         </>
@@ -166,24 +166,24 @@ export default async function AccountPage() {
         </ul>
       )}
 
-      <h2 className="mt-8 font-medium text-stone-900">Your contributions</h2>
+      <h2 className="mt-8 font-medium text-stone-900 dark:text-stone-100">Your contributions</h2>
       {contributions.length === 0 ? (
         <p className="mt-2 text-sm text-stone-500">
-          None yet — find a <Link href="/search?q=60614" className="underline text-teal-700">store near you</Link> and confirm a price.
+          None yet — find a <Link href="/search?q=60614" className="underline text-teal-700 dark:text-teal-400">store near you</Link> and confirm a price.
         </p>
       ) : (
-        <ul className="mt-2 divide-y divide-stone-100 rounded-xl border border-stone-200 bg-white">
+        <ul className="mt-2 divide-y divide-stone-100 dark:divide-stone-800 rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900">
           {contributions.map((c) => (
             <li key={c.id} className="p-3 text-sm flex items-center justify-between gap-2">
               <span>
                 {c.kind === "CONFIRM" ? "Confirmed price at" : `Reported ${formatCents(c.proposedPriceCents)} at`}{" "}
-                <Link href={`/stores/${c.store.id}`} className="text-teal-700 hover:underline">{c.store.name}</Link>
+                <Link href={`/stores/${c.store.id}`} className="text-teal-700 dark:text-teal-400 hover:underline">{c.store.name}</Link>
               </span>
               <span className={`text-xs rounded px-1.5 py-0.5 ${
-                c.status === "PUBLISHED" ? "bg-emerald-50 text-emerald-700"
-                : c.status === "CORROBORATING" ? "bg-amber-50 text-amber-700"
-                : c.status === "PENDING" ? "bg-stone-100 text-stone-600"
-                : "bg-red-50 text-red-700"
+                c.status === "PUBLISHED" ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
+                : c.status === "CORROBORATING" ? "bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400"
+                : c.status === "PENDING" ? "bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400"
+                : "bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300"
               }`}>
                 {c.status.toLowerCase()}
               </span>
@@ -192,12 +192,12 @@ export default async function AccountPage() {
         </ul>
       )}
 
-      <h2 className="mt-8 font-medium text-stone-900">Recent reputation changes</h2>
-      <ul className="mt-2 text-sm text-stone-600 space-y-1">
+      <h2 className="mt-8 font-medium text-stone-900 dark:text-stone-100">Recent reputation changes</h2>
+      <ul className="mt-2 text-sm text-stone-600 dark:text-stone-400 space-y-1">
         {repEvents.length === 0 && <li className="text-stone-400">No reputation events yet.</li>}
         {repEvents.map((e) => (
           <li key={e.id}>
-            <span className={e.delta >= 0 ? "text-emerald-700" : "text-red-600"}>
+            <span className={e.delta >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}>
               {e.delta >= 0 ? "+" : ""}{e.delta}
             </span>{" "}
             {e.reason.replace(/_/g, " ").toLowerCase()} · {e.createdAt.toLocaleDateString()}

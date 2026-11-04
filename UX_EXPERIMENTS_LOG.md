@@ -401,3 +401,32 @@ clicking one recorded a real verification ("Thanks ✓" + "✓ 1 confirm"
 appears after refresh). Typecheck/lint green.
 
 **Recommendation: Keep.**
+
+---
+
+## Cycle 14 — Dark mode (prefers-color-scheme)
+
+**Problem.** No dark theme: at night the all-white UI is harsh, and
+nicotine-pouch price checks skew mobile/evening. The PWA (Cycle 5) also
+looked out of place on dark-mode phones.
+
+**What changed.**
+- `globals.css`: CSS variables + `color-scheme` switch via
+  `prefers-color-scheme` (no toggle UI — follows the OS, zero JS).
+- Tailwind `dark:` variants across every public surface and shared
+  component (layout chrome, home, search + filters + best-price gradient,
+  result cards/badges/compare dialog, store pages incl. qty strip, account,
+  auth forms, ZIP pages, age gate, error/404, skeletons). Semantic colors
+  keep their meaning (teal accents, amber warnings, emerald positives) at
+  dark-appropriate shades.
+- Dark `themeColor` meta for the browser UI; maps intentionally stay light
+  (standard practice, tiles are third-party).
+- `/admin` is deliberately pinned to a light panel (`color-scheme: light`
+  island) — staff tooling, not worth the dark sweep risk.
+
+**Testing.** Full gate re-run: 68 vitest, production build, all 37 e2e
+checks green. Dark screenshots verified for home, search (incl. compare
+dialog + tray), store page, ZIP page, login; two sweep artifacts found and
+fixed (high-confidence pill missing dark variant, pill wrapping).
+
+**Recommendation: Keep.** Follows the OS preference; light mode untouched.

@@ -75,7 +75,7 @@ export function CompareDialog({
       label: "Multi-can deal",
       render: (s) =>
         s.deal ? (
-          <span className="text-teal-800">
+          <span className="text-teal-800 dark:text-teal-300">
             {s.deal.minQty}+ cans:{" "}
             {s.deal.pricePerCanCents !== null
               ? `${formatCents(s.deal.pricePerCanCents)} each`
@@ -95,7 +95,7 @@ export function CompareDialog({
       render: (s) =>
         s.latest ? (
           s.latest.freshness === "stale" ? (
-            <span className="text-amber-700">{s.latest.ageDays}d ago (may be outdated)</span>
+            <span className="text-amber-700 dark:text-amber-400">{s.latest.ageDays}d ago (may be outdated)</span>
           ) : (
             `${s.latest.ageDays === 0 ? "today" : `${s.latest.ageDays}d ago`}`
           )
@@ -111,7 +111,7 @@ export function CompareDialog({
       label: "Confirmations",
       render: (s) =>
         s.latest && s.latest.confirmCount > 0 ? (
-          <span className="text-teal-700">✓ {s.latest.confirmCount}</span>
+          <span className="text-teal-700 dark:text-teal-400">✓ {s.latest.confirmCount}</span>
         ) : (
           <span className="text-stone-400">none yet</span>
         ),
@@ -120,7 +120,7 @@ export function CompareDialog({
       label: "Stock",
       render: (s) =>
         s.latest?.availability === "OUT_OF_STOCK" ? (
-          <span className="text-red-600">reported out</span>
+          <span className="text-red-600 dark:text-red-400">reported out</span>
         ) : s.latest ? (
           "in stock at last report"
         ) : (
@@ -140,14 +140,14 @@ export function CompareDialog({
         aria-modal="true"
         aria-label="Compare stores"
         onClick={(e) => e.stopPropagation()}
-        className="bg-white w-full sm:max-w-3xl max-h-[85vh] overflow-auto rounded-t-2xl sm:rounded-2xl shadow-xl"
+        className="bg-white dark:bg-stone-900 w-full sm:max-w-3xl max-h-[85vh] overflow-auto rounded-t-2xl sm:rounded-2xl shadow-xl"
       >
-        <div className="sticky top-0 bg-white border-b border-stone-200 px-4 py-3 flex items-center justify-between">
-          <h2 className="font-semibold text-stone-900">Compare stores</h2>
+        <div className="sticky top-0 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 px-4 py-3 flex items-center justify-between">
+          <h2 className="font-semibold text-stone-900 dark:text-stone-100">Compare stores</h2>
           <button
             onClick={onClose}
             aria-label="Close comparison"
-            className="rounded-lg px-2.5 py-1 text-stone-500 hover:bg-stone-100 text-xl leading-none"
+            className="rounded-lg px-2.5 py-1 text-stone-500 hover:bg-stone-100 dark:hover:bg-stone-800 text-xl leading-none"
           >
             ×
           </button>
@@ -161,12 +161,12 @@ export function CompareDialog({
                 <th key={s.id} className="px-3 pt-3 pb-2 text-left align-top font-normal">
                   <Link
                     href={`/stores/${s.id}?product=${productSlug}`}
-                    className="font-medium text-stone-900 hover:text-teal-700 underline-offset-2 hover:underline"
+                    className="font-medium text-stone-900 dark:text-stone-100 hover:text-teal-700 underline-offset-2 hover:underline"
                   >
                     {s.name}
                   </Link>
                   {s.isDemo && (
-                    <span className="ml-1 rounded bg-amber-100 text-amber-800 text-[9px] font-medium px-1 py-0.5 uppercase align-middle">
+                    <span className="ml-1 rounded bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 text-[9px] font-medium px-1 py-0.5 uppercase align-middle">
                       demo
                     </span>
                   )}
@@ -177,7 +177,7 @@ export function CompareDialog({
           </thead>
           <tbody>
             {rows.map((row) => (
-              <tr key={row.label} className="border-t border-stone-100">
+              <tr key={row.label} className="border-t border-stone-100 dark:border-stone-800">
                 <th className="px-4 py-2.5 text-left text-xs font-medium text-stone-400 align-top">
                   {row.label}
                 </th>
@@ -185,7 +185,7 @@ export function CompareDialog({
                   <td
                     key={s.id}
                     className={`px-3 py-2.5 align-top ${
-                      row.highlight?.(s) ? "bg-teal-50/70 text-teal-900" : "text-stone-700"
+                      row.highlight?.(s) ? "bg-teal-50 dark:bg-teal-950/70 text-teal-900 dark:text-teal-200" : "text-stone-700 dark:text-stone-300"
                     }`}
                   >
                     {row.render(s)}
@@ -195,7 +195,7 @@ export function CompareDialog({
             ))}
           </tbody>
         </table>
-        <p className="px-4 py-3 text-[11px] text-stone-400 border-t border-stone-100">
+        <p className="px-4 py-3 text-[11px] text-stone-400 border-t border-stone-100 dark:border-stone-800">
           Prices are member/staff reports, may exclude tax, and can be out of
           date — the highlighted cells are the best value in this comparison.
         </p>

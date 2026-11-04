@@ -3,9 +3,9 @@ import { formatCents } from "@/lib/money";
 import { computeConfidence, type ConfidenceInput } from "@/lib/confidence";
 
 const TIER_STYLES = {
-  high: { dot: "bg-emerald-500", text: "text-emerald-800", bg: "bg-emerald-50", label: "High confidence" },
-  medium: { dot: "bg-stone-400", text: "text-stone-600", bg: "bg-stone-100", label: "Medium confidence" },
-  low: { dot: "bg-amber-500", text: "text-amber-800", bg: "bg-amber-50", label: "Low confidence" },
+  high: { dot: "bg-emerald-500", text: "text-emerald-800 dark:text-emerald-300", bg: "bg-emerald-50 dark:bg-emerald-950", label: "High confidence" },
+  medium: { dot: "bg-stone-400", text: "text-stone-600 dark:text-stone-400", bg: "bg-stone-100 dark:bg-stone-800", label: "Medium confidence" },
+  low: { dot: "bg-amber-500", text: "text-amber-800 dark:text-amber-300", bg: "bg-amber-50 dark:bg-amber-950/50", label: "Low confidence" },
 } as const;
 
 /** Glanceable price-confidence pill; the reasons are in the tooltip. */
@@ -23,7 +23,7 @@ export function ConfidenceBadge({
   return (
     <span
       title={`Why: ${c.reasons.join(" · ")}`}
-      className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 ${s.bg} ${s.text}`}
+      className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 whitespace-nowrap ${s.bg} ${s.text}`}
     >
       <span className={`h-1.5 w-1.5 rounded-full ${s.dot}`} aria-hidden />
       {s.label}
@@ -34,7 +34,7 @@ export function ConfidenceBadge({
 
 export function DemoBadge() {
   return (
-    <span className="rounded bg-amber-100 text-amber-800 text-[10px] font-medium px-1.5 py-0.5 uppercase tracking-wide">
+    <span className="rounded bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 text-[10px] font-medium px-1.5 py-0.5 uppercase tracking-wide">
       demo data
     </span>
   );
@@ -50,7 +50,7 @@ export function DealBadge({
       ? `${deal.minQty}-can deal: ${formatCents(deal.discountPerCanCents)} off each`
       : `${deal.minQty}-can deal: ${formatCents(deal.pricePerCanCents)} each`;
   return (
-    <span className="rounded bg-teal-50 text-teal-800 text-[10px] font-medium px-1.5 py-0.5 border border-teal-200">
+    <span className="rounded bg-teal-50 dark:bg-teal-950 text-teal-800 dark:text-teal-300 text-[10px] font-medium px-1.5 py-0.5 border border-teal-200 dark:border-teal-800">
       {label}
       {deal.conditions ? "*" : ""}
     </span>
@@ -64,13 +64,13 @@ export function FreshnessBadge({
 }) {
   if (latest.freshness === "stale") {
     return (
-      <span className="rounded bg-stone-100 text-stone-600 px-1.5 py-0.5">
+      <span className="rounded bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 px-1.5 py-0.5">
         {latest.ageDays}d old — may be outdated
       </span>
     );
   }
   return (
-    <span className="rounded bg-emerald-50 text-emerald-700 px-1.5 py-0.5">
+    <span className="rounded bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 px-1.5 py-0.5">
       updated {latest.ageDays === 0 ? "today" : `${latest.ageDays}d ago`}
     </span>
   );
@@ -95,27 +95,27 @@ export function PriceBadge({
   if (qty === 1 || effective.perCanCents === null) {
     return (
       <div className="text-right shrink-0">
-        <div className="text-xl font-semibold text-stone-900">
+        <div className="text-xl font-semibold text-stone-900 dark:text-stone-100">
           {formatCents(latest.priceCents)}
         </div>
         <div className="text-[11px] text-stone-500">
           per can{latest.taxIncluded === false ? " +tax" : latest.taxIncluded === true ? " incl. tax" : ""}
         </div>
         {qty > 1 && effective.uncertain && (
-          <div className="text-[11px] text-amber-600">deal terms unknown at {qty}</div>
+          <div className="text-[11px] text-amber-600 dark:text-amber-400">deal terms unknown at {qty}</div>
         )}
       </div>
     );
   }
   return (
     <div className="text-right shrink-0">
-      <div className="text-xl font-semibold text-stone-900">
+      <div className="text-xl font-semibold text-stone-900 dark:text-stone-100">
         {formatCents(effective.perCanCents)}
         <span className="text-xs font-normal text-stone-500">/can</span>
       </div>
       <div className="text-[11px] text-stone-500">
         {formatCents(effective.totalCents)} for {qty}
-        {effective.usedDeal && <span className="text-teal-700"> · deal applied</span>}
+        {effective.usedDeal && <span className="text-teal-700 dark:text-teal-400"> · deal applied</span>}
       </div>
     </div>
   );

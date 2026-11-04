@@ -44,7 +44,7 @@ export function CoverageRequestButton({
   return (
     <div className="mt-4">
       {done ? (
-        <p className="text-sm text-teal-700 font-medium">{msg}</p>
+        <p className="text-sm text-teal-700 dark:text-teal-400 font-medium">{msg}</p>
       ) : (
         <>
           <button
@@ -59,7 +59,7 @@ export function CoverageRequestButton({
               ? `${initialCount} ${initialCount === 1 ? "person has" : "people have"} asked for this area. We prioritize coverage by demand.`
               : "Be the first to request this area — we prioritize coverage by demand."}
           </p>
-          {err && <p className="mt-1 text-sm text-red-600">{err}</p>}
+          {err && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{err}</p>}
         </>
       )}
     </div>

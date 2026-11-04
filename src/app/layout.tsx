@@ -32,7 +32,10 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#0d9488",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#0d9488" },
+    { media: "(prefers-color-scheme: dark)", color: "#0c0a09" },
+  ],
 };
 
 export default async function RootLayout({
@@ -50,37 +53,37 @@ export default async function RootLayout({
       <body className="min-h-screen antialiased">
         {!ageConfirmed && <AgeGateOverlay />}
         {demoMode && (
-          <div className="bg-amber-100 text-amber-900 text-center text-xs px-3 py-1.5 border-b border-amber-200">
+          <div className="bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200 text-center text-xs px-3 py-1.5 border-b border-amber-200 dark:border-amber-900">
             Demonstration data — prices shown on fictional “Demo” stores are
             synthetic. Real stores listed have no verified current prices yet.
           </div>
         )}
-        <header className="border-b border-stone-200 bg-white/90 backdrop-blur sticky top-0 z-40">
+        <header className="border-b border-stone-200 dark:border-stone-800 bg-white/90 dark:bg-stone-950/90 backdrop-blur sticky top-0 z-40">
           <div className="mx-auto max-w-5xl px-4 h-14 flex items-center justify-between gap-3">
-            <Link href="/" className="font-semibold tracking-tight text-lg text-stone-900">
-              Nic<span className="text-teal-600">Finder</span>
+            <Link href="/" className="font-semibold tracking-tight text-lg text-stone-900 dark:text-stone-100">
+              Nic<span className="text-teal-600 dark:text-teal-400">Finder</span>
             </Link>
             <nav className="flex items-center gap-3 text-sm">
               {user ? (
                 <>
                   {(user.role === "ADMIN" || user.role === "MODERATOR") && (
-                    <Link href="/admin" className="text-stone-500 hover:text-stone-900">
+                    <Link href="/admin" className="text-stone-500 hover:text-stone-900 dark:hover:text-stone-200">
                       Admin
                     </Link>
                   )}
-                  <Link href="/account" className="text-stone-600 hover:text-stone-900">
+                  <Link href="/account" className="text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-stone-100">
                     {user.displayName}
                   </Link>
                   <LogoutButton />
                 </>
               ) : (
                 <>
-                  <Link href="/login" className="text-stone-600 hover:text-stone-900">
+                  <Link href="/login" className="text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-stone-100">
                     Sign in
                   </Link>
                   <Link
                     href="/signup"
-                    className="rounded-lg bg-stone-900 text-white px-3 py-1.5 hover:bg-stone-700"
+                    className="rounded-lg bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900 px-3 py-1.5 hover:bg-stone-700 dark:hover:bg-white"
                   >
                     Sign up
                   </Link>
@@ -90,7 +93,7 @@ export default async function RootLayout({
           </div>
         </header>
         <main className="mx-auto max-w-5xl px-4 pb-16">{children}</main>
-        <footer className="border-t border-stone-200 mt-8">
+        <footer className="border-t border-stone-200 dark:border-stone-800 mt-8">
           <div className="mx-auto max-w-5xl px-4 py-6 text-xs text-stone-500 space-y-2">
             <p>
               NicFinder is an informational price-comparison service for adults
