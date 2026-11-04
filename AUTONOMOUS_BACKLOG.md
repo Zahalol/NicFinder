@@ -11,7 +11,7 @@ Status: `todo` | `in-progress` | `done` | `blocked` | `rejected`.
 | 4 | Historical-observation disputes (dispute any listed observation, not only displayed price) with provenance | Med-High | M | Med | Moderation flow churn | done |
 | 5 | Mobile UX audit: search → nearest → price readability; loading/empty/error states; keyboard support | Med-High | M | Med | Subjective | todo |
 | 6 | Pluggable rate-limiter storage abstraction (memory default, Postgres-backed option) | Med — deploy readiness | M | High | Over-engineering | todo |
-| 7 | Price history sparkline / freshness visualization on store page (no implied trends on sparse data) | Med | M | Med | Misleading viz if careless | todo |
+| 7 | Price history sparkline / freshness visualization on store page (no implied trends on sparse data) | Med | M | Med | Misleading viz if careless | done |
 | 8 | Two-store side-by-side comparison | Med | M | Med | UI clutter | todo |
 | 9 | Value-of-trip calculator (5-can savings vs added distance, stated assumptions) | Med | S-M | Med | Invented costs — keep assumptions explicit | done |
 | 10 | Import contract fuzz tests (malformed CSV/XLSX, huge files, weird encodings, CRLF, BOM) | Med — robustness | S-M | High | None | done |

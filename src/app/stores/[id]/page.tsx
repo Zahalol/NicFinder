@@ -10,6 +10,7 @@ import { SaveStoreButton } from "@/components/SaveStoreButton";
 import { ContributePanel } from "./ContributePanel";
 import { Comments } from "./Comments";
 import { FlagObservationButton } from "./FlagObservationButton";
+import { PriceHistorySparkline } from "@/components/PriceHistorySparkline";
 
 export const dynamic = "force-dynamic";
 
@@ -222,6 +223,26 @@ export default async function StorePage({
       {/* Price history */}
       <div className="mt-8">
         <h2 className="font-medium text-stone-900">Price history</h2>
+        {productLines.map((line) => (
+          <PriceHistorySparkline
+            key={line.id}
+            lineName={line.name}
+            points={store.observations
+              .filter(
+                (o) =>
+                  o.productLineId === line.id &&
+                  o.priceCents !== null &&
+                  (o.status === "ACTIVE" || o.status === "SUPERSEDED")
+              )
+              .slice(0, 25)
+              .map((o) => ({
+                observedAt: o.observedAt,
+                priceCents: o.priceCents!,
+                sourceType: o.sourceType,
+                status: o.status,
+              }))}
+          />
+        ))}
         {store.observations.length === 0 ? (
           <p className="mt-2 text-sm text-stone-500">No observations recorded.</p>
         ) : (
