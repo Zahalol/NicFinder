@@ -1,119 +1,94 @@
-# HANDOFF — NicFinder
+# HANDOFF
 
-_Last updated: 2026-11-04. Branch: `claude/hopeful-feynman-mchyuv`._
+## Current state
+_Date: 2026-11-04 — Session 1_
 
-This file is the single entry point for anyone (human or AI) picking up the
-project. Read this, then the root `README.md`, then `docs/README.md`.
+- NicFinder (ZYN price-comparison site, Chicago pilot, 21+ informational) is a
+  **complete, verified MVP on PostgreSQL, ready to deploy on Replit**.
+- All gates green at commit `76c9401` on branch `claude/hopeful-feynman-mchyuv`
+  (pushed): 53 vitest tests, 35-check Playwright e2e, lint, typecheck, prod build.
+- Features live: search/list/map with best-price card and deal math, store pages,
+  community confirm/dispute with reputation, watchlist, coverage requests,
+  SEO ZIP pages + sitemap, CSV/XLSX import pipeline (preview/commit/reverse),
+  full admin suite (imports, stores/duplicates, review, coverage demand,
+  analytics, settings), Replit Auth provider, health endpoint, maintenance job.
+- Outbound calling is deliberately **not built** — research only
+  (docs/ELEVENLABS_CALLING_RESEARCH.md); gated on TCPA legal review.
+- Docs reorganized under docs/ (index: docs/README.md); 17-screenshot tour in
+  docs/screenshots/; git history is the full session narrative.
 
-## What this is
+## Open items
+- [ ] Deploy to Replit per docs/REPLIT.md (owner's stated plan; not started)
+- [ ] Owner's Windows clone still targets the old SQLite setup — after `git pull`
+      it needs a Postgres `DATABASE_URL` in `.env` (simplest: the Replit DB string)
+- [ ] Change/replace seeded demo credentials before any shared deployment
+      (admin@example.com / admin-demo-password is documented publicly)
+- [ ] After Replit deploy: promote owner's Replit-auth account to ADMIN in DB
+- [ ] Owner advised to rotate ElevenLabs/Twilio credentials exposed in old
+      workbook copies — unknown whether done
+- [ ] Real Chicago price collection for the 27 directory stores (business gate G1)
+      not started; demo data still populates the site (DEMO_MODE=true)
+- [ ] Email verification / password reset not implemented (documented limitation)
 
-**NicFinder** — a location-based price-comparison site for ZYN nicotine
-pouches (Chicago pilot). Informational only, adults 21+, no sales. Think
-"calm GasBuddy for pouches": search a ZIP/address → nearby stores on
-list/map → latest reported price per can, multi-can deal math, community
-confirm/dispute with a reputation system, and an admin suite built around a
-CSV/XLSX import pipeline. Visual tour: `docs/screenshots/`.
+## Next steps
+1. Create the Replit app + PostgreSQL database; copy its DATABASE_URL into the
+   owner's local .env so laptop and Replit share one DB (docs/REPLIT.md §1–2).
+2. Set Replit secrets (SESSION_SECRET, APP_URL, REPLIT_AUTH_ENABLED=true) and
+   enable Replit Auth; deploy Autoscale (build/run preconfigured in .replit).
+3. Run `npx prisma migrate deploy` + `npm run db:seed` in the Replit shell;
+   promote the owner's account to ADMIN; verify /api/health.
+4. Add a Scheduled Deployment: `node scripts/maintenance.mjs` (hourly or daily).
+5. Collect real prices for the 27 real Chicago stores (manual/community/admin
+   entry), then set DEMO_MODE=false and retire demo stores.
+6. Watch /admin/coverage demand to choose expansion ZIPs.
 
-## Current state: **complete, verified MVP — ready to deploy on Replit**
-
-Every gate is green as of the last commit:
-
-| Gate | Command | Status |
-| --- | --- | --- |
-| Unit/integration tests (53) | `npm test` | ✅ |
-| Lint / typecheck | `npm run lint` / `npm run typecheck` | ✅ |
-| Production build | `npm run build` | ✅ |
-| Browser e2e smoke (35 checks) | `npm run e2e` (after build + seed) | ✅ |
-
-**Not built by design:** any outbound calling (ElevenLabs/Twilio). That is
-research-only — `docs/ELEVENLABS_CALLING_RESEARCH.md` — and gated on legal
-review (TCPA wireless-consent is the headline risk).
-
-## Run it in 5 minutes
-
-```bash
+## How to run things
+```
+# from the repo root (branch claude/hopeful-feynman-mchyuv)
 npm install
-cp .env.example .env            # set SESSION_SECRET + DATABASE_URL (Postgres)
+cp .env.example .env        # set SESSION_SECRET and Postgres DATABASE_URL
 npx prisma generate
 npx prisma migrate deploy
-npm run db:seed                 # demo users + Chicago directory + demo prices
-npm run dev                     # http://localhost:3000
+npm run db:seed             # demo users + Chicago directory + demo prices
+npm run dev                 # http://localhost:3000
+
+npm test                    # 53 tests (needs nicfinder_test DB; see below)
+npm run build && npm run e2e  # 35-check browser smoke on port 3100
 ```
+Postgres options (Docker one-liner / shared Replit DB / native) are in
+README.md "Database setup". Tests expect
+`postgresql://nicfinder:nicfinder_dev@localhost:5432/nicfinder_test`
+(override with TEST_DATABASE_URL; the DB name must contain "test").
+Demo logins: docs/DEMO_GUIDE.md.
 
-Postgres options are in README "Database setup" (Docker one-liner, or point
-at the Replit/Neon DB). Demo logins in `docs/DEMO_GUIDE.md` — admin is
-`admin@example.com` / `admin-demo-password` (**local demo only — change
-before any shared deployment**).
+## Gotchas
+- **Postgres aborts the whole transaction on any failed statement** — for
+  expected unique collisions use `createMany({ skipDuplicates: true })`,
+  never `create().catch()` inside a transaction (bit us in the import engine).
+- **Age gate must stay an overlay, not a redirect** — a redirect blocks
+  crawlers from /zyn-prices/* pages, the only viable acquisition channel
+  (nicotine ads are banned on Google/Meta).
+- **Data honesty invariants**: observations are append-only (status changes,
+  never deletes); displayed prices are computed in src/lib/prices.ts; ZYN
+  Ultra never inherits regular prices; demo data stays labeled (Store.isDemo).
+- **Imports must stay idempotent** (file + row content hashes) — tests cover it.
+- **REPLIT_AUTH_ENABLED only on Replit deployments**: it trusts proxy-injected
+  X-Replit-User-* headers, forgeable anywhere else.
+- `src/data/zip-centroids.csv` must keep LF endings (.gitattributes enforces;
+  Windows CRLF once silently broke all ZIP search).
+- A crashed e2e run can orphan `next-server` processes holding the port —
+  `pkill -f next-server`.
+- Prisma blocks destructive resets for AI agents; the test harness resets only
+  the test schema via SQL (tests/global-setup.ts) — keep it that way.
+- Every /api/admin/* route re-checks the role server-side (withStaff/withAdmin);
+  the admin layout redirect is not the security boundary.
+- Never commit .env, real *.xlsx workbooks (gitignored — the original held
+  credentials), or model identifiers in repo artifacts.
 
-## Deploying (the owner's plan: Replit)
-
-Follow `docs/REPLIT.md` end to end. Short version: import repo → add
-PostgreSQL database → set secrets (`SESSION_SECRET`, `APP_URL`,
-`REPLIT_AUTH_ENABLED=true`, later `DEMO_MODE=false`) → enable Replit Auth
-(gives Google/GitHub/Apple/email SSO with no credential setup) → deploy
-Autoscale (build/run already configured in `.replit`) → add a Scheduled
-Deployment running `node scripts/maintenance.mjs` → promote your own
-account to ADMIN in the DB.
-
-## Repo map
-
+## Resume prompt
 ```
-README.md / HANDOFF.md        start here
-docs/                         all documentation (index: docs/README.md)
-docs/screenshots/             visual tour (committed PNGs)
-sample-data/                  fictional CSV + XLSX import samples
-prisma/                       schema, migrations (Postgres), seed
-src/lib/                      domain logic (framework-free, unit-tested):
-  import/                     the import engine — the system's central seam
-  prices.ts                   latest-price selection policy
-  reputation.ts               community trust engine
-  deals.ts / money.ts / geo*  deal math, cents, geocoding (offline ZIPs)
-src/app/                      Next.js pages + API routes (/admin, /api)
-scripts/                      e2e-smoke.mjs, maintenance.mjs, make-sample-xlsx.mjs
-tests/                        vitest suites (run on nicfinder_test DB)
+Project: /home/user/NicFinder (github.com/Zahalol/NicFinder, branch claude/hopeful-feynman-mchyuv)
+Read first: HANDOFF.md, README.md, docs/REPLIT.md
+State: verified Postgres MVP at 76c9401, all tests green, not yet deployed.
+Next: walk the owner through the Replit deployment in docs/REPLIT.md (DB, secrets, Replit Auth, Autoscale).
 ```
-
-## Invariants — do not break these
-
-1. **Honesty of data.** Never attach prices to real stores without a real
-   observation; never let ZYN Ultra inherit regular prices; unknown stays
-   unknown; demo data stays visibly labeled (`Store.isDemo`, DEMO_MODE
-   banner).
-2. **Observations are append-only.** Corrections/reversals change `status`
-   (SUPERSEDED/INVALIDATED), never delete. Displayed prices are *computed*
-   (`src/lib/prices.ts`).
-3. **Idempotent imports.** Same file or same row twice must change nothing
-   (content + row hashes). Tested — keep those tests green.
-4. **Server-side authz on every admin/API route** (`withStaff`/`withAdmin`);
-   the UI redirect is not the security boundary.
-5. **Age gate is an overlay, not a redirect** — redirects would block
-   search-engine indexing of `/zyn-prices/*`, the only viable acquisition
-   channel (nicotine ads are banned on Google/Meta).
-6. **Postgres transactions abort on any failed statement** — use
-   `createMany({ skipDuplicates: true })` for expected unique collisions,
-   never `create().catch()` inside a transaction.
-7. **No secrets in the repo.** The original research workbook contained
-   credentials; it stays gitignored (`*.xlsx` outside `sample-data/`), and
-   the owner was advised to rotate anything from shared copies.
-8. **`REPLIT_AUTH_ENABLED` only on Replit deployments** — it makes the app
-   trust proxy-injected identity headers that are forgeable elsewhere.
-
-## Gotchas learned the hard way
-
-- `src/data/zip-centroids.csv` must keep LF endings (`.gitattributes`
-  handles it) — Windows CRLF checkout once broke all ZIP search.
-- `npm run e2e` needs the port free; it kills its own process group, but a
-  crashed run can orphan `next-server` — `pkill -f next-server`.
-- Prisma blocks `migrate reset`/`db push --force-reset` for AI agents; the
-  test harness intentionally resets only the `nicfinder_test` schema via
-  SQL (name must contain "test").
-- An interrupted `npm install` can skip Prisma client generation — hence
-  the explicit `npx prisma generate` in setup docs.
-
-## Where to go next (owner-agreed priorities)
-
-See `docs/ROADMAP.md` "Now" section: ① deploy on Replit, ② collect real
-prices for the 27 real Chicago stores to measure actual dispersion
-(business gate G1 in `docs/BUSINESS_RESEARCH.md`), using
-`/admin/coverage` demand to pick expansion ZIPs; calling remains gated on
-legal counsel. All past decisions and their reasoning: `docs/DECISIONS.md`.
