@@ -66,41 +66,47 @@ export function toCanonical(
     const n = Number(v);
     return Number.isFinite(n) ? n : null;
   };
-  const str = (v: unknown): string | null =>
-    v === null || v === undefined || String(v).trim() === ""
-      ? null
-      : String(v).trim();
+  // Defensive string handling for hostile/garbled files:
+  //  - strip C0/C1 control chars (incl. NUL, which Postgres text rejects),
+  //    keeping tab/newline inside multi-line cells out (collapsed by trim
+  //    where relevant), and cap length per field so a 1 MB cell can't bloat
+  //    the DB or the admin UI.
+  const str = (v: unknown, max = 500): string | null => {
+    if (v === null || v === undefined) return null;
+    const cleaned = String(v).replace(/[\u0000-\u0008\u000B-\u001F\u007F-\u009F]/g, "").trim();
+    return cleaned === "" ? null : cleaned.slice(0, max);
+  };
 
   return {
-    external_store_id: str(c.external_store_id),
-    store_name: str(c.store_name),
-    address: str(c.address),
-    city: str(c.city),
-    state: str(c.state)?.toUpperCase() ?? null,
-    zip: str(c.zip)?.slice(0, 5) ?? null,
+    external_store_id: str(c.external_store_id, 120),
+    store_name: str(c.store_name, 160),
+    address: str(c.address, 250),
+    city: str(c.city, 80),
+    state: str(c.state, 40)?.toUpperCase() ?? null,
+    zip: str(c.zip, 20)?.slice(0, 5) ?? null,
     latitude: num(c.latitude),
     longitude: num(c.longitude),
-    phone: str(c.phone),
-    observed_at: str(c.observed_at),
-    product_line: str(c.product_line)?.toLowerCase().replace(/[\s_]+/g, "-") ?? null,
+    phone: str(c.phone, 40),
+    observed_at: str(c.observed_at, 60),
+    product_line: str(c.product_line, 60)?.toLowerCase().replace(/[\s_]+/g, "-") ?? null,
     price_usd: (c.price_usd as string | number | null) ?? null,
-    currency: str(c.currency)?.toUpperCase() ?? null,
+    currency: str(c.currency, 10)?.toUpperCase() ?? null,
     tax_included: parseBool(c.tax_included),
-    availability: str(c.availability),
+    availability: str(c.availability, 40),
     confidence: num(c.confidence),
-    strength: str(c.strength),
-    flavor: str(c.flavor),
-    can_size: str(c.can_size),
+    strength: str(c.strength, 60),
+    flavor: str(c.flavor, 80),
+    can_size: str(c.can_size, 60),
     deal_min_qty: num(c.deal_min_qty),
     deal_price_per_can_usd: (c.deal_price_per_can_usd as string | number | null) ?? null,
     deal_discount_per_can_usd:
       (c.deal_discount_per_can_usd as string | number | null) ?? null,
     deal_applies_above_min_qty: parseBool(c.deal_applies_above_min_qty),
-    deal_conditions: str(c.deal_conditions),
-    deal_expires_at: str(c.deal_expires_at),
-    source_row_id: str(c.source_row_id),
-    call_id: str(c.call_id),
-    notes: str(c.notes),
+    deal_conditions: str(c.deal_conditions, 300),
+    deal_expires_at: str(c.deal_expires_at, 60),
+    source_row_id: str(c.source_row_id, 120),
+    call_id: str(c.call_id, 120),
+    notes: str(c.notes, 1000),
   };
 }
 

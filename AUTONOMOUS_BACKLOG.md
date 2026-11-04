@@ -14,7 +14,7 @@ Status: `todo` | `in-progress` | `done` | `blocked` | `rejected`.
 | 7 | Price history sparkline / freshness visualization on store page (no implied trends on sparse data) | Med | M | Med | Misleading viz if careless | todo |
 | 8 | Two-store side-by-side comparison | Med | M | Med | UI clutter | todo |
 | 9 | Value-of-trip calculator (5-can savings vs added distance, stated assumptions) | Med | S-M | Med | Invented costs — keep assumptions explicit | todo |
-| 10 | Import contract fuzz tests (malformed CSV/XLSX, huge files, weird encodings, CRLF, BOM) | Med — robustness | S-M | High | None | todo |
+| 10 | Import contract fuzz tests (malformed CSV/XLSX, huge files, weird encodings, CRLF, BOM) | Med — robustness | S-M | High | None | done |
 | 11 | Price reliability score (age + source + corroboration + disputes), transparent formula | Med | M | Med | False precision | todo |
 | 12 | No-map low-clutter quick compare mode for mobile | Low-Med | S | Med | Duplicate of list view? | todo |
 | 13 | Admin pilot economics dashboard (coverage, obs age, est. acquisition cost from configurable assumptions) | Low-Med | M | Low | Speculative | todo |
