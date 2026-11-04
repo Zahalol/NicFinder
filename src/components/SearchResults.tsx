@@ -203,6 +203,22 @@ export function SearchResults({
     }
   }, [view]);
 
+  // EXPERIMENT (Cycle 21): map pin click highlights + scrolls to the card
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const cardRefs = useRef<Map<string, HTMLLIElement>>(new Map());
+  function selectFromMap(id: string) {
+    const r = results.find((x) => x.id === id);
+    if (r && !r.latest) setDirectoryOpen(true); // card lives in the directory
+    setActiveId(id);
+  }
+  useEffect(() => {
+    if (!activeId) return;
+    const el = cardRefs.current.get(activeId);
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    const t = setTimeout(() => setActiveId(null), 2500);
+    return () => clearTimeout(t);
+  }, [activeId]);
+
   // EXPERIMENT (Cycle 20): on large screens show list + map side by side
   // (no toggle). SSR renders the mobile toggle layout; desktop upgrades on
   // hydration via matchMedia.
@@ -234,7 +250,14 @@ export function SearchResults({
     <>
           <ul className="mt-4 space-y-3">
             {(showGrouped ? priced : results).map((r) => (
-              <li key={r.id}>
+              <li
+                key={r.id}
+                ref={(el) => {
+                  if (el) cardRefs.current.set(r.id, el);
+                  else cardRefs.current.delete(r.id);
+                }}
+                className={activeId === r.id ? "rounded-xl ring-2 ring-teal-500 transition" : undefined}
+              >
                 <StoreCard
                   r={r}
                   qty={qty}
@@ -309,7 +332,14 @@ export function SearchResults({
                   </p>
                   <ul className="mt-2 space-y-3">
                     {unpriced.map((r) => (
-                      <li key={r.id}>
+                      <li
+                        key={r.id}
+                        ref={(el) => {
+                          if (el) cardRefs.current.set(r.id, el);
+                          else cardRefs.current.delete(r.id);
+                        }}
+                        className={activeId === r.id ? "rounded-xl ring-2 ring-teal-500 transition" : undefined}
+                      >
                         <StoreCard r={r} qty={qty} productSlug={productSlug} />
                       </li>
                     ))}
@@ -359,7 +389,13 @@ export function SearchResults({
         <div className="mt-4 grid grid-cols-[minmax(0,1fr)_420px] gap-5 items-start">
           <div>{listContent}</div>
           <div className="sticky top-20 h-[calc(100vh-7.5rem)] min-h-[420px]">
-            <StoreMap results={results} center={center} qty={qty} productSlug={productSlug} />
+            <StoreMap
+              results={results}
+              center={center}
+              qty={qty}
+              productSlug={productSlug}
+              onSelect={selectFromMap}
+            />
           </div>
         </div>
       </div>

@@ -546,6 +546,22 @@ unchanged. SSR renders the mobile layout; desktop upgrades on hydration via
 
 **Testing.** 1400px screenshots show the split with price chips on the map
 and the map pinned while scrolled; 390px still shows the toggle; typecheck/
-lint/72 tests green.
+lint/72 tests green. (Follow-up: the e2e map check now waits for hydration
+since the SSR toggle detaches at desktop widths.)
+
+**Recommendation: Keep.**
+
+---
+
+## Cycle 21 — Map→list sync in the desktop split
+
+**What changed.** Clicking a map marker in the desktop split view now also
+highlights the matching list card (teal ring, auto-clears after 2.5s) and
+scrolls it into view; a dot (unpriced) marker first auto-expands the
+no-price directory so its card can be shown. Popup behavior unchanged;
+mobile unaffected (callback only passed in the split layout).
+
+**Testing.** Playwright: clicked the $7.29 chip — popup opened, the
+matching card scrolled into view ringed; no page errors.
 
 **Recommendation: Keep.**

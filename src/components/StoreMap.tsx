@@ -31,11 +31,15 @@ export default function StoreMap({
   center,
   qty,
   productSlug = "zyn",
+  onSelect,
 }: {
   results: StoreResult[];
   center: { lat: number; lng: number };
   qty: number;
   productSlug?: string;
+  /** Called with the store id when a marker is clicked (desktop split view
+   *  uses this to highlight + scroll to the matching list card). */
+  onSelect?: (id: string) => void;
 }) {
   return (
     <MapContainer
@@ -67,6 +71,7 @@ export default function StoreMap({
               position={[r.latitude!, r.longitude!]}
               icon={label ? priceIcon(label, r.latest?.freshness === "stale") : dotIcon()}
               zIndexOffset={label ? 1000 : 0}
+              eventHandlers={onSelect ? { click: () => onSelect(r.id) } : undefined}
             >
               <Popup>
                 <div style={{ minWidth: 160 }}>
