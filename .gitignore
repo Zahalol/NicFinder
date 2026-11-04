@@ -24,7 +24,7 @@ prisma/*.db-journal
 .cache/
 
 # testing
-coverage/
+/coverage/
 test-results/
 
 # uploads stored at runtime
