@@ -25,6 +25,14 @@ async function main() {
     where: { createdAt: { lt: new Date(now.getTime() - 86400_000) } },
   });
 
+  // Prune READ in-app notifications after 90 days (unread ones stay until
+  // seen). Operational convenience data, not price evidence.
+  const prunedNotifications = await prisma.notification.deleteMany({
+    where: {
+      readAt: { not: null, lt: new Date(now.getTime() - 90 * 86400_000) },
+    },
+  });
+
   const staleCutoff = new Date(now.getTime() - 21 * 86400_000);
   const [activeObs, staleObs, openReviews, coverageRequests] = await Promise.all([
     prisma.priceObservation.count({ where: { status: "ACTIVE" } }),
@@ -40,6 +48,7 @@ async function main() {
       ranAt: now.toISOString(),
       dealsExpired: expired.count,
       prunedRateLimitEvents: prunedRateLimitEvents.count,
+      prunedNotifications: prunedNotifications.count,
       activeObservations: activeObs,
       staleObservations: staleObs,
       openReviewItems: openReviews,
