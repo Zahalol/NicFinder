@@ -48,7 +48,7 @@ All access dates are 2026-11-04 unless stated.
 | M7 | ElevenLabs Agents $0.08/min; plan concurrency 4–40; burst $0.16/min | Re-verified in Phase 4 |
 | M8 | Twilio $0.014/min outbound, $1.15/number, AMD $0.0075/answered call; billed per started minute | Re-verified in Phase 4 |
 | M9 | Answer rate 65%, price-given 60% (business doc) vs success 50–70% (calling doc) | **Both are unsupported assumptions.** No published benchmark exists for this exact call type (Phase 4). |
-| M10 | Nicokick/Northerner/Prilla affiliate programs "exist" | Verified/qualified in Phase 3 |
+| M10 | Nicokick/Northerner/Prilla affiliate programs "exist" | **PARTLY VERIFIED.** Nicokick (5%, 1-day cookie, CJ) and Northerner (5–10%) appear only on aggregators. **Both are owned by Haypp Group.** No Prilla affiliate program was found. |
 
 ## D. Open questions log (carry forward)
 
@@ -61,3 +61,4 @@ All access dates are 2026-11-04 unless stated.
 
 ## E. Change log
 - 2026-11-04: Register created during Phase 1. L7 marked contradicted, L10 verified from IDOR, L11 reconciled, D1/D2 assigned to Phases 4/3.
+- 2026-11-04: Phase 3. D2 resolved (Google Ads = advertiser-side prohibition; Publisher Policies = restricted serving). M10 updated.
