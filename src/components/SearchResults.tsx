@@ -27,31 +27,56 @@ export function SearchResults({
   productSlug: string;
 }) {
   const [view, setView] = useState<"list" | "map">("list");
+  const [pricedOnly, setPricedOnly] = useState(false);
   const tripValues = useMemo(
     () => computeTripValues(results.map(toComparable)),
     [results]
   );
+  const pricedCount = results.filter((r) => r.latest).length;
+  // "Priced only" keeps availability-signal stores visible: "not carried"
+  // is information, hiding it would misrepresent coverage.
+  const visible =
+    pricedOnly && pricedCount > 0
+      ? results.filter((r) => r.latest || r.availabilitySignal)
+      : results;
 
   return (
     <div className="mt-5">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
         <p className="text-sm text-stone-500">
           {results.length} store{results.length === 1 ? "" : "s"} ·{" "}
-          {results.filter((r) => r.latest).length} with reported prices
+          {pricedCount} with reported prices
         </p>
-        <div className="inline-flex rounded-lg border border-stone-300 overflow-hidden text-sm">
-          <button
-            onClick={() => setView("list")}
-            className={`px-4 py-1.5 ${view === "list" ? "bg-stone-900 text-white" : "bg-white text-stone-600"}`}
-          >
-            List
-          </button>
-          <button
-            onClick={() => setView("map")}
-            className={`px-4 py-1.5 ${view === "map" ? "bg-stone-900 text-white" : "bg-white text-stone-600"}`}
-          >
-            Map
-          </button>
+        <div className="flex items-center gap-2">
+          {pricedCount > 0 && pricedCount < results.length && (
+            <button
+              onClick={() => setPricedOnly((v) => !v)}
+              aria-pressed={pricedOnly}
+              className={`rounded-lg border px-3 py-1.5 text-sm ${
+                pricedOnly
+                  ? "border-teal-600 bg-teal-600 text-white"
+                  : "border-stone-300 bg-white text-stone-600 hover:bg-stone-50"
+              }`}
+            >
+              Priced only
+            </button>
+          )}
+          <div className="inline-flex rounded-lg border border-stone-300 overflow-hidden text-sm" role="group" aria-label="Result view">
+            <button
+              onClick={() => setView("list")}
+              aria-pressed={view === "list"}
+              className={`px-4 py-1.5 ${view === "list" ? "bg-stone-900 text-white" : "bg-white text-stone-600"}`}
+            >
+              List
+            </button>
+            <button
+              onClick={() => setView("map")}
+              aria-pressed={view === "map"}
+              className={`px-4 py-1.5 ${view === "map" ? "bg-stone-900 text-white" : "bg-white text-stone-600"}`}
+            >
+              Map
+            </button>
+          </div>
         </div>
       </div>
 
@@ -61,7 +86,7 @@ export function SearchResults({
         </div>
       ) : (
         <ul className="mt-4 space-y-3">
-          {results.map((r) => (
+          {visible.map((r) => (
             <li key={r.id}>
               <Link
                 href={`/stores/${r.id}?product=${productSlug}`}

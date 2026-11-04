@@ -99,14 +99,14 @@ export default async function SearchPage({
             </span>
             {/* Product toggle */}
             <span className="inline-flex rounded-lg border border-stone-300 overflow-hidden">
-              <Link href={href({ product: "zyn" })} className={`px-3 py-1 ${product === "zyn" ? "bg-stone-900 text-white" : "bg-white text-stone-600"}`}>ZYN</Link>
-              <Link href={href({ product: "zyn-ultra" })} className={`px-3 py-1 ${product === "zyn-ultra" ? "bg-stone-900 text-white" : "bg-white text-stone-600"}`}>ZYN Ultra</Link>
+              <Link href={href({ product: "zyn" })} aria-current={product === "zyn" ? "true" : undefined} className={`px-3 py-1 ${product === "zyn" ? "bg-stone-900 text-white" : "bg-white text-stone-600"}`}>ZYN</Link>
+              <Link href={href({ product: "zyn-ultra" })} aria-current={product === "zyn-ultra" ? "true" : undefined} className={`px-3 py-1 ${product === "zyn-ultra" ? "bg-stone-900 text-white" : "bg-white text-stone-600"}`}>ZYN Ultra</Link>
             </span>
             {/* Quantity */}
             <label className="text-stone-500 ml-1">Buying</label>
             <span className="inline-flex rounded-lg border border-stone-300 overflow-hidden">
               {QTYS.map((n) => (
-                <Link key={n} href={href({ qty: n })} className={`px-2.5 py-1 ${qty === n ? "bg-teal-600 text-white" : "bg-white text-stone-600"}`}>
+                <Link key={n} href={href({ qty: n })} aria-current={qty === n ? "true" : undefined} className={`px-2.5 py-1 ${qty === n ? "bg-teal-600 text-white" : "bg-white text-stone-600"}`}>
                   {n}
                 </Link>
               ))}
@@ -116,7 +116,7 @@ export default async function SearchPage({
             <label className="text-stone-500 ml-1">within</label>
             <span className="inline-flex rounded-lg border border-stone-300 overflow-hidden">
               {RADII.map((r) => (
-                <Link key={r} href={href({ radius: r })} className={`px-2.5 py-1 ${radius === r ? "bg-stone-900 text-white" : "bg-white text-stone-600"}`}>
+                <Link key={r} href={href({ radius: r })} aria-current={radius === r ? "true" : undefined} className={`px-2.5 py-1 ${radius === r ? "bg-stone-900 text-white" : "bg-white text-stone-600"}`}>
                   {r}mi
                 </Link>
               ))}
@@ -125,7 +125,7 @@ export default async function SearchPage({
             <label className="text-stone-500 ml-1">sort</label>
             <span className="inline-flex rounded-lg border border-stone-300 overflow-hidden">
               {(["distance", "price", "recency"] as const).map((s) => (
-                <Link key={s} href={href({ sort: s })} className={`px-2.5 py-1 capitalize ${sort === s ? "bg-stone-900 text-white" : "bg-white text-stone-600"}`}>
+                <Link key={s} href={href({ sort: s })} aria-current={sort === s ? "true" : undefined} className={`px-2.5 py-1 capitalize ${sort === s ? "bg-stone-900 text-white" : "bg-white text-stone-600"}`}>
                   {s}
                 </Link>
               ))}
