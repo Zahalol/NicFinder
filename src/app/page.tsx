@@ -13,13 +13,48 @@ const POPULAR = [
   { q: "60647", label: "Logan Square 60647" },
 ];
 
+function timeAgo(d: Date): string {
+  const days = Math.floor((Date.now() - d.getTime()) / 86400_000);
+  if (days === 0) return "today";
+  if (days === 1) return "yesterday";
+  if (days < 30) return `${days}d ago`;
+  return `${Math.round(days / 30)}mo ago`;
+}
+
 export default async function HomePage() {
-  const [storeCount, pricedCount] = await Promise.all([
+  const [storeCount, pricedCount, recentObs] = await Promise.all([
     prisma.store.count({ where: { status: "ACTIVE" } }),
     prisma.store.count({
       where: { status: "ACTIVE", observations: { some: { status: "ACTIVE" } } },
     }),
+    // Recent price activity: newest ACTIVE observations on active stores.
+    prisma.priceObservation.findMany({
+      where: { status: "ACTIVE", store: { status: "ACTIVE" } },
+      orderBy: { observedAt: "desc" },
+      take: 5,
+      include: {
+        store: { select: { id: true, name: true, city: true, zip: true, isDemo: true } },
+        productLine: { select: { name: true } },
+      },
+    }),
   ]);
+
+  // Change vs the store's previous recorded price for the same line (any
+  // status — superseded rows are exactly the prior history).
+  const recent = await Promise.all(
+    recentObs.map(async (o) => {
+      const prev = await prisma.priceObservation.findFirst({
+        where: {
+          storeId: o.storeId,
+          productLineId: o.productLineId,
+          observedAt: { lt: o.observedAt },
+        },
+        orderBy: { observedAt: "desc" },
+        select: { priceCents: true },
+      });
+      return { o, deltaCents: prev ? o.priceCents - prev.priceCents : null };
+    })
+  );
 
   return (
     <div className="py-14 sm:py-20">
@@ -42,7 +77,61 @@ export default async function HomePage() {
         </p>
       </div>
 
-      <div className="mt-16 grid sm:grid-cols-3 gap-4 max-w-3xl mx-auto">
+      {recent.length > 0 && (
+        <div className="mt-14 max-w-xl mx-auto">
+          <h2 className="text-sm font-medium text-stone-700 text-center">
+            Latest price reports
+          </h2>
+          <ul className="mt-3 divide-y divide-stone-100 rounded-xl border border-stone-200 bg-white">
+            {recent.map(({ o, deltaCents }) => (
+              <li key={o.id}>
+                <Link
+                  href={`/stores/${o.store.id}`}
+                  className="flex items-center justify-between gap-3 p-3 text-sm hover:bg-stone-50 transition"
+                >
+                  <span className="min-w-0">
+                    <span className="font-medium text-stone-800 truncate">
+                      {o.store.name}
+                    </span>{" "}
+                    {o.store.isDemo && (
+                      <span className="rounded bg-amber-100 text-amber-800 text-[9px] font-medium px-1 py-0.5 uppercase align-middle">
+                        demo
+                      </span>
+                    )}
+                    <span className="block text-xs text-stone-400">
+                      {o.productLine.name}
+                      {o.store.zip ? ` · ${o.store.zip}` : ""} ·{" "}
+                      {timeAgo(o.observedAt)}
+                    </span>
+                  </span>
+                  <span className="shrink-0 text-right">
+                    <span className="font-semibold text-stone-900">
+                      {(o.priceCents / 100).toLocaleString("en-US", {
+                        style: "currency",
+                        currency: "USD",
+                      })}
+                    </span>
+                    {deltaCents !== null && deltaCents !== 0 && (
+                      <span
+                        className={`block text-xs ${deltaCents < 0 ? "text-emerald-700" : "text-amber-700"}`}
+                      >
+                        {deltaCents < 0 ? "▾" : "▴"}{" "}
+                        {(Math.abs(deltaCents) / 100).toLocaleString("en-US", {
+                          style: "currency",
+                          currency: "USD",
+                        })}{" "}
+                        vs prior
+                      </span>
+                    )}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <div className="mt-14 grid sm:grid-cols-3 gap-4 max-w-3xl mx-auto">
         {[
           {
             title: "Honest prices",

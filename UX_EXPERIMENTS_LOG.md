@@ -336,3 +336,23 @@ structured data target featured snippets without any fabricated data.
 mobile screenshot shows stats cards + deal callout; typecheck/lint green.
 
 **Recommendation: Keep.**
+
+---
+
+## Cycle 11 — "Latest price reports" feed on the homepage
+
+**Problem.** The homepage was static marketing; nothing signaled that the
+data is alive or gave a returning visitor something new to glance at.
+
+**What changed.** A compact server-rendered feed of the 5 newest active
+observations (store, line, ZIP, age, price) with a change-vs-prior-report
+arrow (green down / amber up) computed against the store+line's previous
+recorded observation. Demo rows carry the demo chip as everywhere else.
+
+**Why selected.** Return-visit hook + "the data moves" trust signal, cheap
+(one query + N small lookups at N=5), zero new client JS.
+
+**Testing.** Screenshot shows feed with ▾ $0.30 deltas on seeded history
+stores; typecheck/lint green.
+
+**Recommendation: Keep.**
