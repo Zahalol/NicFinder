@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import type { StoreResult } from "@/lib/search";
-import { PriceBadge, FreshnessBadge, DealBadge, DemoBadge } from "./badges";
+import { PriceBadge, FreshnessBadge, DealBadge, DemoBadge, ConfidenceBadge } from "./badges";
 import { CompareDialog } from "./CompareDialog";
 
 const MAX_COMPARE = 3;
@@ -50,16 +50,15 @@ function StoreCard({
           </p>
           {r.latest && (
             <div className="mt-1.5 flex items-center gap-2 text-xs text-stone-500 flex-wrap">
+              <ConfidenceBadge
+                input={{
+                  sourceType: r.latest.sourceType,
+                  ageDays: r.latest.ageDays,
+                  confirmCount: r.latest.confirmCount,
+                  disputeCount: r.latest.disputeCount,
+                }}
+              />
               <FreshnessBadge latest={r.latest} />
-              <span>
-                {r.latest.sourceType === "COMMUNITY"
-                  ? "community-reported"
-                  : r.latest.sourceType === "CALL"
-                    ? "store call"
-                    : r.latest.sourceType === "IMPORT"
-                      ? "data import"
-                      : "staff-entered"}
-              </span>
               {r.latest.confirmCount > 0 && (
                 <span className="text-teal-700">
                   ✓ {r.latest.confirmCount} confirm{r.latest.confirmCount > 1 ? "s" : ""}

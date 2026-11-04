@@ -173,3 +173,63 @@ caching is a bigger, riskier bite — logged as a future idea).
 visually; map screenshot shows chips vs dots; typecheck/lint/62 tests green.
 
 **Recommendation: Keep.**
+
+---
+
+## Interlude — restored /admin/coverage + e2e suite back to green
+
+Found while running the full smoke suite: a bare `coverage/` in `.gitignore`
+(meant for test-coverage output) had silently kept the prior session's
+`src/app/admin/coverage/` page out of git — admin nav linked to a 404 and the
+e2e check failed. Anchored the ignore to `/coverage/`, rebuilt the page
+(read-only demand ranking: requests/ZIP, member split, magnitude bars), and
+updated two e2e checks that asserted the pre-Cycle-1 flat list ("No price
+yet" is now revealed by expanding the directory section; the check verifies
+both the summary line and the expansion). All 37 smoke checks green.
+
+---
+
+## Cycle 6 — Price-confidence indicator
+
+**Problem.** Trust signals (source, age, confirmations, disputes) were
+scattered as separate fragments the visitor had to synthesize; "how much
+should I believe this $5.99?" had no glanceable answer. Reliability
+indicators were a stated product priority.
+
+**What changed.**
+- `src/lib/confidence.ts`: transparent `computeConfidence()` — source base
+  (staff/call 70, import 60, community 55), gentle-then-steep age decay
+  (0.8/day ≤7d, then 1.5/day, capped −45), +12 per confirmation (max 3),
+  −18 per dispute, clamped 0–100 → tiers: high ≥65, medium ≥35, low.
+  Returns human-readable `reasons` with every score.
+- `ConfidenceBadge` (badges.tsx): emerald/stone/amber pill with dot;
+  tooltip lists the reasons. Added to search result cards (replacing the
+  bare source word, which moved into the reasons) and store-page price
+  cards; store page also prints the reasons inline (phones have no hover).
+- `tests/confidence.test.ts`: tier behavior, decay monotonicity,
+  community+confirm flywheel (lone report = medium, 1 confirmation = high),
+  confirm cap, dispute severity, clamping, unknown-source fallback.
+
+**Why selected.** Top-ranked in the round-2 idea list (10 ideas, ranked by
+impact/effort below); display-only synthesis of existing evidence — no new
+data collected, honesty preserved by always exposing the "why".
+
+**Testing.** 68 vitest green; screenshots verify badges on search cards and
+store pages.
+
+**Recommendation: Keep.**
+
+### Round-2 idea backlog (generated after Cycle 5, ranked)
+1. **Price-confidence indicator** — built (Cycle 6).
+2. Home/empty-state quick wins: recent searches (localStorage), popular ZIP
+   chips, clearer geolocate CTA (Cycle 7).
+3. Multi-can cost table (1/3/5/10) on store pages (Cycle 8).
+4. Watchlist dashboard: saved stores w/ current prices + cheapest highlight
+   (Cycle 9).
+5. ZIP SEO page enrichment: stats, best deal, internal links (Cycle 10).
+6. One-tap "price still right?" confirm from search cards (needs sign-in UX
+   care; later).
+7. "What changed nearby" price-drops feed (return-visit hook).
+8. Share a store/price via navigator.share (mobile).
+9. Dark mode (prefers-color-scheme) across public pages.
+10. Service-worker offline shell for the PWA (riskier; last).

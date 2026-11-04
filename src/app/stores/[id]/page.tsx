@@ -4,7 +4,8 @@ import { getCurrentUser } from "@/lib/auth";
 import { getSettings } from "@/lib/settings";
 import { selectLatestPrice } from "@/lib/prices";
 import { formatCents } from "@/lib/money";
-import { DemoBadge } from "@/components/badges";
+import { DemoBadge, ConfidenceBadge } from "@/components/badges";
+import { computeConfidence } from "@/lib/confidence";
 import { PriceSparkline, trendSummary, type SparkPoint } from "@/components/PriceSparkline";
 import { BackLink } from "@/components/BackLink";
 import { SaveStoreButton } from "@/components/SaveStoreButton";
@@ -132,7 +133,21 @@ export default async function StorePage({
       <div className="mt-6 grid sm:grid-cols-2 gap-4">
         {latestByLine.map(({ line, latest, history }) => (
           <div key={line.id} className="rounded-xl border border-stone-200 bg-white p-5">
-            <h2 className="text-sm font-medium text-stone-500">{line.name}</h2>
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-sm font-medium text-stone-500">{line.name}</h2>
+              {latest && (
+                <span className="text-xs">
+                  <ConfidenceBadge
+                    input={{
+                      sourceType: latest.observation.sourceType,
+                      ageDays: latest.ageDays,
+                      confirmCount: latest.confirmCount,
+                      disputeCount: latest.disputeCount,
+                    }}
+                  />
+                </span>
+              )}
+            </div>
             {latest ? (
               <>
                 <div className="mt-1 text-3xl font-semibold text-stone-900">
@@ -164,6 +179,15 @@ export default async function StorePage({
                   {latest.observation.availability === "OUT_OF_STOCK" && (
                     <span className="text-red-600"> · reported out of stock</span>
                   )}
+                </p>
+                <p className="mt-1 text-[11px] text-stone-400">
+                  Confidence:{" "}
+                  {computeConfidence({
+                    sourceType: latest.observation.sourceType,
+                    ageDays: latest.ageDays,
+                    confirmCount: latest.confirmCount,
+                    disputeCount: latest.disputeCount,
+                  }).reasons.join(" · ")}
                 </p>
                 {history.length >= 2 && (
                   <div className="mt-3 border-t border-stone-100 pt-2">
