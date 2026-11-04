@@ -23,6 +23,7 @@ export async function generateMetadata({
   if (!info) return { title: "ZYN prices — NicFinder" };
   return {
     title: `ZYN prices in ${info.city}, ${info.state} ${zip} — NicFinder`,
+    alternates: { canonical: `/zyn-prices/${zip}` },
     description: `Compare reported ZYN nicotine pouch prices at gas stations and convenience stores near ${info.city}, ${info.state} ${zip}. Community-verified, updated continuously. Adults 21+.`,
   };
 }

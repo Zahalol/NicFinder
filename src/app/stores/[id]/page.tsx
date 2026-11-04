@@ -19,6 +19,25 @@ import { Comments } from "./Comments";
 
 export const dynamic = "force-dynamic";
 
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const store = await prisma.store.findUnique({
+    where: { id },
+    select: { name: true, city: true, state: true, zip: true, status: true },
+  });
+  if (!store || store.status !== "ACTIVE") return { title: "Store — NicFinder" };
+  const place = [store.city, store.state].filter(Boolean).join(", ");
+  return {
+    title: `${store.name} — ZYN prices${place ? ` in ${place}` : ""}`,
+    description: `Reported ZYN nicotine pouch prices, price history, and multi-can deals at ${store.name}${place ? ` in ${place}` : ""}${store.zip ? ` ${store.zip}` : ""}. Community-verified. Adults 21+.`,
+    alternates: { canonical: `/stores/${id}` },
+  };
+}
+
 /** Compact what-it-costs strip: totals at common quantities, deal-aware. */
 function QtyCostTable({
   regularCents,
