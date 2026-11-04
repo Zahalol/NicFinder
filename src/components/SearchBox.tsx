@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export function SearchBox({
   initialQuery = "",
@@ -13,6 +13,10 @@ export function SearchBox({
   const router = useRouter();
   const [q, setQ] = useState(initialQuery);
   const [locating, setLocating] = useState(false);
+
+  // Follow URL-driven changes (back/forward, "use my location") — useState
+  // ignores later prop values, leaving a query that doesn't match results.
+  useEffect(() => setQ(initialQuery), [initialQuery]);
 
   function submit(e?: React.FormEvent) {
     e?.preventDefault();

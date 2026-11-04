@@ -14,7 +14,14 @@ export function UploadForm() {
     const data = new FormData(form);
     setBusy(true);
     setErr(null);
-    const res = await fetch("/api/admin/imports", { method: "POST", body: data });
+    let res: Response;
+    try {
+      res = await fetch("/api/admin/imports", { method: "POST", body: data });
+    } catch {
+      setBusy(false);
+      setErr("Network error — try again.");
+      return;
+    }
     const json = await res.json().catch(() => ({}));
     setBusy(false);
     if (!res.ok) {

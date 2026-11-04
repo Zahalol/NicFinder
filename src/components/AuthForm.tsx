@@ -27,13 +27,20 @@ export function AuthForm({
     e.preventDefault();
     setBusy(true);
     setErr(null);
-    const res = await fetch(`/api/auth/${mode === "login" ? "login" : "signup"}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(
-        mode === "login" ? { email, password } : { email, password, displayName }
-      ),
-    });
+    let res: Response;
+    try {
+      res = await fetch(`/api/auth/${mode === "login" ? "login" : "signup"}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(
+          mode === "login" ? { email, password } : { email, password, displayName }
+        ),
+      });
+    } catch {
+      setBusy(false);
+      setErr("Network error — check your connection and try again.");
+      return;
+    }
     const data = await res.json().catch(() => ({}));
     setBusy(false);
     if (!res.ok) {

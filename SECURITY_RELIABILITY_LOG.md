@@ -72,6 +72,54 @@ defense-in-depth, availability), **Low** (hygiene).
 
 ---
 
+## 2026-11-05 — Wave 12: client-component reliability (third audit, 15 findings)
+
+A third independent audit covered only the client components (the two prior
+audits were server-side). It confirmed no XSS sinks and no client/server
+contract mismatches, and found a systematic error-handling gap:
+
+### H-10 (High) The age gate could permanently lock a visitor out
+- The confirm button did `setBusy(true); await fetch(); router.refresh()`
+  with no catch, no `res.ok` check, and nothing re-enabling the button. One
+  failed request (flaky mobile network; or the Secure cookie not sticking)
+  left the ONLY interactive control on an otherwise-inert page disabled
+  forever. **Fix**: try/catch/finally, res.ok check, visible error, button
+  always re-enabled.
+
+### M-25 (Medium) Stuck-busy / silent-failure pattern across components
+- Every `setBusy(true); await fetch(); setBusy(false)` without try/catch
+  left controls disabled after a single network rejection (sign-in, post
+  comment, moderation row, settings save, import commit/reverse/remap/
+  upload, watchlist star, sign out). Several components also swallowed
+  server errors entirely (DuplicateList ignored every response — a 409'd
+  merge looked like a silent no-op; SaveStoreButton dropped "watchlist
+  limit" and expired-session errors; comment report/delete gave no
+  feedback).
+- **Fix**: shared `apiFetch` helper (never throws; returns {ok,status,
+  error,data}, parsing non-JSON bodies safely); applied everywhere, with
+  errors surfaced, busy always cleared, double-submit guards added to
+  ManualEntry (two clicks = two ADMIN observations before), and 409s on
+  stale moderation/import/confirm UI triggering router.refresh() so dead
+  rows disappear instead of inviting more clicks.
+
+### M-26 (Medium) Map viewport stuck on the old area after a new search
+- `MapContainer` reads center/zoom only on mount and App Router keeps the
+  component mounted across search-param changes: searching a new ZIP from
+  map view moved the markers off-screen while the viewport stayed put.
+  **Fix**: key the map on the center coordinates.
+
+### L-9 (Low) UI state nits
+- SearchBox now follows URL-driven query changes (back/forward, "use my
+  location"); ContributePanel resets the quantity after a successful
+  report; unknown OAuth codes handled earlier.
+
+### A11y
+- Accessible names added to: all settings inputs (label htmlFor/id), manual
+  entry selects/inputs, mapping-editor selects, and the public comment
+  input.
+
+---
+
 ## 2026-11-04 — Wave 11: self-review of this session's own changes
 
 A high-effort code review of the whole branch diff (2e3de05..HEAD) surfaced

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { apiFetch } from "@/lib/client/api";
 
 export function ManualEntry({
   stores,
@@ -14,17 +15,16 @@ export function ManualEntry({
   const [open, setOpen] = useState<"none" | "price" | "store">("none");
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
   async function post(url: string, body: Record<string, unknown>) {
+    if (busy) return false; // double-submit guard (two identical POSTs = two observations/stores)
+    setBusy(true);
     setErr(null);
     setMsg(null);
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    const json = await res.json().catch(() => ({}));
-    if (!res.ok) { setErr(json.error ?? "Failed."); return false; }
+    const res = await apiFetch(url, { body });
+    setBusy(false);
+    if (!res.ok) { setErr(res.error); return false; }
     setMsg("Saved.");
     router.refresh();
     return true;
@@ -65,26 +65,26 @@ export function ManualEntry({
             if (ok) (e.target as HTMLFormElement).reset();
           }}
         >
-          <select name="storeId" required className="rounded-lg border border-stone-300 px-2 py-1.5 max-w-60 bg-white">
+          <select name="storeId" required aria-label="Store" className="rounded-lg border border-stone-300 px-2 py-1.5 max-w-60 bg-white">
             <option value="">Store…</option>
             {stores.map((s) => (
               <option key={s.id} value={s.id}>{s.name} — {s.address}</option>
             ))}
           </select>
-          <select name="productLineId" required className="rounded-lg border border-stone-300 px-2 py-1.5 bg-white">
+          <select name="productLineId" required aria-label="Product line" className="rounded-lg border border-stone-300 px-2 py-1.5 bg-white">
             {productLines.map((l) => (
               <option key={l.id} value={l.id}>{l.name}</option>
             ))}
           </select>
-          <input name="price" required placeholder="6.49" inputMode="decimal" className="w-20 rounded-lg border border-stone-300 px-2 py-1.5" />
-          <select name="availability" className="rounded-lg border border-stone-300 px-2 py-1.5 bg-white">
+          <input name="price" required placeholder="6.49" aria-label="Price in dollars" inputMode="decimal" className="w-20 rounded-lg border border-stone-300 px-2 py-1.5" />
+          <select name="availability" aria-label="Availability" className="rounded-lg border border-stone-300 px-2 py-1.5 bg-white">
             <option value="IN_STOCK">in stock</option>
             <option value="OUT_OF_STOCK">out of stock</option>
             <option value="NOT_CARRIED">not carried</option>
             <option value="UNKNOWN">unknown</option>
           </select>
-          <input name="notes" placeholder="note (optional)" className="rounded-lg border border-stone-300 px-2 py-1.5 w-48" />
-          <button className="rounded-lg bg-stone-900 text-white px-3 py-1.5">Save</button>
+          <input name="notes" placeholder="note (optional)" aria-label="Note" className="rounded-lg border border-stone-300 px-2 py-1.5 w-48" />
+          <button disabled={busy} className="rounded-lg bg-stone-900 text-white px-3 py-1.5 disabled:opacity-50">Save</button>
         </form>
       )}
 
@@ -107,15 +107,15 @@ export function ManualEntry({
             if (ok) (e.target as HTMLFormElement).reset();
           }}
         >
-          <input name="name" required placeholder="Name" className="rounded-lg border border-stone-300 px-2 py-1.5" />
-          <input name="address" placeholder="Street address" className="rounded-lg border border-stone-300 px-2 py-1.5 w-56" />
-          <input name="city" placeholder="City" className="rounded-lg border border-stone-300 px-2 py-1.5 w-28" />
-          <input name="state" placeholder="IL" maxLength={2} className="rounded-lg border border-stone-300 px-2 py-1.5 w-12" />
-          <input name="zip" placeholder="ZIP" className="rounded-lg border border-stone-300 px-2 py-1.5 w-20" />
-          <input name="latitude" placeholder="lat" className="rounded-lg border border-stone-300 px-2 py-1.5 w-24" />
-          <input name="longitude" placeholder="lng" className="rounded-lg border border-stone-300 px-2 py-1.5 w-24" />
-          <input name="phone" placeholder="phone" className="rounded-lg border border-stone-300 px-2 py-1.5 w-32" />
-          <button className="rounded-lg bg-stone-900 text-white px-3 py-1.5">Create</button>
+          <input name="name" aria-label="Store name" required placeholder="Name" className="rounded-lg border border-stone-300 px-2 py-1.5" />
+          <input name="address" aria-label="Street address" placeholder="Street address" className="rounded-lg border border-stone-300 px-2 py-1.5 w-56" />
+          <input name="city" aria-label="City" placeholder="City" className="rounded-lg border border-stone-300 px-2 py-1.5 w-28" />
+          <input name="state" aria-label="State" placeholder="IL" maxLength={2} className="rounded-lg border border-stone-300 px-2 py-1.5 w-12" />
+          <input name="zip" aria-label="ZIP code" placeholder="ZIP" className="rounded-lg border border-stone-300 px-2 py-1.5 w-20" />
+          <input name="latitude" aria-label="Latitude" placeholder="lat" className="rounded-lg border border-stone-300 px-2 py-1.5 w-24" />
+          <input name="longitude" aria-label="Longitude" placeholder="lng" className="rounded-lg border border-stone-300 px-2 py-1.5 w-24" />
+          <input name="phone" aria-label="Phone" placeholder="phone" className="rounded-lg border border-stone-300 px-2 py-1.5 w-32" />
+          <button disabled={busy} className="rounded-lg bg-stone-900 text-white px-3 py-1.5 disabled:opacity-50">Create</button>
         </form>
       )}
     </div>

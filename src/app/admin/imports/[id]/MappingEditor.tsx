@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { apiFetch } from "@/lib/client/api";
 import { CANONICAL_FIELDS } from "@/lib/import/contract";
 
 export function MappingEditor({
@@ -22,14 +23,15 @@ export function MappingEditor({
   async function save() {
     setBusy(true);
     setErr(null);
-    const res = await fetch(`/api/admin/imports/${batchId}/remap`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mapping: local }),
+    const res = await apiFetch(`/api/admin/imports/${batchId}/remap`, {
+      body: { mapping: local },
     });
-    const json = await res.json().catch(() => ({}));
     setBusy(false);
-    if (!res.ok) { setErr(json.error ?? "Remap failed."); return; }
+    if (!res.ok) {
+      setErr(res.error);
+      if (res.status === 409) router.refresh(); // batch no longer in preview
+      return;
+    }
     setOpen(false);
     router.refresh();
   }
@@ -62,6 +64,7 @@ export function MappingEditor({
             <div key={header} className="flex items-center gap-2 text-sm">
               <span className="w-48 truncate font-mono text-stone-600">{header}</span>
               <select
+                aria-label={`Map column ${header}`}
                 value={field ?? ""}
                 onChange={(e) =>
                   setLocal({ ...local, [header]: e.target.value || null })

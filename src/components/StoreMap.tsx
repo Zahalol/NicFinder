@@ -27,6 +27,11 @@ export default function StoreMap({
 }) {
   return (
     <MapContainer
+      // MapContainer reads center/zoom only on mount, and App Router keeps
+      // this component mounted across search-param changes — without the key
+      // a new search moved the markers but left the viewport on the old
+      // area. Keying on the center remounts the map at the new location.
+      key={`${center.lat.toFixed(4)},${center.lng.toFixed(4)}`}
       center={[center.lat, center.lng]}
       zoom={13}
       scrollWheelZoom

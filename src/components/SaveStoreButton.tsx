@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { apiFetch } from "@/lib/client/api";
 
 export function SaveStoreButton({
   storeId,
@@ -15,6 +16,7 @@ export function SaveStoreButton({
   const router = useRouter();
   const [saved, setSaved] = useState(initialSaved);
   const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
 
   async function toggle() {
     if (!signedIn) {
@@ -22,11 +24,18 @@ export function SaveStoreButton({
       return;
     }
     setBusy(true);
-    const res = await fetch(`/api/stores/${storeId}/save`, {
+    setErr(null);
+    const res = await apiFetch(`/api/stores/${storeId}/save`, {
       method: saved ? "DELETE" : "POST",
     });
     setBusy(false);
-    if (res.ok) setSaved(!saved);
+    if (res.ok) {
+      setSaved(!saved);
+    } else if (res.status === 401) {
+      router.push("/login"); // session expired since the page rendered
+    } else {
+      setErr(res.error);
+    }
   }
 
   return (
@@ -42,6 +51,11 @@ export function SaveStoreButton({
       } disabled:opacity-50`}
     >
       {saved ? "★ Saved" : "☆ Save"}
+      {err && (
+        <span role="alert" className="ml-2 text-xs font-normal text-red-600">
+          {err}
+        </span>
+      )}
     </button>
   );
 }
