@@ -19,6 +19,7 @@ Requires Node 20+ (tested on 22). No paid services or API keys needed.
 ```bash
 npm install
 cp .env.example .env          # defaults work for local dev; set SESSION_SECRET
+npx prisma generate           # generate the Prisma client
 npx prisma migrate deploy     # creates prisma/dev.db (SQLite)
 npm run db:seed               # product lines, demo users, Chicago store directory
 npm run dev                   # http://localhost:3000
