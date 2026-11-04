@@ -14,6 +14,8 @@ All access dates are 2026-11-04 unless stated.
 |---|---|---|---|---|
 | D1 | Cost per successful price ≈ **$0.90** vs ≈ **$0.20** | BUSINESS_RESEARCH §4.1 (A1 = $0.35/dial at 3.5 min × $0.10/min; 39% net success) vs ELEVENLABS_CALLING_RESEARCH §6.2 ($0.118/attempt; 60% success; 75 s calls) | **RECONCILED in Phase 4** (`04_ELEVENLABS_TWILIO_ACCURACY_AND_UNIT_ECONOMICS.md` §7) | The two figures differ in three ways at once. First, the $0.90 model assumes every dial costs 3.5 minutes, but unanswered calls cost almost nothing and a price question takes about a minute. Second, the success rates differ (39% vs 60%). Third, neither figure is "per *accurate* price": both count model-generated numbers that were never audited. Phase 4 rebuilds both on one set of assumptions. |
 | D2 | "Google Ads … prohibit nicotine" used to imply the site can't run Google display ads | BUSINESS_RESEARCH §6.1, §7 | **RECONCILED in Phase 3** (`03_MONETIZATION_AND_EXIT_OPTIONS.md` §2) | Google Ads is the advertiser side: it decides whether *NicFinder may buy ads*. Google Publisher Policies/AdSense is the publisher side: it decides whether *NicFinder pages may show ads*. These are separate rule sets. Phase 3 verifies each one separately. |
+| D3 | product_line `zyn_ultra` (calling doc §5.4) vs. `zyn-ultra` slug (IMPORT_CONTRACT) | docs | **CONTRADICTION (minor)** | The contract wins. Any future producer should emit `zyn-ultra` and `can_size`. |
+| D4 | Phase 3 data upkeep $1.00/store-month vs. Phase 5 calls-based refresh ≈$0.20–0.40 | research | **RECONCILED** | All-in figure including audits ≈$0.40–0.80. Phase 3's conclusion is unchanged. |
 
 ## B. Legal / regulatory claims (Phase 1 audit)
 
@@ -29,7 +31,7 @@ All access dates are 2026-11-04 unless stated.
 | L8 | Illinois eavesdropping covers *transcribing* | **PARTLY VERIFIED** | The 2014 rewrite (P.A. 98-1142) covers transcribing private *electronic communications* and recording private *conversations*. In either case the conduct must be **surreptitious** ("by stealth or deception … secrecy or concealment", §14-1). Disclosing at the start of the call goes directly at that element. |
 | L9 | Illinois Automatic Telephone Dialers Act (815 ILCS 305) may apply | **PARTLY VERIFIED** | §15 (as reproduced in bill texts) bars autodialer calls between 9 p.m. and 9 a.m., requires the caller to identify itself and ask for consent at the start of a prerecorded message, and requires disconnecting within 30 s. Penalties and any private right of action were **not confirmed** this session. Whether an interactive AI agent is a "recorded message" is **OPEN**. |
 | L10 | Illinois Tobacco Products Tax raised to 45% of wholesale, nicotine pouches included, eff. July 1, 2025 | **VERIFIED (primary)** | IDOR Informational Bulletin FY 2025-31: https://tax.illinois.gov/research/publications/bulletins/fy-2025-31.html. Retail license fee rose from $75 to $150 per location. |
-| L11 | Prior rate "36%" vs "15%" | **RECONCILED (inference)** | The enacted bill text and IDOR say tobacco products were taxed at 36% before July 2025. The "15% → 45%" figure (CBS) most plausibly describes *vape/e-cigarette* products, which were taxed at 15% of wholesale. Pouches were previously outside the tax base (Axios). |
+| L11 | Prior rate "36%" vs "15%" | **RECONCILED (inference). Note:** the Tax Foundation (Sept 2026) also says pouches went "15% → 45%". | The enacted bill text and IDOR say tobacco products were taxed at 36% before July 2025. The "15% → 45%" figure (CBS) most plausibly describes *vape/e-cigarette* products, which were taxed at 15% of wholesale. Pouches were previously outside the tax base (Axios). |
 | L12 | Cook County smokeless tax $0.60/oz; applicability to leaf-free pouches unresolved | **UNVERIFIED (still OPEN)** | No 2025–26 county source found. Only the 2013 notice. Ask Cook County Dept. of Revenue or counsel. This does not affect site legality. It only affects any tax explanation shown on the site. |
 | L13 | No Chicago city tax on pouches after *Iwan Ries* (2019) | **PARTLY VERIFIED** | The case is verified (Justia). No newer city ordinance was found. Low materiality. |
 | L14 | "Publishing truthful price info is protected speech" | **REASONABLE, NOT A GUARANTEE** | Truth is a defense to defamation and trade libel. Section 230 protects *user* reports, not NicFinder's own called or imported prices. See Phase 1 §3. |
@@ -50,8 +52,6 @@ All access dates are 2026-11-04 unless stated.
 | M9 | Answer rate 65%, price-given 60% (business doc) vs success 50–70% (calling doc) | **Both are unsupported assumptions.** The only anchors found: 411 Locals (≈38% of small-business calls answered by a person) and **PHR 2009 (telephone cigarette prices not valid vs. in-store)**. |
 | M10 | Nicokick/Northerner/Prilla affiliate programs "exist" | **PARTLY VERIFIED.** Nicokick (5%, 1-day cookie, CJ) and Northerner (5–10%) appear only on aggregators. **Both are owned by Haypp Group.** No Prilla affiliate program was found. |
 
-| D3 | product_line `zyn_ultra` (calling doc §5.4) vs. `zyn-ultra` slug (IMPORT_CONTRACT) | docs | **CONTRADICTION (minor)** | The contract wins. Any future producer should emit `zyn-ultra` and `can_size`. |
-| D4 | Phase 3 data upkeep $1.00/store-month vs. Phase 5 calls-based refresh ≈$0.20–0.40 | research | **RECONCILED** | All-in figure including audits ≈$0.40–0.80. Phase 3's conclusion is unchanged. |
 
 ## D. Open questions log (carry forward)
 
@@ -67,3 +67,4 @@ All access dates are 2026-11-04 unless stated.
 - 2026-11-04: Phase 3. D2 resolved (Google Ads = advertiser-side prohibition; Publisher Policies = restricted serving). M10 updated.
 - 2026-11-04: Phase 4. D1 reconciled ($0.90 overstated per-dial cost ~8×; both figures omitted accuracy, QA, and fixed floors). M7–M9 updated.
 - 2026-11-04: Phase 5. M6 verified from City open data; D3 and D4 added.
+- 2026-11-04: Phase 6. NY 75% pouch tax verified (Notice N-26-2). Tax Foundation narrative/table conflict on NY recorded.

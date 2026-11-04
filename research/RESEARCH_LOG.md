@@ -14,3 +14,5 @@
 - Next: Phase 5 scaling and Chicago launch plan.
 - Phase 5 complete: queried the Chicago Data Portal (free public API, read-only) for the active tobacco license universe. Found the dataset lacks phone numbers, and Twilio has a 3-concurrent-call cap for Individual profiles.
 - Next: Phase 6 city expansion ranking.
+- Phase 6 complete: Tax Foundation Sept 2026 pouch-tax table; NY 75% (eff. Sept 1, 2026) verified; 20-market weighted model with 5 sensitivity weightings.
+- Next: Phase 7 backlog and memos, then the founder brief, then stop (per founder instruction).
