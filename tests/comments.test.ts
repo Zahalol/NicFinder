@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { prisma } from "@/lib/db";
 import { resetDb } from "./helpers";
-import { reportComment } from "@/lib/comments";
+import { reportComment, setCommentVisibility } from "@/lib/comments";
 
 const AUTO_HIDE = 3;
 
@@ -60,6 +60,26 @@ describe("comment report dedupe / auto-hide (anti-abuse)", () => {
     const r = await reportComment(comment.id, author.id, AUTO_HIDE);
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.status).toBe(400);
+  });
+
+  it("restore clears the report ledger — one new report can't instantly re-hide", async () => {
+    const { comment, reporters } = await fixtures();
+    for (const r of reporters) await reportComment(comment.id, r.id, AUTO_HIDE);
+    let c = await prisma.comment.findUnique({ where: { id: comment.id } });
+    expect(c!.status).toBe("HIDDEN");
+
+    await setCommentVisibility(comment.id, true); // moderator restores
+    c = await prisma.comment.findUnique({ where: { id: comment.id } });
+    expect(c!.status).toBe("VISIBLE");
+    expect(c!.reportCount).toBe(0);
+    expect(await prisma.commentReport.count({ where: { commentId: comment.id } })).toBe(0);
+
+    // Earlier reporters may report again, but it takes a full N again.
+    const r = await reportComment(comment.id, reporters[0].id, AUTO_HIDE);
+    expect(r.ok && !r.hidden).toBe(true);
+    c = await prisma.comment.findUnique({ where: { id: comment.id } });
+    expect(c!.status).toBe("VISIBLE");
+    expect(c!.reportCount).toBe(1);
   });
 
   it("hidden or missing comments return 404", async () => {

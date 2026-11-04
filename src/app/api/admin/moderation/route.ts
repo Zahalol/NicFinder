@@ -3,6 +3,7 @@ import { withStaff } from "@/lib/admin-api";
 import { prisma } from "@/lib/db";
 import { publishDispute, addReputation, REP_DELTAS } from "@/lib/reputation";
 import { upholdFlag, dismissFlag } from "@/lib/flags";
+import { setCommentVisibility } from "@/lib/comments";
 import { audit } from "@/lib/audit";
 
 export async function POST(req: NextRequest) {
@@ -66,10 +67,7 @@ export async function POST(req: NextRequest) {
     if (action === "HIDE_COMMENT" || action === "RESTORE_COMMENT") {
       const comment = await prisma.comment.findUnique({ where: { id: targetId } });
       if (!comment) return NextResponse.json({ error: "Comment not found." }, { status: 404 });
-      await prisma.comment.update({
-        where: { id: targetId },
-        data: { status: action === "HIDE_COMMENT" ? "HIDDEN" : "VISIBLE", reportCount: 0 },
-      });
+      await setCommentVisibility(targetId, action === "RESTORE_COMMENT");
       await prisma.moderationAction.create({
         data: { actorId: user.id, action, targetType: "comment", targetId, reason: reason || action },
       });

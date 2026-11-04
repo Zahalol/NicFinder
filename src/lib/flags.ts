@@ -65,7 +65,9 @@ export async function flagObservation(opts: {
       kind: FLAG_KIND,
       targetObservationId: opts.observationId,
       userId: opts.userId,
-      status: { in: ["PENDING", "PUBLISHED"] },
+      // Includes REJECTED: an observation is immutable, so re-flagging the
+      // same one after a moderator dismissed your flag is pure spam.
+      status: { in: ["PENDING", "PUBLISHED", "REJECTED"] },
     },
     select: { id: true },
   });

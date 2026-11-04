@@ -12,6 +12,24 @@ export type ReportResult =
  * constraint) so a single account can never auto-hide someone else's comment
  * by reporting it repeatedly. Authors cannot report their own comments.
  */
+/**
+ * Moderator hide/restore. Restoring also clears the report ledger —
+ * otherwise one new report would recount all old distinct reporters and
+ * instantly re-hide the comment, overriding the moderator's decision.
+ */
+export async function setCommentVisibility(
+  commentId: string,
+  visible: boolean
+): Promise<void> {
+  await prisma.$transaction([
+    prisma.comment.update({
+      where: { id: commentId },
+      data: { status: visible ? "VISIBLE" : "HIDDEN", reportCount: 0 },
+    }),
+    prisma.commentReport.deleteMany({ where: { commentId } }),
+  ]);
+}
+
 export async function reportComment(
   commentId: string,
   userId: string,

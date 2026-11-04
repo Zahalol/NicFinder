@@ -588,6 +588,16 @@ export async function commitBatch(
       l.name,
     ])
   );
+  const watchedStoreNames = new Map(
+    watchedStoreIds.size
+      ? (
+          await prisma.store.findMany({
+            where: { id: { in: [...watchedStoreIds] } },
+            select: { id: true, name: true },
+          })
+        ).map((st) => [st.id, st.name])
+      : []
+  );
 
   await prisma.$transaction(
     async (tx) => {
@@ -687,14 +697,10 @@ export async function commitBatch(
                 orderBy: { observedAt: "desc" },
                 select: { priceCents: true },
               });
-              const storeRow = await tx.store.findUnique({
-                where: { id: storeId },
-                select: { name: true },
-              });
               await notifyPriceChange(
                 {
                   storeId,
-                  storeName: storeRow?.name ?? "A saved store",
+                  storeName: watchedStoreNames.get(storeId) ?? "A saved store",
                   productLineName: lineNames.get(row.productLineId) ?? "price",
                   newPriceCents: row.priceCents,
                   previousPriceCents: prev?.priceCents ?? null,

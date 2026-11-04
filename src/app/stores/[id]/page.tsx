@@ -43,7 +43,7 @@ export default async function StorePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [store, user, settings, productLines] = await Promise.all([
+  const [store, user, settings, productLines, pendingReports] = await Promise.all([
     prisma.store.findUnique({
       where: { id },
       include: {
@@ -69,16 +69,12 @@ export default async function StorePage({
     getCurrentUser().catch(() => null),
     getSettings(),
     prisma.productLine.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } }),
+    prisma.contribution.count({
+      where: { storeId: id, status: { in: ["PENDING", "CORROBORATING"] } },
+    }),
   ]);
 
   if (!store || store.status !== "ACTIVE") notFound();
-
-  const pendingReports = await prisma.contribution.count({
-    where: {
-      storeId: store.id,
-      status: { in: ["PENDING", "CORROBORATING"] },
-    },
-  });
 
   const saved = user
     ? (await prisma.savedStore.findFirst({

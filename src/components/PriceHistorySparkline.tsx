@@ -65,7 +65,6 @@ export function PriceHistorySparkline({
         viewBox={`0 0 ${W} ${H}`}
         className="w-full max-w-xl"
         role="img"
-        aria-describedby={undefined}
       >
         {/* recessive min/max gridlines */}
         <line x1={PAD.left} x2={W - PAD.right} y1={y(pMax)} y2={y(pMax)} stroke="#e7e5e4" strokeWidth="1" />

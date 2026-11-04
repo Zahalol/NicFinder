@@ -72,6 +72,12 @@ export async function POST(
           { error: "That price is no longer current — refresh the page." },
           { status: 409 }
         );
+      // Availability-only observations carry no price to confirm.
+      if (obs.priceCents === null)
+        return NextResponse.json(
+          { error: "This entry has no price to confirm." },
+          { status: 400 }
+        );
 
       // Confirming your own community observation is self-confirmation.
       if (obs.contributionId) {
