@@ -1,8 +1,10 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { getSettings } from "@/lib/settings";
 import { selectLatestPrice } from "@/lib/prices";
+import { searchStores } from "@/lib/search";
 import { effectivePerCanCents, totalCents, type DealInput } from "@/lib/deals";
 import { formatCents } from "@/lib/money";
 import { DemoBadge, ConfidenceBadge } from "@/components/badges";
@@ -180,6 +182,45 @@ export default async function StorePage({
       ? `https://www.openstreetmap.org/?mlat=${store.latitude}&mlon=${store.longitude}#map=17/${store.latitude}/${store.longitude}`
       : null;
 
+  // "Cheaper nearby": when this store has a current ZYN price, surface up to
+  // two cheaper priced stores within 2 miles (distance measured from this
+  // store). Honest cross-navigation — never shown without real prices.
+  const zynLatest = latestByLine.find((l) => l.line.slug === "zyn")?.latest ?? null;
+  let cheaperNearby: Array<{
+    id: string;
+    name: string;
+    isDemo: boolean;
+    distanceMiles: number;
+    priceCents: number;
+    saveCents: number;
+  }> = [];
+  if (zynLatest && store.latitude !== null && store.longitude !== null) {
+    const { results } = await searchStores({
+      lat: store.latitude,
+      lng: store.longitude,
+      radiusMiles: 2,
+      productSlug: "zyn",
+      qty: 1,
+      sort: "price",
+    });
+    cheaperNearby = results
+      .filter(
+        (r) =>
+          r.id !== store.id &&
+          r.latest !== null &&
+          r.latest.priceCents < zynLatest.observation.priceCents
+      )
+      .slice(0, 2)
+      .map((r) => ({
+        id: r.id,
+        name: r.name,
+        isDemo: r.isDemo,
+        distanceMiles: r.distanceMiles,
+        priceCents: r.latest!.priceCents,
+        saveCents: zynLatest.observation.priceCents - r.latest!.priceCents,
+      }));
+  }
+
   return (
     <div className="py-6 max-w-3xl mx-auto">
       <BackLink fallback="/search?q=60614">← Back to search</BackLink>
@@ -300,6 +341,36 @@ export default async function StorePage({
           </div>
         ))}
       </div>
+
+      {/* Cheaper nearby (EXPERIMENT, Cycle 15) */}
+      {cheaperNearby.length > 0 && (
+        <div className="mt-4 rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-4">
+          <h2 className="text-[10px] font-medium uppercase tracking-wider text-stone-400">
+            Cheaper nearby
+          </h2>
+          <ul className="mt-2 space-y-1.5">
+            {cheaperNearby.map((c) => (
+              <li key={c.id} className="text-sm">
+                <Link
+                  href={`/stores/${c.id}`}
+                  className="text-teal-700 dark:text-teal-400 font-medium hover:underline"
+                >
+                  {c.name}
+                </Link>
+                {c.isDemo && (
+                  <span className="ml-1.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 text-[9px] font-medium px-1 py-0.5 uppercase align-middle">
+                    demo
+                  </span>
+                )}
+                <span className="text-stone-600 dark:text-stone-400">
+                  {" "}— {formatCents(c.priceCents)}/can ({formatCents(c.saveCents)} less),{" "}
+                  {c.distanceMiles} mi from here
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Deals */}
       {store.deals.length > 0 && (

@@ -430,3 +430,37 @@ dialog + tray), store page, ZIP page, login; two sweep artifacts found and
 fixed (high-confidence pill missing dark variant, pill wrapping).
 
 **Recommendation: Keep.** Follows the OS preference; light mode untouched.
+
+### Round-3 idea backlog (generated after Cycle 14, ranked)
+1. **"Cheaper nearby" on store pages** — built (Cycle 15).
+2. Accessibility pass: skip link, focus-visible rings, aria on filter groups.
+3. Store-page SEO: LocalBusiness/Offer JSON-LD + breadcrumbs.
+4. Remember last filters (qty/radius/sort) per device and reapply.
+5. FAQ/about page (trust + long-tail SEO).
+6. "Did you mean <ZIP>?" recovery on geocode failure.
+7. Service-worker offline shell for the PWA.
+8. Suggest-a-missing-store flow (needs new model + admin queue — coordinate
+   with the core session first).
+9. View-transition polish on search→store navigation.
+10. Per-pouch normalization (skipped: ZYN cans are uniform 15-pouch).
+
+---
+
+## Cycle 15 — "Cheaper nearby" on store pages
+
+**Problem.** A visitor landing on a store page (via search, share, or SEO)
+had no signal when a better deal sat two blocks away — the comparison
+intelligence lived only on the search page.
+
+**What changed.** When the viewed store has a current ZYN price, the page
+searches 2 miles around *the store itself* and lists up to two cheaper
+priced stores: price, savings per can, and distance "from here", linking to
+their pages. Never rendered without real reported prices; demo stores keep
+their chip.
+
+**Testing.** Verified on the $8.99 out-of-stock demo store: strip lists
+$5.59 (-$3.40, 1.2 mi) and $5.99 (-$3.00, 1.5 mi) alternatives. Hidden on
+the cheapest store. Typecheck/lint green.
+
+**Recommendation: Keep.** High-value cross-navigation; one extra bounded
+query per store view (same code path as search).
