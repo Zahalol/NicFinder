@@ -117,10 +117,22 @@ export default async function ZipLandingPage({
                 </td>
                 <td className="py-2 pr-2 text-stone-500">{r.address}</td>
                 <td className="py-2 pr-2 font-semibold text-stone-900">
-                  {r.latest ? formatCents(r.latest.priceCents) : <span className="font-normal text-stone-400">not reported</span>}
+                  {r.latest ? (
+                    formatCents(r.latest.priceCents)
+                  ) : r.availabilitySignal?.availability === "NOT_CARRIED" ? (
+                    <span className="font-normal text-stone-500">not carried</span>
+                  ) : r.availabilitySignal?.availability === "OUT_OF_STOCK" ? (
+                    <span className="font-normal text-red-600">out of stock</span>
+                  ) : (
+                    <span className="font-normal text-stone-400">not reported</span>
+                  )}
                 </td>
                 <td className="py-2 text-stone-500">
-                  {r.latest ? `${r.latest.ageDays}d ago` : "—"}
+                  {r.latest
+                    ? `${r.latest.ageDays}d ago`
+                    : r.availabilitySignal
+                      ? `${r.availabilitySignal.ageDays}d ago`
+                      : "—"}
                 </td>
               </tr>
             ))}
