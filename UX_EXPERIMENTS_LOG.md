@@ -650,7 +650,35 @@ input on search/home; build green.
 
 ### Round-4 idea backlog (ranked, remaining)
 1. ~~README refresh / stale nudge / "/" shortcut~~ — built (Cycle 25).
-2. Nearest-covered-area suggestion on distant no-coverage searches.
-3. Compare selection persistence across filter navigations (sessionStorage).
+2. ~~Nearest-covered-area suggestion~~ — built (Cycle 26).
+3. ~~Compare selection persistence~~ — built (Cycle 27).
 4. Watchlist deal badges + per-store "worth the trip" vs cheapest saved.
 5. View Transitions polish on search→store navigation.
+
+---
+
+## Cycle 26 — Nearest-covered-area suggestion
+
+**What changed.** The no-coverage empty state now links the nearest covered
+city/ZIP with its approximate distance — but only when a priced store is
+within 100 miles. A Joliet (60435) search suggests "Chicago, IL 60614
+(~33 mi)"; a Beverly Hills search keeps the plain honest message rather
+than proposing a cross-country drive.
+
+**Recommendation: Keep.**
+
+---
+
+## Cycle 27 — Compare selection survives filter changes
+
+**Problem.** Filter pills are full server navigations, so the compare tray
+(client state) silently emptied whenever someone adjusted quantity or sort
+mid-comparison.
+
+**What changed.** Selection mirrors to `sessionStorage` and rehydrates on
+mount, keeping only ids still present in the current results (so a radius
+change that drops a store also drops it from the tray). Verified: select 2,
+switch sort to Cheapest → both "✓ Comparing" chips and the tray's
+"Compare (2)" persist.
+
+**Recommendation: Keep.**

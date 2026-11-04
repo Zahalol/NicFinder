@@ -192,9 +192,33 @@ export function SearchResults({
 }) {
   const [view, setView] = useState<"list" | "map">("list");
   const [directoryOpen, setDirectoryOpen] = useState(false);
-  // EXPERIMENT (Cycle 4): compare tray state
-  const [compareIds, setCompareIds] = useState<string[]>([]);
+  // EXPERIMENT (Cycle 4): compare tray state. Selection survives filter
+  // changes (which are full server navigations) via sessionStorage.
+  const [compareIds, setCompareIdsState] = useState<string[]>([]);
   const [compareOpen, setCompareOpen] = useState(false);
+  useEffect(() => {
+    try {
+      const saved: string[] = JSON.parse(sessionStorage.getItem("nf_compare") ?? "[]");
+      // keep only stores present in the current result set
+      const valid = saved.filter((id) => results.some((r) => r.id === id));
+      if (valid.length) setCompareIdsState(valid);
+    } catch {
+      /* ignore */
+    }
+    // results identity changes every render of a server page; run once
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  function setCompareIds(next: string[] | ((ids: string[]) => string[])) {
+    setCompareIdsState((prev) => {
+      const value = typeof next === "function" ? next(prev) : next;
+      try {
+        sessionStorage.setItem("nf_compare", JSON.stringify(value));
+      } catch {
+        /* ignore */
+      }
+      return value;
+    });
+  }
 
   const mapWrapRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
