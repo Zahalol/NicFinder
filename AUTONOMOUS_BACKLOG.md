@@ -31,7 +31,7 @@ Status: `todo` | `in-progress` | `done` | `blocked` | `rejected`.
 | # | Idea | Impact | Effort | Confidence | Risks | Status |
 |---|------|--------|--------|------------|-------|--------|
 | 21 | "Nearby alternatives" on store pages: up to 3 stores within 2mi with current price + distance, cheaper flagged | Med-High — keeps users inside the comparison loop | S-M | High | None | done |
-| 22 | Pending-dispute visibility on store page ("N reports awaiting review/corroboration") + /how-it-works trust explainer | Med — roadmap asked for pending vs published clarity | M | Med | Copy quality | todo |
+| 22 | Pending-dispute visibility on store page ("N reports awaiting review/corroboration") + /how-it-works trust explainer | Med — roadmap asked for pending vs published clarity | M | Med | Copy quality | done |
 | 23 | Admin CSV export of current displayed prices (owner backup / spreadsheet workflows) | Med | S | High | None | todo |
 | 24 | PWA manifest + icons (installable, no service worker complexity) | Low | S | Med | Complexity creep if SW added | todo |
 | 25 | User profile credibility: clearer reputation explanation on /users/[id] | Low-Med | S | Med | — | todo |

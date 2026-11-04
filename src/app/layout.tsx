@@ -99,6 +99,13 @@ export default async function RootLayout({
         <footer className="border-t border-stone-200 mt-8">
           <div className="mx-auto max-w-5xl px-4 py-6 text-xs text-stone-500 space-y-2">
             <p>
+              <Link href="/how-it-works" className="text-teal-700 underline">
+                How NicFinder works
+              </Link>{" "}
+              — where prices come from, freshness and confidence labels, and
+              how community verification keeps listings honest.
+            </p>
+            <p>
               NicFinder is an informational price-comparison service for adults
               21+. We do not sell, deliver, or promote nicotine products.
               Prices are reported by calls, imports, and community members;

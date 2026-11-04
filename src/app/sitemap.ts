@@ -21,6 +21,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ]);
   return [
     { url: base, changeFrequency: "daily", priority: 1 },
+    { url: `${base}/how-it-works`, changeFrequency: "monthly", priority: 0.5 },
     ...zips.map((z) => ({
       url: `${base}/zyn-prices/${z.zip}`,
       changeFrequency: "daily" as const,

@@ -73,6 +73,13 @@ export default async function StorePage({
 
   if (!store || store.status !== "ACTIVE") notFound();
 
+  const pendingReports = await prisma.contribution.count({
+    where: {
+      storeId: store.id,
+      status: { in: ["PENDING", "CORROBORATING"] },
+    },
+  });
+
   const saved = user
     ? (await prisma.savedStore.findFirst({
         where: { userId: user.id, storeId: store.id },
@@ -270,6 +277,17 @@ export default async function StorePage({
           </div>
         ))}
       </div>
+
+      {pendingReports > 0 && (
+        <p className="mt-3 text-xs text-stone-500">
+          {pendingReports} community report{pendingReports === 1 ? "" : "s"}{" "}
+          awaiting review or corroboration — displayed prices don’t change
+          until reports are verified.{" "}
+          <Link href="/how-it-works" className="text-teal-700 underline">
+            How this works
+          </Link>
+        </p>
+      )}
 
       {/* Deals */}
       {store.deals.length > 0 && (
