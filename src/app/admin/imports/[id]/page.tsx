@@ -1,3 +1,4 @@
+import { requireStaffPage } from "@/lib/page-auth";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
@@ -19,6 +20,7 @@ export default async function BatchPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await requireStaffPage();
   const { id } = await params;
   const batch = await prisma.importBatch.findUnique({
     where: { id },

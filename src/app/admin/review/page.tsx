@@ -1,3 +1,4 @@
+import { requireStaffPage } from "@/lib/page-auth";
 import { prisma } from "@/lib/db";
 import { ReviewActions } from "./ReviewActions";
 import { formatCents } from "@/lib/money";
@@ -7,6 +8,7 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Review queue — NicFinder admin" };
 
 export default async function ReviewPage() {
+  await requireStaffPage();
   const [pending, corroborating, flaggedComments] = await Promise.all([
     prisma.contribution.findMany({
       where: { status: "PENDING", kind: "DISPUTE" },

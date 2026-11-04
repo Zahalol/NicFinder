@@ -1,3 +1,4 @@
+import { requireStaffPage } from "@/lib/page-auth";
 import { prisma } from "@/lib/db";
 import { getSettings } from "@/lib/settings";
 
@@ -17,6 +18,7 @@ function timeAgo(d: Date): string {
 }
 
 export default async function CoverageDemandPage() {
+  await requireStaffPage();
   const settings = await getSettings();
   const since7d = new Date(Date.now() - 7 * 86400_000);
   const freshCutoff = new Date(Date.now() - settings.expireAfterDays * 86400_000);

@@ -9,6 +9,43 @@ defense-in-depth, availability), **Low** (hygiene).
 
 ---
 
+## 2026-11-04 — Wave 2: admin page auth, resource hygiene
+
+### H-4 (High) Admin pages relied on the layout for authorization
+- **Finding**: every `/admin/*` page fetched privileged data with **no auth
+  check of its own** — only `src/app/admin/layout.tsx` checked the role. In
+  the App Router a layout is not a security boundary: layouts and pages
+  render in parallel on the server, and a layout does not re-execute on
+  client-side navigation between its children (Next.js' own guidance is to
+  authorize next to the data). The admin API routes were already
+  independently guarded; the pages were the gap.
+- **Fix**: `src/lib/page-auth.ts#requireStaffPage()` (redirects non-staff)
+  called at the top of all 8 admin page components, keeping the layout check
+  as UX only.
+- **Tests**: e2e already asserts guest `/admin` redirects to login; the gate
+  suite re-run green.
+
+### M-8 (Medium) Expired auth sessions accumulated forever
+- **Finding**: `AuthSession` rows were only deleted lazily when the exact
+  token was presented again; abandoned sessions persisted indefinitely
+  (table growth + dead credential hashes at rest).
+- **Fix**: `scripts/maintenance.mjs` now bulk-deletes sessions past
+  `expiresAt` and reports `sessionsPurged`.
+
+### M-9 (Medium) In-memory rate limiter grew without bound
+- **Finding**: `memoryRateLimit`'s bucket map is keyed by attacker-controlled
+  values (IPs, emails) and never evicted — a slow memory exhaustion vector.
+- **Fix**: lazy sweep (every 60s on write) deletes buckets idle past the
+  largest window (1h).
+
+### L-2 (Low) Search page accepted absurd URL coordinates
+- **Finding**: `?lat=99999&lng=−∞`-style values flowed into bounding-box and
+  haversine math (harmless results, but NaN-propagating and cache-unfriendly).
+- **Fix**: finite-range check (|lat| ≤ 90, |lng| ≤ 180) or the coordinates
+  are ignored.
+
+---
+
 ## 2026-11-04 — Wave 1: audit + first hardening pass
 
 Baseline at start: commit `2e3de05`, 53/53 vitest, lint/typecheck/build green.

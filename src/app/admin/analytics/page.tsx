@@ -1,3 +1,4 @@
+import { requireStaffPage } from "@/lib/page-auth";
 import { prisma } from "@/lib/db";
 import { getSettings } from "@/lib/settings";
 import { selectLatestPrice } from "@/lib/prices";
@@ -11,6 +12,7 @@ export const metadata = { title: "Analytics — NicFinder admin" };
 // no legend needed (single series), table view built in.
 
 export default async function AnalyticsPage() {
+  await requireStaffPage();
   const settings = await getSettings();
   const [zyn, observations, contributions, coverageRequests] = await Promise.all([
     prisma.productLine.findUnique({ where: { slug: "zyn" } }),

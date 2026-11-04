@@ -1,3 +1,4 @@
+import { requireStaffPage } from "@/lib/page-auth";
 import { prisma } from "@/lib/db";
 import Link from "next/link";
 import { UploadForm } from "./UploadForm";
@@ -12,6 +13,7 @@ const STATUS_STYLE: Record<string, string> = {
 };
 
 export default async function ImportsPage() {
+  await requireStaffPage();
   const batches = await prisma.importBatch.findMany({
     orderBy: { createdAt: "desc" },
     take: 50,

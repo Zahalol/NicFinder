@@ -1,3 +1,4 @@
+import { requireStaffPage } from "@/lib/page-auth";
 import { getSettings } from "@/lib/settings";
 import { getCurrentUser } from "@/lib/auth";
 import { SettingsForm } from "./SettingsForm";
@@ -21,6 +22,7 @@ const FIELD_DOCS: Record<string, string> = {
 };
 
 export default async function SettingsPage() {
+  await requireStaffPage();
   const [settings, user] = await Promise.all([getSettings(), getCurrentUser()]);
   const isAdmin = user?.role === "ADMIN";
 

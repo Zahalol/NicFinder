@@ -1,3 +1,4 @@
+import { requireStaffPage } from "@/lib/page-auth";
 import { prisma } from "@/lib/db";
 import Link from "next/link";
 import { DuplicateList } from "./DuplicateList";
@@ -11,6 +12,7 @@ export default async function AdminStores({
 }: {
   searchParams: Promise<{ q?: string }>;
 }) {
+  await requireStaffPage();
   const { q } = await searchParams;
   const [stores, duplicates, productLines] = await Promise.all([
     prisma.store.findMany({

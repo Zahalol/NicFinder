@@ -31,12 +31,31 @@ export async function countRecentComments(
 // docs/ARCHITECTURE.md for the production note).
 const buckets = new Map<string, number[]>();
 
+// The map is keyed by attacker-controlled values (IPs, emails), so it must
+// not grow without bound: sweep out buckets whose entries have all aged past
+// the largest window we use. Sweeping lazily on write keeps this dependency-
+// free and O(1) amortized.
+const SWEEP_EVERY_MS = 60_000;
+const MAX_WINDOW_MS = 3_600_000; // largest window used by any caller
+let lastSweepAt = 0;
+
+function sweep(now: number): void {
+  if (now - lastSweepAt < SWEEP_EVERY_MS) return;
+  lastSweepAt = now;
+  for (const [key, arr] of buckets) {
+    if (!arr.length || now - arr[arr.length - 1] >= MAX_WINDOW_MS) {
+      buckets.delete(key);
+    }
+  }
+}
+
 export function memoryRateLimit(
   key: string,
   max: number,
   windowMs: number
 ): boolean {
   const now = Date.now();
+  sweep(now);
   const arr = (buckets.get(key) ?? []).filter((t) => now - t < windowMs);
   if (arr.length >= max) {
     buckets.set(key, arr);
