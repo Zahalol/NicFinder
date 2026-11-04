@@ -87,9 +87,17 @@ try {
     "page content still present behind the overlay (SEO-safe)",
     (await page.locator('a[href^="/stores/"]').count()) > 0
   );
+  check(
+    "page behind overlay is inert (keyboard/AT cannot bypass the gate)",
+    (await page.locator("body > div[inert]").count()) === 1
+  );
   await page.getByRole("button", { name: /21 or older/i }).click();
   await page.waitForTimeout(1200);
   check("overlay dismissed after confirming", (await page.getByRole("dialog").count()) === 0);
+  check(
+    "page interactive after confirming (inert removed)",
+    (await page.locator("body > div[inert]").count()) === 0
+  );
 
   // 2. Search results
   console.log("Search 60614…");

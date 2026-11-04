@@ -35,6 +35,10 @@ export function AgeGateOverlay() {
           Nicotine is addictive.
         </p>
         <button
+          // Focus starts on the only meaningful action: the page behind the
+          // overlay is inert, so without this a keyboard user tabs from the
+          // address bar into nothing.
+          autoFocus
           disabled={busy}
           onClick={async () => {
             setBusy(true);

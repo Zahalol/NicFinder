@@ -56,6 +56,8 @@ export function AuthForm({
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
             placeholder="Display name"
+            aria-label="Display name"
+            autoComplete="nickname"
             required
             minLength={2}
             maxLength={40}
@@ -67,6 +69,8 @@ export function AuthForm({
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="Email"
+          aria-label="Email"
+          autoComplete="email"
           required
           className="w-full rounded-lg border border-stone-300 px-3 py-2.5"
         />
@@ -75,6 +79,8 @@ export function AuthForm({
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder={mode === "signup" ? "Password (10+ characters)" : "Password"}
+          aria-label="Password"
+          autoComplete={mode === "signup" ? "new-password" : "current-password"}
           required
           minLength={mode === "signup" ? 10 : 1}
           className="w-full rounded-lg border border-stone-300 px-3 py-2.5"

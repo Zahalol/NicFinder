@@ -46,6 +46,30 @@ defense-in-depth, availability), **Low** (hygiene).
 
 ---
 
+## 2026-11-04 — Wave 6: age-gate integrity & accessibility
+
+### M-15 (Medium) Keyboard users could bypass the 21+ age gate
+- **Finding**: the age-gate overlay set `aria-modal` but the page behind it
+  remained focusable — Tab moved focus past the dialog into the site, so a
+  keyboard user (or any script driving the keyboard) could browse and search
+  without ever confirming age. For an age-restricted nicotine site the gate
+  is a compliance control, not decoration.
+- **Fix**: the entire page behind the overlay is now `inert` while the gate
+  shows (no focus, no clicks, removed from the accessibility tree) and the
+  confirm button takes initial focus; the HTML stays server-rendered so
+  /zyn-prices/* remain indexable (the SEO constraint that forbids a redirect
+  gate). Two new e2e checks assert inert-while-gated and interactive-after-
+  confirm.
+
+### L-5 (Low) Placeholder-only labels on auth forms
+- **Finding**: login/signup inputs had no accessible names beyond
+  placeholders (which vanish on input), and no autocomplete hints.
+- **Fix**: aria-labels plus `autocomplete` (`email`, `new-password` /
+  `current-password`, `nickname`) — screen-reader naming and password-manager
+  behavior.
+
+---
+
 ## 2026-11-04 — Wave 5: search truncation accuracy, reputation ledger, race polish
 
 ### M-13 (Medium) Radius search truncated in arbitrary order at scale
