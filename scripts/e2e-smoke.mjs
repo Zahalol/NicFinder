@@ -88,7 +88,13 @@ try {
     (await page.locator('a[href^="/stores/"]').count()) > 0
   );
   await page.getByRole("button", { name: /21 or older/i }).click();
-  await page.waitForTimeout(1200);
+  // The overlay hides as soon as the cookie POST succeeds; wait for it
+  // rather than sleeping a fixed interval (cold servers can be slow).
+  await page
+    .waitForFunction(() => document.querySelectorAll('[role="dialog"]').length === 0, {
+      timeout: 10_000,
+    })
+    .catch(() => {});
   check("overlay dismissed after confirming", (await page.getByRole("dialog").count()) === 0);
 
   // 2. Search results

@@ -565,3 +565,39 @@ mobile unaffected (callback only passed in the split layout).
 matching card scrolled into view ringed; no page errors.
 
 **Recommendation: Keep.**
+
+---
+
+## Cycle 22 — Per-store metadata + canonicals
+
+**What changed.** Store pages now generate real titles
+("<name> — ZYN prices in <city, state>"), descriptions, and canonical URLs
+(previously every store shared the site-default title); ZIP pages got
+canonicals.
+
+**Recommendation: Keep.**
+
+---
+
+## Cycle 23 — Honest offline support + instant age-gate dismissal
+
+**What changed.**
+- `public/sw.js` + `/offline` + `ServiceWorkerRegistrar` (prod-only):
+  a deliberately minimal service worker. Navigations are **always
+  network-first** — pages and price data are never served from cache while
+  online, so nobody ever sees a silently stale price; offline navigations
+  fall back to a clear "You're offline" page (which says exactly that we
+  refuse to show cached prices as live). Only the offline page, icons and
+  manifest are precached; map tiles and APIs are untouched.
+- Age gate now hides as soon as the cookie POST succeeds instead of waiting
+  for the full server refresh (which took >1s on cold servers — also the
+  source of an e2e flake); on POST failure the gate stays up. The e2e now
+  waits for the dialog to detach instead of sleeping 1.2s.
+- Search skeleton got its missing dark variant.
+
+**Testing.** Production build: SW activates, offline navigation shows the
+fallback, back-online navigation works; all 37 e2e checks green (the suite
+exercises the whole flow with the SW registered).
+
+**Recommendation: Keep.** The "no stale prices ever" rule makes this a
+safe-by-design PWA completion rather than a caching risk.

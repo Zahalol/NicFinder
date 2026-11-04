@@ -5,6 +5,7 @@ import "./globals.css";
 import { getCurrentUser } from "@/lib/auth";
 import { LogoutButton } from "@/components/LogoutButton";
 import { AgeGateOverlay } from "@/components/AgeGateOverlay";
+import { ServiceWorkerRegistrar } from "@/components/ServiceWorkerRegistrar";
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.APP_URL ?? "http://localhost:3000"),
@@ -54,6 +55,7 @@ export default async function RootLayout({
         <a href="#main" className="skip-link">
           Skip to content
         </a>
+        <ServiceWorkerRegistrar />
         {!ageConfirmed && <AgeGateOverlay />}
         {demoMode && (
           <div className="bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200 text-center text-xs px-3 py-1.5 border-b border-amber-200 dark:border-amber-900">

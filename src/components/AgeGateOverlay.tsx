@@ -13,6 +13,12 @@ import { useState } from "react";
 export function AgeGateOverlay() {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
+  const [hidden, setHidden] = useState(false);
+
+  // Once the cookie is set, hide immediately — router.refresh() then updates
+  // the server-rendered tree in the background (it can take a second on a
+  // cold server, and the visitor has already confirmed).
+  if (hidden) return null;
 
   return (
     <div
@@ -38,8 +44,17 @@ export function AgeGateOverlay() {
           disabled={busy}
           onClick={async () => {
             setBusy(true);
-            await fetch("/api/age", { method: "POST" });
-            router.refresh();
+            try {
+              const res = await fetch("/api/age", { method: "POST" });
+              if (res.ok) {
+                setHidden(true);
+                router.refresh();
+                return;
+              }
+            } catch {
+              // fall through — keep the gate up if the cookie wasn't set
+            }
+            setBusy(false);
           }}
           className="mt-6 w-full rounded-xl bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900 py-3 font-medium hover:bg-stone-700 dark:hover:bg-white disabled:opacity-50"
         >
