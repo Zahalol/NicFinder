@@ -1,6 +1,17 @@
 import { SearchBox } from "@/components/SearchBox";
+import { QuickSearches } from "@/components/QuickSearches";
 import { prisma } from "@/lib/db";
 import Link from "next/link";
+
+// Pilot-area neighborhoods for first-visit quick chips (replaced by the
+// visitor's own recent searches once they have any).
+const POPULAR = [
+  { q: "60614", label: "Lincoln Park 60614" },
+  { q: "60657", label: "Lakeview 60657" },
+  { q: "60622", label: "Wicker Park 60622" },
+  { q: "60618", label: "North Center 60618" },
+  { q: "60647", label: "Logan Square 60647" },
+];
 
 export default async function HomePage() {
   const [storeCount, pricedCount] = await Promise.all([
@@ -22,10 +33,12 @@ export default async function HomePage() {
         </p>
         <div className="mt-8">
           <SearchBox autoFocus />
+          <QuickSearches popular={POPULAR} />
         </div>
         <p className="mt-3 text-xs text-stone-500">
-          Try a Chicago ZIP like <Link className="underline" href="/search?q=60614">60614</Link> — our
-          pilot area. {storeCount} stores tracked, {pricedCount} with reported prices.
+          Our pilot area is Chicago —{" "}
+          <Link className="underline" href="/search?q=60614">60614</Link> and nearby.{" "}
+          {storeCount} stores tracked, {pricedCount} with reported prices.
         </p>
       </div>
 

@@ -233,3 +233,30 @@ store pages.
 8. Share a store/price via navigator.share (mobile).
 9. Dark mode (prefers-color-scheme) across public pages.
 10. Service-worker offline shell for the PWA (riskier; last).
+
+---
+
+## Cycle 7 — Quick-search chips: "near me", recents, neighborhoods
+
+**Problem.** The home and empty search states offered one text input and a
+tiny easter-egg link; a returning phone user had to retype their ZIP every
+visit, and new visitors had no scent of where coverage exists.
+
+**What changed.**
+- `src/components/QuickSearches.tsx`: chip row under the search box —
+  "⌖ Near me" (geolocation), the visitor's last 5 searches (localStorage
+  only, device-private, with a "clear" control), and, until they have any
+  recents, popular pilot-area chips labeled by neighborhood
+  ("Lincoln Park 60614", "Lakeview 60657", …).
+- `SearchBox` records successful submissions via `rememberSearch()`
+  (try/catch-guarded for private mode).
+- Home page + `/search` empty state render the chips; home copy no longer
+  buries the pilot-area hint in a one-word link.
+
+**Why selected.** #2 in the ranked backlog; biggest returning-mobile-user
+friction (retyping a ZIP) for ~70 lines of isolated code.
+
+**Testing.** Playwright: fresh visitor sees neighborhood chips; after one
+search the row shows "60614 · clear"; chips navigate. Typecheck/lint green.
+
+**Recommendation: Keep.**

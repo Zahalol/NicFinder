@@ -3,6 +3,7 @@ import { searchStores, type SortKey } from "@/lib/search";
 import { SearchBox } from "@/components/SearchBox";
 import { SearchResults } from "@/components/SearchResults";
 import { CoverageRequestButton } from "@/components/CoverageRequestButton";
+import { QuickSearches } from "@/components/QuickSearches";
 import { formatCents } from "@/lib/money";
 import { compareTrip } from "@/lib/trip";
 import { prisma } from "@/lib/db";
@@ -75,9 +76,18 @@ export default async function SearchPage({
       <SearchBox initialQuery={q} />
 
       {!q && !hasLocation && (
-        <p className="mt-8 text-center text-stone-500 text-sm">
-          Enter a ZIP code or address to find nearby prices.
-        </p>
+        <div className="mt-8 text-center">
+          <p className="text-stone-500 text-sm">
+            Enter a ZIP code or address to find nearby prices.
+          </p>
+          <QuickSearches
+            popular={[
+              { q: "60614", label: "Lincoln Park 60614" },
+              { q: "60657", label: "Lakeview 60657" },
+              { q: "60622", label: "Wicker Park 60622" },
+            ]}
+          />
+        </div>
       )}
 
       {geocodeFailed && (

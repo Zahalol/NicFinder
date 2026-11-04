@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { rememberSearch } from "./QuickSearches";
 
 export function SearchBox({
   initialQuery = "",
@@ -18,6 +19,7 @@ export function SearchBox({
     e?.preventDefault();
     const query = q.trim();
     if (!query) return;
+    rememberSearch(query);
     router.push(`/search?q=${encodeURIComponent(query)}`);
   }
 
