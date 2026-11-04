@@ -78,38 +78,58 @@ export async function searchStores(opts: {
   });
   if (!product) return { results: [], productLineId: null };
 
+  // Two-phase query so the 500-store cap keeps the NEAREST stores, not an
+  // arbitrary subset of the bounding box (which silently dropped close
+  // stores once a box held > 500 — caught by scripts/bench-search.ts):
+  //   1. cheap id+coords scan of the box, distance-filter and rank in JS;
+  //   2. full fetch (observations/deals) only for the nearest 500.
   const box = boundingBox(opts.lat, opts.lng, opts.radiusMiles);
-  const stores = await prisma.store.findMany({
+  const candidates = await prisma.store.findMany({
     where: {
       status: "ACTIVE",
       latitude: { gte: box.minLat, lte: box.maxLat },
       longitude: { gte: box.minLon, lte: box.maxLon },
     },
-    include: {
-      observations: {
-        where: { productLineId: product.id, status: "ACTIVE" },
-        include: { verifications: true },
-        orderBy: { observedAt: "desc" },
-        take: 10,
-      },
-      deals: {
-        where: {
-          productLineId: product.id,
-          status: "ACTIVE",
-          OR: [{ expiresAt: null }, { expiresAt: { gte: new Date() } }],
-        },
-        orderBy: { observedAt: "desc" },
-        take: 1,
-      },
-    },
-    take: 500,
+    select: { id: true, latitude: true, longitude: true },
   });
+  const distanceById = new Map<string, number>();
+  for (const c of candidates) {
+    if (c.latitude === null || c.longitude === null) continue;
+    const d = haversineMiles(opts.lat, opts.lng, c.latitude, c.longitude);
+    if (d <= opts.radiusMiles) distanceById.set(c.id, d);
+  }
+  const nearestIds = [...distanceById.entries()]
+    .sort((a, b) => a[1] - b[1])
+    .slice(0, 500)
+    .map(([id]) => id);
+
+  const stores = nearestIds.length
+    ? await prisma.store.findMany({
+        where: { id: { in: nearestIds } },
+        include: {
+          observations: {
+            where: { productLineId: product.id, status: "ACTIVE" },
+            include: { verifications: true },
+            orderBy: { observedAt: "desc" },
+            take: 10,
+          },
+          deals: {
+            where: {
+              productLineId: product.id,
+              status: "ACTIVE",
+              OR: [{ expiresAt: null }, { expiresAt: { gte: new Date() } }],
+            },
+            orderBy: { observedAt: "desc" },
+            take: 1,
+          },
+        },
+      })
+    : [];
 
   const results: StoreResult[] = [];
   for (const s of stores) {
     if (s.latitude === null || s.longitude === null) continue;
-    const distance = haversineMiles(opts.lat, opts.lng, s.latitude, s.longitude);
-    if (distance > opts.radiusMiles) continue;
+    const distance = distanceById.get(s.id)!;
 
     const latest: LatestPrice | null = selectLatestPrice(s.observations, settings);
     const availSignal = selectLatestAvailability(s.observations, settings);
