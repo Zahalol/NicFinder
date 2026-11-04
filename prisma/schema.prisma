@@ -1,0 +1,407 @@
+// NicFinder data model.
+// SQLite for local dev; the schema avoids SQLite-only features so the
+// migration path to PostgreSQL is mechanical (see ARCHITECTURE.md).
+// Prices are stored as integer cents (SQLite has no DECIMAL type).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Stores
+// ---------------------------------------------------------------------------
+
+model Store {
+  id            String   @id @default(cuid())
+  name          String
+  address       String?
+  city          String?
+  state         String? // 2-letter
+  zip           String?
+  latitude      Float?
+  longitude     Float?
+  phone         String? // E.164 normalized
+  // Lifecycle: ACTIVE | MERGED (into mergedIntoId) | RETIRED
+  status        String   @default("ACTIVE")
+  mergedIntoId  String?
+  mergedInto    Store?   @relation("StoreMerge", fields: [mergedIntoId], references: [id])
+  mergedFrom    Store[]  @relation("StoreMerge")
+  // True for clearly fictional demo fixtures; their prices are synthetic.
+  isDemo        Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  identities    StoreIdentity[]
+  observations  PriceObservation[]
+  deals         QuantityDeal[]
+  contributions Contribution[]
+  comments      Comment[]
+  duplicatesA   DuplicateCandidate[] @relation("DupA")
+  duplicatesB   DuplicateCandidate[] @relation("DupB")
+
+  @@index([latitude, longitude])
+  @@index([zip])
+  @@index([status])
+}
+
+// External identities a store is known by (import source IDs, normalized
+// phone, normalized address) — used for idempotent store matching.
+model StoreIdentity {
+  id        String   @id @default(cuid())
+  storeId   String
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  // EXTERNAL_ID | PHONE | ADDRESS
+  kind      String
+  value     String // normalized value
+  source    String? // which feed/system supplied it
+  createdAt DateTime @default(now())
+
+  @@unique([kind, value, source])
+  @@index([storeId])
+  @@index([kind, value])
+}
+
+// Flagged potential duplicate stores for admin resolution.
+model DuplicateCandidate {
+  id         String   @id @default(cuid())
+  storeAId   String
+  storeA     Store    @relation("DupA", fields: [storeAId], references: [id], onDelete: Cascade)
+  storeBId   String
+  storeB     Store    @relation("DupB", fields: [storeBId], references: [id], onDelete: Cascade)
+  reason     String // e.g. "same phone", "within 60m + similar name"
+  score      Float // 0..1 similarity
+  // OPEN | MERGED | DISMISSED
+  status     String   @default("OPEN")
+  resolvedBy String?
+  createdAt  DateTime @default(now())
+  resolvedAt DateTime?
+
+  @@unique([storeAId, storeBId])
+}
+
+// ---------------------------------------------------------------------------
+// Products
+// ---------------------------------------------------------------------------
+
+// Product lines are seeded (ZYN, ZYN Ultra) but generic — the ingestion
+// engine is brand-agnostic.
+model ProductLine {
+  id           String   @id @default(cuid())
+  slug         String   @unique // "zyn" | "zyn-ultra" | future lines
+  name         String
+  brand        String
+  description  String?
+  sortOrder    Int      @default(0)
+  active       Boolean  @default(true)
+  observations PriceObservation[]
+  deals        QuantityDeal[]
+}
+
+// ---------------------------------------------------------------------------
+// Price observations (append-only evidence log)
+// ---------------------------------------------------------------------------
+
+model PriceObservation {
+  id            String   @id @default(cuid())
+  storeId       String
+  store         Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  productLineId String
+  productLine   ProductLine @relation(fields: [productLineId], references: [id])
+
+  priceCents    Int // regular single-can shelf price
+  currency      String   @default("USD")
+  // true | false | null=unknown
+  taxIncluded   Boolean?
+  // IN_STOCK | OUT_OF_STOCK | NOT_CARRIED | UNKNOWN
+  availability  String   @default("UNKNOWN")
+  strength      String? // e.g. "6mg" — optional detail
+  flavor        String?
+  canSize       String? // e.g. "15 pouches"
+  observedAt    DateTime // when the price was observed (not imported)
+  // CALL | IMPORT | COMMUNITY | ADMIN
+  sourceType    String
+  // Confidence 0..1 from the source; null = unspecified
+  confidence    Float?
+  // Provenance
+  importRowId   String?  @unique
+  importRow     ImportRow? @relation(fields: [importRowId], references: [id])
+  contributionId String? @unique
+  contribution  Contribution? @relation("ContributionObservation", fields: [contributionId], references: [id])
+  externalCallId String?
+  notes         String?
+
+  // Lifecycle — observations are never deleted, only superseded/invalidated:
+  // ACTIVE | SUPERSEDED | INVALIDATED (bad import / moderation) | PENDING (awaiting review)
+  status        String   @default("ACTIVE")
+  invalidReason String?
+
+  createdAt     DateTime @default(now())
+
+  verifications Verification[]
+
+  @@index([storeId, productLineId, status, observedAt])
+  @@index([sourceType])
+}
+
+// Quantity deals, e.g. "buy 5 cans, $1 off each".
+model QuantityDeal {
+  id             String   @id @default(cuid())
+  storeId        String
+  store          Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  productLineId  String
+  productLine    ProductLine @relation(fields: [productLineId], references: [id])
+  minQty         Int
+  // Exactly one of these is set; the other is derived at display time.
+  pricePerCanCents Int? // explicit per-can price at qty
+  discountPerCanCents Int? // discount off the regular price per can
+  // Whether buying more than minQty still qualifies: true/false/null=unknown
+  appliesAboveMinQty Boolean?
+  conditions     String? // loyalty/membership/combination text, verbatim
+  expiresAt      DateTime?
+  observedAt     DateTime
+  sourceType     String // CALL | IMPORT | COMMUNITY | ADMIN
+  importRowId    String?
+  contributionId String?
+  // ACTIVE | EXPIRED | SUPERSEDED | INVALIDATED | PENDING
+  status         String   @default("ACTIVE")
+  createdAt      DateTime @default(now())
+
+  @@index([storeId, productLineId, status])
+}
+
+// ---------------------------------------------------------------------------
+// Imports
+// ---------------------------------------------------------------------------
+
+model ImportBatch {
+  id            String   @id @default(cuid())
+  filename      String
+  // sha256 of normalized file content — idempotency across re-uploads
+  contentHash   String
+  fileType      String // csv | xlsx
+  // column mapping used, JSON
+  mappingJson   String
+  // PREVIEW | COMMITTED | REVERSED
+  status        String   @default("PREVIEW")
+  uploadedById  String?
+  uploadedBy    User?    @relation(fields: [uploadedById], references: [id])
+  totalRows     Int      @default(0)
+  acceptedRows  Int      @default(0)
+  updatedRows   Int      @default(0)
+  skippedRows   Int      @default(0)
+  flaggedRows   Int      @default(0)
+  rejectedRows  Int      @default(0)
+  createdAt     DateTime @default(now())
+  committedAt   DateTime?
+  reversedAt    DateTime?
+  reversedById  String?
+  reverseReason String?
+
+  rows          ImportRow[]
+
+  @@index([contentHash])
+}
+
+model ImportRow {
+  id          String   @id @default(cuid())
+  batchId     String
+  batch       ImportBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  rowNumber   Int
+  rawJson     String // original row values, verbatim
+  // sha256 of (contentHash-independent) normalized row payload — dedupe across batches
+  rowHash     String
+  // ACCEPTED | UPDATED | SKIPPED_DUPLICATE | FLAGGED | REJECTED
+  outcome     String
+  // machine-readable issue list, JSON array of {code, field, message}
+  issuesJson  String   @default("[]")
+  matchedStoreId String?
+  createdAt   DateTime @default(now())
+
+  observation PriceObservation?
+
+  @@index([batchId])
+  @@index([rowHash])
+}
+
+// ---------------------------------------------------------------------------
+// Users, sessions, contributions, reputation
+// ---------------------------------------------------------------------------
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  // scrypt hash; null for OAuth-only accounts
+  passwordHash  String?
+  googleId      String?  @unique
+  displayName   String
+  // USER | MODERATOR | ADMIN
+  role          String   @default("USER")
+  // Reputation score (computed, cached). See COMMUNITY_REPUTATION.md.
+  reputation    Int      @default(0)
+  // SUSPENDED users cannot contribute
+  status        String   @default("ACTIVE")
+  ageConfirmedAt DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  sessions      AuthSession[]
+  contributions Contribution[]
+  verifications Verification[]
+  comments      Comment[]
+  reputationEvents ReputationEvent[]
+  importBatches ImportBatch[]
+  moderationActions ModerationAction[] @relation("ModActor")
+  auditEvents   AuditEvent[]
+}
+
+model AuthSession {
+  id        String   @id @default(cuid())
+  // sha256 of the opaque token actually stored in the cookie
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  ip        String?
+  userAgent String?
+
+  @@index([userId])
+}
+
+// A community submission: either confirming the displayed price or proposing
+// a replacement.
+model Contribution {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  storeId       String
+  store         Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  productLineId String
+  // CONFIRM | DISPUTE (replacement price proposed)
+  kind          String
+  // For CONFIRM: the observation being confirmed.
+  targetObservationId String?
+  // For DISPUTE: proposed values
+  proposedPriceCents Int?
+  proposedQty   Int?
+  proposedDealJson String?
+  comment       String?
+  // PENDING | PUBLISHED | CORROBORATING (needs more confirmations) | REJECTED | RETRACTED
+  status        String   @default("PENDING")
+  reviewedById  String?
+  reviewNote    String?
+  createdAt     DateTime @default(now())
+  resolvedAt    DateTime?
+
+  observation   PriceObservation? @relation("ContributionObservation")
+
+  @@index([storeId, productLineId, status])
+  @@index([userId, createdAt])
+}
+
+// Confirmations attached to a specific observation.
+model Verification {
+  id            String   @id @default(cuid())
+  observationId String
+  observation   PriceObservation @relation(fields: [observationId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // CONFIRM | REJECT
+  verdict       String
+  weight        Float    @default(1) // reputation-scaled at write time
+  createdAt     DateTime @default(now())
+
+  @@unique([observationId, userId]) // one verification per user per observation
+  @@index([userId, createdAt])
+}
+
+model ReputationEvent {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  delta     Int
+  // e.g. CONTRIBUTION_CORROBORATED, CONTRIBUTION_REJECTED, CONFIRM_ACCURATE,
+  // CONFIRM_INACCURATE, ABUSE_PENALTY, ADMIN_ADJUST
+  reason    String
+  refType   String? // contribution | verification | admin
+  refId     String?
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Comments & moderation
+// ---------------------------------------------------------------------------
+
+model Comment {
+  id        String   @id @default(cuid())
+  storeId   String
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  body      String
+  // VISIBLE | HIDDEN (moderated) | DELETED (by author)
+  status    String   @default("VISIBLE")
+  reportCount Int    @default(0)
+  createdAt DateTime @default(now())
+  editedAt  DateTime?
+
+  @@index([storeId, status, createdAt])
+}
+
+model ModerationAction {
+  id        String   @id @default(cuid())
+  actorId   String
+  actor     User     @relation("ModActor", fields: [actorId], references: [id])
+  // HIDE_COMMENT | RESTORE_COMMENT | REJECT_CONTRIBUTION | APPROVE_CONTRIBUTION |
+  // INVALIDATE_OBSERVATION | MERGE_STORES | SUSPEND_USER | REINSTATE_USER | ...
+  action    String
+  targetType String
+  targetId  String
+  reason    String
+  createdAt DateTime @default(now())
+
+  @@index([targetType, targetId])
+}
+
+model AuditEvent {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String // e.g. IMPORT_COMMITTED, IMPORT_REVERSED, SETTINGS_CHANGED, PRICE_PUBLISHED
+  targetType String?
+  targetId  String?
+  detailJson String  @default("{}")
+  createdAt DateTime @default(now())
+
+  @@index([action, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Settings & geocode cache
+// ---------------------------------------------------------------------------
+
+// Single-row JSON settings blob with typed accessor in src/lib/settings.ts.
+model Setting {
+  key       String   @id
+  valueJson String
+  updatedAt DateTime @updatedAt
+}
+
+model GeocodeCache {
+  id        String   @id @default(cuid())
+  query     String   @unique // normalized query string
+  latitude  Float?
+  longitude Float?
+  label     String?
+  // OK | NOT_FOUND
+  status    String
+  provider  String // zip-centroid | nominatim
+  createdAt DateTime @default(now())
+}
