@@ -297,6 +297,18 @@ model CoverageRequest {
   @@index([createdAt])
 }
 
+// Sliding-window rate-limit events for the "db" backend (multi-process
+// deployments, e.g. Replit Autoscale). Rows are short-lived; the
+// maintenance job prunes anything older than a day.
+model RateLimitEvent {
+  id        String   @id @default(cuid())
+  key       String
+  createdAt DateTime @default(now())
+
+  @@index([key, createdAt])
+  @@index([createdAt])
+}
+
 model AuthSession {
   id        String   @id @default(cuid())
   // sha256 of the opaque token actually stored in the cookie
