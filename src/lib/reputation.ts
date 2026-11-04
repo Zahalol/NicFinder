@@ -24,7 +24,7 @@
 import { prisma } from "./db";
 import type { AppSettings } from "./settings";
 import { audit } from "./audit";
-import { notifyPriceChange } from "./notifications";
+import { notifyPriceChange, notifyReportResolved } from "./notifications";
 import type { Prisma } from "@prisma/client";
 
 export const REP_DELTAS = {
@@ -249,6 +249,21 @@ export async function publishDispute(
       { type: "contribution", id: c.id },
       tx
     );
+
+    // Close the loop with the reporter — except for trusted auto-publishes,
+    // where they just saw it happen in the response.
+    if (how !== "auto") {
+      await notifyReportResolved(
+        {
+          userId: c.userId,
+          storeId: c.storeId,
+          storeName: storeRow?.name ?? "a store",
+          what: "price report",
+          outcome: "published",
+        },
+        tx
+      );
+    }
   });
   await audit("PRICE_PUBLISHED", {
     targetType: "contribution",

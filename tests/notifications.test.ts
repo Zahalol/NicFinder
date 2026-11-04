@@ -85,6 +85,42 @@ describe("in-app price-watch notifications", () => {
     expect(await prisma.notification.count({ where: { userId: watcher.id } })).toBe(2);
   });
 
+  it("resolution notices: reporter learns their report was published (not on auto)", async () => {
+    const { zyn, store, other } = await fixtures();
+    const dispute = await prisma.contribution.create({
+      data: {
+        userId: other.id,
+        storeId: store.id,
+        productLineId: zyn.id,
+        kind: "DISPUTE",
+        proposedPriceCents: 599,
+        status: "CORROBORATING",
+      },
+    });
+    await publishDispute(dispute.id, "moderator", undefined);
+    const resolved = await prisma.notification.findFirst({
+      where: { userId: other.id, kind: "REPORT_RESOLVED" },
+    });
+    expect(resolved).not.toBeNull();
+    expect(resolved!.title).toContain("was published");
+
+    // Trusted auto-publish does NOT notify the actor about their own action.
+    const auto = await prisma.contribution.create({
+      data: {
+        userId: other.id,
+        storeId: store.id,
+        productLineId: zyn.id,
+        kind: "DISPUTE",
+        proposedPriceCents: 589,
+        status: "PENDING",
+      },
+    });
+    await publishDispute(auto.id, "auto");
+    expect(
+      await prisma.notification.count({ where: { userId: other.id, kind: "REPORT_RESOLVED" } })
+    ).toBe(1);
+  });
+
   it("publishDispute alerts watchers end-to-end", async () => {
     const { zyn, store, watcher, other } = await fixtures();
     // current price

@@ -73,6 +73,42 @@ export async function notifyPriceChange(
   return created;
 }
 
+/**
+ * Tell a contributor their report was resolved. Unlike price-change alerts
+ * these are NOT collapsed — each resolution is its own event.
+ */
+export async function notifyReportResolved(
+  opts: {
+    userId: string;
+    storeId: string;
+    storeName: string;
+    /** e.g. "price report", "observation flag", "deal report" */
+    what: string;
+    outcome: "published" | "rejected" | "upheld" | "dismissed";
+    note?: string | null;
+  },
+  tx: Tx = prisma
+): Promise<void> {
+  const verb =
+    opts.outcome === "published"
+      ? "was published"
+      : opts.outcome === "upheld"
+        ? "was upheld"
+        : opts.outcome === "dismissed"
+          ? "was dismissed"
+          : "was not accepted";
+  await tx.notification.create({
+    data: {
+      userId: opts.userId,
+      kind: "REPORT_RESOLVED",
+      storeId: opts.storeId,
+      title: `Your ${opts.what} at ${opts.storeName} ${verb}`,
+      body: opts.note ? `Moderator note: ${opts.note}` : null,
+      url: `/stores/${opts.storeId}`,
+    },
+  });
+}
+
 export async function unreadCount(userId: string): Promise<number> {
   return prisma.notification.count({ where: { userId, readAt: null } });
 }

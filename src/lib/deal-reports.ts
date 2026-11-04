@@ -8,6 +8,7 @@
 import { prisma } from "./db";
 import { parsePriceToCents } from "./money";
 import { addReputation } from "./reputation";
+import { notifyReportResolved } from "./notifications";
 import { audit } from "./audit";
 
 export const DEAL_KIND = "REPORT_DEAL";
@@ -158,6 +159,20 @@ export async function publishDealReport(
         reason: "Deal report approved",
       },
     });
+    const storeRow = await tx.store.findUnique({
+      where: { id: c.storeId },
+      select: { name: true },
+    });
+    await notifyReportResolved(
+      {
+        userId: c.userId,
+        storeId: c.storeId,
+        storeName: storeRow?.name ?? "a store",
+        what: "deal report",
+        outcome: "published",
+      },
+      tx
+    );
   });
   await audit("DEAL_PUBLISHED", {
     userId: moderatorId,
@@ -201,6 +216,21 @@ export async function rejectDealReport(
         reason: reason.slice(0, 300),
       },
     });
+    const storeRow = await tx.store.findUnique({
+      where: { id: c.storeId },
+      select: { name: true },
+    });
+    await notifyReportResolved(
+      {
+        userId: c.userId,
+        storeId: c.storeId,
+        storeName: storeRow?.name ?? "a store",
+        what: "deal report",
+        outcome: "rejected",
+        note: reason.slice(0, 300),
+      },
+      tx
+    );
   });
   return { ok: true };
 }

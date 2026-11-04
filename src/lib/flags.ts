@@ -9,6 +9,7 @@
 
 import { prisma } from "./db";
 import { addReputation } from "./reputation";
+import { notifyReportResolved } from "./notifications";
 import { audit } from "./audit";
 
 export const FLAG_REP = {
@@ -132,6 +133,20 @@ export async function upholdFlag(
         reason: note || "Flag upheld",
       },
     });
+    const storeRow = await tx.store.findUnique({
+      where: { id: c.storeId },
+      select: { name: true },
+    });
+    await notifyReportResolved(
+      {
+        userId: c.userId,
+        storeId: c.storeId,
+        storeName: storeRow?.name ?? "a store",
+        what: "observation flag",
+        outcome: "upheld",
+      },
+      tx
+    );
   });
   await audit("OBSERVATION_INVALIDATED", {
     userId: moderatorId,
@@ -177,6 +192,21 @@ export async function dismissFlag(
         reason: reason.slice(0, 300),
       },
     });
+    const storeRow = await tx.store.findUnique({
+      where: { id: c.storeId },
+      select: { name: true },
+    });
+    await notifyReportResolved(
+      {
+        userId: c.userId,
+        storeId: c.storeId,
+        storeName: storeRow?.name ?? "a store",
+        what: "observation flag",
+        outcome: "dismissed",
+        note: reason.slice(0, 300),
+      },
+      tx
+    );
   });
   return { ok: true };
 }

@@ -5,6 +5,7 @@ import { publishDispute, addReputation, REP_DELTAS } from "@/lib/reputation";
 import { upholdFlag, dismissFlag } from "@/lib/flags";
 import { setCommentVisibility } from "@/lib/comments";
 import { publishDealReport, rejectDealReport } from "@/lib/deal-reports";
+import { notifyReportResolved } from "@/lib/notifications";
 import { audit } from "@/lib/audit";
 
 export async function POST(req: NextRequest) {
@@ -62,6 +63,21 @@ export async function POST(req: NextRequest) {
         await tx.moderationAction.create({
           data: { actorId: user.id, action, targetType: "contribution", targetId, reason },
         });
+        const storeRow = await tx.store.findUnique({
+          where: { id: c.storeId },
+          select: { name: true },
+        });
+        await notifyReportResolved(
+          {
+            userId: c.userId,
+            storeId: c.storeId,
+            storeName: storeRow?.name ?? "a store",
+            what: "price report",
+            outcome: "rejected",
+            note: reason,
+          },
+          tx
+        );
       });
       return NextResponse.json({ ok: true });
     }
