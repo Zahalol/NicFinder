@@ -7,6 +7,7 @@ import {
   selectLatestAvailability,
   type LatestPrice,
 } from "./prices";
+import { assessReliability, type Reliability } from "./reliability";
 import { effectivePerCanCents, totalCents, type DealInput } from "./deals";
 import { getSettings } from "./settings";
 
@@ -31,6 +32,8 @@ export interface StoreResult {
     disputeCount: number;
     availability: string;
     taxIncluded: boolean | null;
+    confidence: number | null;
+    reliability: Reliability;
   } | null;
   deal: {
     minQty: number;
@@ -157,6 +160,15 @@ export async function searchStores(opts: {
             disputeCount: latest.disputeCount,
             availability: latest.observation.availability,
             taxIncluded: latest.observation.taxIncluded,
+            confidence: latest.observation.confidence,
+            reliability: assessReliability({
+              ageDays: latest.ageDays,
+              staleAfterDays: settings.staleAfterDays,
+              sourceType: latest.observation.sourceType,
+              confirmCount: latest.confirmCount,
+              disputeCount: latest.disputeCount,
+              confidence: latest.observation.confidence,
+            }),
           }
         : null,
       availabilitySignal,

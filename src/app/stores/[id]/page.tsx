@@ -4,7 +4,8 @@ import { getCurrentUser } from "@/lib/auth";
 import { getSettings } from "@/lib/settings";
 import { selectLatestPrice, selectLatestAvailability } from "@/lib/prices";
 import { formatCents } from "@/lib/money";
-import { DemoBadge } from "@/components/badges";
+import { DemoBadge, ReliabilityBadge } from "@/components/badges";
+import { assessReliability } from "@/lib/reliability";
 import { BackLink } from "@/components/BackLink";
 import { SaveStoreButton } from "@/components/SaveStoreButton";
 import { ContributePanel } from "./ContributePanel";
@@ -110,9 +111,21 @@ export default async function StorePage({
             <h2 className="text-sm font-medium text-stone-500">{line.name}</h2>
             {latest ? (
               <>
-                <div className="mt-1 text-3xl font-semibold text-stone-900">
-                  {formatCents(latest.observation.priceCents)}
-                  <span className="text-sm font-normal text-stone-500"> /can</span>
+                <div className="mt-1 text-3xl font-semibold text-stone-900 flex items-baseline gap-2 flex-wrap">
+                  <span>
+                    {formatCents(latest.observation.priceCents)}
+                    <span className="text-sm font-normal text-stone-500"> /can</span>
+                  </span>
+                  <ReliabilityBadge
+                    reliability={assessReliability({
+                      ageDays: latest.ageDays,
+                      staleAfterDays: settings.staleAfterDays,
+                      sourceType: latest.observation.sourceType,
+                      confirmCount: latest.confirmCount,
+                      disputeCount: latest.disputeCount,
+                      confidence: latest.observation.confidence,
+                    })}
+                  />
                 </div>
                 <p className="mt-1 text-xs text-stone-500">
                   Observed {latest.observation.observedAt.toLocaleDateString()} ·{" "}

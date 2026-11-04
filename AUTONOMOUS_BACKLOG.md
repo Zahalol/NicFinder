@@ -15,7 +15,7 @@ Status: `todo` | `in-progress` | `done` | `blocked` | `rejected`.
 | 8 | Two-store side-by-side comparison | Med | M | Med | UI clutter | todo |
 | 9 | Value-of-trip calculator (5-can savings vs added distance, stated assumptions) | Med | S-M | Med | Invented costs — keep assumptions explicit | done |
 | 10 | Import contract fuzz tests (malformed CSV/XLSX, huge files, weird encodings, CRLF, BOM) | Med — robustness | S-M | High | None | done |
-| 11 | Price reliability score (age + source + corroboration + disputes), transparent formula | Med | M | Med | False precision | todo |
+| 11 | Price reliability score (age + source + corroboration + disputes), transparent formula | Med | M | Med | False precision | done |
 | 12 | No-map low-clutter quick compare mode for mobile | Low-Med | S | Med | Duplicate of list view? | partially covered by 'Priced only' filter |
 | 13 | Admin pilot economics dashboard (coverage, obs age, est. acquisition cost from configurable assumptions) | Low-Med | M | Low | Speculative | todo |
 | 14 | Benchmark search with 10k synthetic stores; index/queries as justified | Med | M | Med | Needs careful measurement | todo |

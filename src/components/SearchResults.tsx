@@ -6,7 +6,7 @@ import Link from "next/link";
 import type { StoreResult } from "@/lib/search";
 import { computeTripValues, toComparable } from "@/lib/trip-value";
 import { formatCents } from "@/lib/money";
-import { PriceBadge, FreshnessBadge, DealBadge, DemoBadge } from "./badges";
+import { PriceBadge, FreshnessBadge, DealBadge, DemoBadge, ReliabilityBadge } from "./badges";
 
 const StoreMap = dynamic(() => import("./StoreMap"), {
   ssr: false,
@@ -106,6 +106,7 @@ export function SearchResults({
                     {r.latest && (
                       <div className="mt-1.5 flex items-center gap-2 text-xs text-stone-500 flex-wrap">
                         <FreshnessBadge latest={r.latest} />
+                        <ReliabilityBadge reliability={r.latest.reliability} />
                         <span>
                           {r.latest.sourceType === "COMMUNITY"
                             ? "community-reported"

@@ -1,5 +1,29 @@
 import type { StoreResult } from "@/lib/search";
 import { formatCents } from "@/lib/money";
+import {
+  RELIABILITY_LABEL,
+  type Reliability,
+} from "@/lib/reliability";
+
+/**
+ * Qualitative confidence chip. The tooltip lists every factor verbatim so
+ * the assessment is auditable by the reader, not a black box.
+ */
+export function ReliabilityBadge({ reliability }: { reliability: Reliability }) {
+  const styles: Record<Reliability["level"], string> = {
+    high: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    medium: "bg-stone-100 text-stone-600 border-stone-200",
+    low: "bg-amber-50 text-amber-700 border-amber-200",
+  };
+  return (
+    <span
+      className={`rounded border px-1.5 py-0.5 text-[10px] font-medium ${styles[reliability.level]}`}
+      title={`${RELIABILITY_LABEL[reliability.level]}: ${reliability.reasons.join("; ")}`}
+    >
+      {RELIABILITY_LABEL[reliability.level].toLowerCase()}
+    </span>
+  );
+}
 
 export function DemoBadge() {
   return (
