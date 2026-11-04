@@ -239,6 +239,16 @@ try {
   await page.waitForTimeout(1500);
   check("map container renders", (await page.locator(".leaflet-container").count()) > 0);
 
+  const exportCsv = await page.evaluate(async () => {
+    const r = await fetch("/api/admin/export");
+    return { ok: r.ok, text: (await r.text()).slice(0, 200) };
+  });
+  check(
+    "admin price CSV export works",
+    exportCsv.ok && exportCsv.text.startsWith("store_id,"),
+    exportCsv.text
+  );
+
   for (const [path2, marker] of [
     ["/admin", "Active stores"],
     ["/admin/imports", "sample-import.csv"],

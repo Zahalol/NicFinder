@@ -45,7 +45,15 @@ export default async function AdminStores({
     <div>
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <h1 className="text-lg font-semibold text-stone-900">Stores</h1>
-        <DuplicateScanButton />
+        <div className="flex items-center gap-2">
+          <a
+            href="/api/admin/export"
+            className="rounded-lg border border-stone-300 px-3 py-1.5 text-sm text-stone-600 hover:bg-stone-50"
+          >
+            Export prices (CSV)
+          </a>
+          <DuplicateScanButton />
+        </div>
       </div>
 
       {duplicates.length > 0 && (
