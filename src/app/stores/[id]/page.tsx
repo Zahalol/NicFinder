@@ -447,6 +447,7 @@ export default async function StorePage({
           id: c.id,
           body: c.body,
           createdAt: c.createdAt.toISOString(),
+          editedAt: c.editedAt?.toISOString() ?? null,
           user: c.user,
         }))}
         currentUserId={user?.id ?? null}

@@ -8,6 +8,7 @@ interface CommentView {
   id: string;
   body: string;
   createdAt: string;
+  editedAt: string | null;
   user: { id: string; displayName: string; reputation: number };
 }
 
@@ -24,6 +25,26 @@ export function Comments({
   const [body, setBody] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
+
+  async function saveEdit(commentId: string) {
+    setBusy(true);
+    const res = await fetch(`/api/comments/${commentId}/edit`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ body: editText }),
+    });
+    const data = await res.json().catch(() => ({}));
+    setBusy(false);
+    if (!res.ok) {
+      setErr(data.error ?? "Could not save the edit.");
+      return;
+    }
+    setEditingId(null);
+    setErr(null);
+    router.refresh();
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -94,9 +115,20 @@ export function Comments({
               </span>
               <span className="flex gap-2">
                 {currentUserId === c.user.id ? (
-                  <button onClick={() => act(c.id, "delete")} className="hover:text-red-600">
-                    delete
-                  </button>
+                  <>
+                    <button
+                      onClick={() => {
+                        setEditingId(c.id);
+                        setEditText(c.body);
+                      }}
+                      className="hover:text-teal-700"
+                    >
+                      edit
+                    </button>
+                    <button onClick={() => act(c.id, "delete")} className="hover:text-red-600">
+                      delete
+                    </button>
+                  </>
                 ) : (
                   currentUserId && (
                     <button onClick={() => act(c.id, "report")} className="hover:text-amber-600">
@@ -106,7 +138,42 @@ export function Comments({
                 )}
               </span>
             </div>
-            <p className="mt-1 text-sm text-stone-700 whitespace-pre-wrap">{c.body}</p>
+            {editingId === c.id ? (
+              <div className="mt-2 flex gap-2">
+                <input
+                  value={editText}
+                  onChange={(e) => setEditText(e.target.value)}
+                  maxLength={500}
+                  className="flex-1 rounded-lg border border-stone-300 px-3 py-1.5 text-sm"
+                  autoFocus
+                />
+                <button
+                  onClick={() => saveEdit(c.id)}
+                  disabled={busy || editText.trim().length < 2}
+                  className="rounded-lg bg-stone-900 px-3 py-1.5 text-sm text-white disabled:opacity-40"
+                >
+                  Save
+                </button>
+                <button
+                  onClick={() => setEditingId(null)}
+                  className="rounded-lg border border-stone-300 px-3 py-1.5 text-sm text-stone-600"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <p className="mt-1 text-sm text-stone-700 whitespace-pre-wrap">
+                {c.body}
+                {c.editedAt && (
+                  <span
+                    className="ml-1.5 text-[11px] text-stone-400"
+                    title={`Edited ${new Date(c.editedAt).toLocaleString()}`}
+                  >
+                    (edited)
+                  </span>
+                )}
+              </p>
+            )}
           </li>
         ))}
       </ul>

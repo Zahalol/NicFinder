@@ -35,7 +35,7 @@ Status: `todo` | `in-progress` | `done` | `blocked` | `rejected`.
 | 23 | Admin CSV export of current displayed prices (owner backup / spreadsheet workflows) | Med | S | High | None | done |
 | 24 | PWA manifest + icons (installable, no service worker complexity) | Low | S | Med | Complexity creep if SW added | done (no SW, deliberate) |
 | 25 | User profile credibility: clearer reputation explanation on /users/[id] | Low-Med | S | Med | — | done |
-| 26 | Comment editing (editedAt exists in schema, no UI) | Low | S | Med | — | todo |
+| 26 | Comment editing (editedAt exists in schema, no UI) | Low | S | Med | — | done |
 | 27 | Watchlist quick-compare: compare two saved stores from /account | Low | S | Low | duplicate of /compare entry | todo |
 | 28 | Store-page share/copy-link affordance with OG metadata check | Low | S | Med | — | todo |
 | 29 | Maintenance job: hook duplicate scan + notification pruning | Low-Med | S | Med | tsx dependency in cron | done (notification pruning; dup scan stays admin-button) |
