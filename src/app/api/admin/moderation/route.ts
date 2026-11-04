@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { publishDispute, addReputation, REP_DELTAS } from "@/lib/reputation";
 import { upholdFlag, dismissFlag } from "@/lib/flags";
 import { setCommentVisibility } from "@/lib/comments";
+import { publishDealReport, rejectDealReport } from "@/lib/deal-reports";
 import { audit } from "@/lib/audit";
 
 export async function POST(req: NextRequest) {
@@ -19,6 +20,15 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Contribution not reviewable." }, { status: 409 });
       if (c.kind === "FLAG_OBSERVATION")
         return NextResponse.json({ error: "Use UPHOLD_FLAG for observation flags." }, { status: 400 });
+      if (c.kind === "REPORT_DEAL") {
+        const result = await publishDealReport(c.id, user.id);
+        if (!result.ok)
+          return NextResponse.json({ error: result.error }, { status: result.status });
+        await prisma.moderationAction.create({
+          data: { actorId: user.id, action, targetType: "contribution", targetId, reason: reason || "Deal approved" },
+        });
+        return NextResponse.json({ ok: true });
+      }
       await publishDispute(c.id, "moderator", user.id);
       await prisma.moderationAction.create({
         data: { actorId: user.id, action, targetType: "contribution", targetId, reason: reason || "Approved" },
@@ -32,6 +42,12 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Contribution not reviewable." }, { status: 409 });
       if (c.kind === "FLAG_OBSERVATION")
         return NextResponse.json({ error: "Use DISMISS_FLAG for observation flags." }, { status: 400 });
+      if (c.kind === "REPORT_DEAL") {
+        const result = await rejectDealReport(c.id, user.id, reason);
+        if (!result.ok)
+          return NextResponse.json({ error: result.error }, { status: result.status });
+        return NextResponse.json({ ok: true });
+      }
       if (!reason)
         return NextResponse.json({ error: "A reason is required to reject." }, { status: 400 });
       await prisma.$transaction(async (tx) => {

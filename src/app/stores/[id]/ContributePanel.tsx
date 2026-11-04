@@ -21,7 +21,11 @@ export function ContributePanel({
   signedIn: boolean;
 }) {
   const router = useRouter();
-  const [mode, setMode] = useState<"idle" | "dispute">("idle");
+  const [mode, setMode] = useState<"idle" | "dispute" | "deal">("idle");
+  const [dealQty, setDealQty] = useState("5");
+  const [dealPrice, setDealPrice] = useState("");
+  const [dealDiscount, setDealDiscount] = useState("");
+  const [dealConditions, setDealConditions] = useState("");
   const [lineId, setLineId] = useState(productLines[0]?.id ?? "");
   const [price, setPrice] = useState("");
   const [qty, setQty] = useState("");
@@ -104,7 +108,90 @@ export function ContributePanel({
         >
           Report a different price
         </button>
+        <button
+          disabled={busy}
+          onClick={() => setMode(mode === "deal" ? "idle" : "deal")}
+          className="rounded-lg border border-stone-300 px-3 py-1.5 text-sm text-stone-700 hover:bg-stone-50"
+        >
+          Report a multi-can deal
+        </button>
       </div>
+
+      {mode === "deal" && (
+        <form
+          className="mt-4 space-y-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            post({
+              kind: "REPORT_DEAL",
+              productLineId: lineId,
+              minQty: Number(dealQty),
+              dealPrice: dealPrice || null,
+              dealDiscount: dealDiscount || null,
+              conditions: dealConditions || undefined,
+            });
+          }}
+        >
+          <div className="flex gap-2 flex-wrap items-end">
+            <label className="text-sm text-stone-600 flex items-center gap-2">
+              Buy at least
+              <input
+                required
+                value={dealQty}
+                onChange={(e) => setDealQty(e.target.value)}
+                inputMode="numeric"
+                className="w-14 rounded-lg border border-stone-300 px-2 py-1.5"
+              />
+              cans
+            </label>
+            <label className="text-sm text-stone-600 flex items-center gap-2">
+              at
+              <input
+                value={dealPrice}
+                onChange={(e) => {
+                  setDealPrice(e.target.value);
+                  if (e.target.value) setDealDiscount("");
+                }}
+                placeholder="5.99"
+                inputMode="decimal"
+                className="w-20 rounded-lg border border-stone-300 px-2 py-1.5"
+              />
+              /can
+            </label>
+            <span className="text-xs text-stone-400">or</span>
+            <label className="text-sm text-stone-600 flex items-center gap-2">
+              <input
+                value={dealDiscount}
+                onChange={(e) => {
+                  setDealDiscount(e.target.value);
+                  if (e.target.value) setDealPrice("");
+                }}
+                placeholder="1.00"
+                inputMode="decimal"
+                className="w-20 rounded-lg border border-stone-300 px-2 py-1.5"
+              />
+              off each
+            </label>
+          </div>
+          <input
+            value={dealConditions}
+            onChange={(e) => setDealConditions(e.target.value)}
+            placeholder="Conditions (loyalty card, specific flavors…) — optional"
+            maxLength={300}
+            className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+          />
+          <button
+            disabled={busy || !dealQty || (!dealPrice && !dealDiscount)}
+            className="rounded-lg bg-stone-900 text-white px-4 py-2 text-sm font-medium hover:bg-stone-700 disabled:opacity-50"
+          >
+            Submit deal report
+          </button>
+          <p className="text-xs text-stone-400">
+            A moderator reviews deal reports before they appear — deal math is
+            easy to get wrong, so we double-check.
+          </p>
+        </form>
+      )}
 
       {mode === "dispute" && (
         <form

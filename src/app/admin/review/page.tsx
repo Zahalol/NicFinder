@@ -6,10 +6,25 @@ import Link from "next/link";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Review queue — NicFinder admin" };
 
+function describeDeal(json: string): string {
+  try {
+    const d = JSON.parse(json) as {
+      minQty: number;
+      pricePerCanCents: number | null;
+      discountPerCanCents: number | null;
+    };
+    return d.pricePerCanCents !== null
+      ? `Deal: buy ${d.minQty}+ at ${formatCents(d.pricePerCanCents)}/can`
+      : `Deal: buy ${d.minQty}+, ${formatCents(d.discountPerCanCents)} off each`;
+  } catch {
+    return "Deal report (unparseable)";
+  }
+}
+
 export default async function ReviewPage() {
   const [pending, corroborating, flaggedComments, observationFlags] = await Promise.all([
     prisma.contribution.findMany({
-      where: { status: "PENDING", kind: "DISPUTE" },
+      where: { status: "PENDING", kind: { in: ["DISPUTE", "REPORT_DEAL"] } },
       include: {
         user: { select: { id: true, displayName: true, reputation: true } },
         store: { select: { id: true, name: true, address: true } },
@@ -68,7 +83,12 @@ export default async function ReviewPage() {
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div>
             <p>
-              <strong>{formatCents(c.proposedPriceCents)}</strong> proposed at{" "}
+              {c.kind === "REPORT_DEAL" && c.proposedDealJson ? (
+                <strong>{describeDeal(c.proposedDealJson)}</strong>
+              ) : (
+                <strong>{formatCents(c.proposedPriceCents)}</strong>
+              )}{" "}
+              proposed at{" "}
               <Link href={`/stores/${c.store.id}`} className="text-teal-700 hover:underline">
                 {c.store.name}
               </Link>{" "}
@@ -95,7 +115,9 @@ export default async function ReviewPage() {
         <h1 className="text-lg font-semibold text-stone-900">
           Needs moderator decision ({pending.length})
         </h1>
-        <p className="text-sm text-stone-500">Guardrail-tripping price changes.</p>
+        <p className="text-sm text-stone-500">
+          Guardrail-tripping price changes and community deal reports.
+        </p>
         <ul className="mt-3 space-y-2">
           {pending.length === 0 && <li className="text-sm text-stone-400">Queue is empty.</li>}
           {pending.map((c) => <ContributionRow key={c.id} c={c} />)}

@@ -13,6 +13,7 @@ import {
   REP_DELTAS,
 } from "@/lib/reputation";
 import { flagObservation } from "@/lib/flags";
+import { reportDeal } from "@/lib/deal-reports";
 
 export async function POST(
   req: NextRequest,
@@ -145,6 +146,25 @@ export async function POST(
         }
       });
       return NextResponse.json({ ok: true, message: "Thanks — confirmation recorded." });
+    }
+
+    // ----- REPORT_DEAL: propose a multi-can deal (moderator-reviewed) -----
+    if (kind === "REPORT_DEAL") {
+      const result = await reportDeal({
+        storeId,
+        productLineId,
+        userId: user.id,
+        minQty: body?.minQty,
+        dealPrice: body?.dealPrice ?? null,
+        dealDiscount: body?.dealDiscount ?? null,
+        conditions: body?.conditions,
+      });
+      if (!result.ok)
+        return NextResponse.json({ error: result.error }, { status: result.status });
+      return NextResponse.json({
+        ok: true,
+        message: "Thanks — a moderator will review the deal before it’s shown.",
+      });
     }
 
     // ----- DISPUTE: propose a replacement price ---------------------------
