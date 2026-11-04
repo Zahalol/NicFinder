@@ -1,5 +1,5 @@
 // Centralized, configurable thresholds. Stored as a single JSON blob in the
-// Setting table; defaults documented in COMMUNITY_REPUTATION.md.
+// Setting table; defaults documented in docs/COMMUNITY_REPUTATION.md.
 
 import { prisma } from "./db";
 

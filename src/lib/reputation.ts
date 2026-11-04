@@ -1,5 +1,5 @@
 // Community reputation & publication engine.
-// Full rules and rationale: COMMUNITY_REPUTATION.md. All thresholds come
+// Full rules and rationale: docs/COMMUNITY_REPUTATION.md. All thresholds come
 // from settings (admin-configurable in one place).
 //
 // Flow for a DISPUTE (replacement price):

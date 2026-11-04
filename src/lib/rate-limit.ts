@@ -28,7 +28,7 @@ export async function countRecentComments(
 }
 
 // In-memory sliding window (per process — adequate for the MVP; see
-// ARCHITECTURE.md for the production note).
+// docs/ARCHITECTURE.md for the production note).
 const buckets = new Map<string, number[]>();
 
 export function memoryRateLimit(

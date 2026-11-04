@@ -1,7 +1,7 @@
 // Latest-price selection policy.
 //
 // Observations are an append-only evidence log; what a visitor sees is
-// *computed* from it. Policy (documented in ARCHITECTURE.md):
+// *computed* from it. Policy (documented in docs/ARCHITECTURE.md):
 //  1. Only ACTIVE observations count.
 //  2. Observations older than expireAfterDays are excluded entirely —
 //     we show "no recent price" rather than something ancient.

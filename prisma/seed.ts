@@ -95,7 +95,7 @@ async function main() {
     create: { slug: "zyn-ultra", name: "ZYN Ultra", brand: "ZYN", sortOrder: 2, description: "ZYN Ultra line — may be priced differently from regular ZYN." },
   });
 
-  // --- Users (documented in DEMO_GUIDE.md)
+  // --- Users (documented in docs/DEMO_GUIDE.md)
   const admin = await prisma.user.upsert({
     where: { email: "admin@example.com" },
     update: {},

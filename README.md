@@ -8,9 +8,16 @@ The site works like a calmer GasBuddy for pouches: search any US address or
 ZIP, see nearby stores on a list or map, compare single-can prices and
 multi-can deal pricing, and see exactly how fresh and trustworthy every
 number is. Prices arrive by **file import** (CSV/XLSX from a future calling
-system — see `IMPORT_CONTRACT.md`), by **community reports**, and by
+system — see `docs/IMPORT_CONTRACT.md`), by **community reports**, and by
 **manual admin entry**. There is deliberately **no calling code** in this
-application (`ELEVENLABS_CALLING_RESEARCH.md` covers that future workstream).
+application (`docs/ELEVENLABS_CALLING_RESEARCH.md` covers that future workstream).
+
+<p align="center">
+  <img src="docs/screenshots/03-search-list.png" alt="Search results with best-price card" width="80%">
+</p>
+
+**📸 Full visual tour: [docs/screenshots/](docs/screenshots/README.md)** —
+search, map, deals, store pages, community flows, and the whole admin suite.
 
 ## Quick start
 
@@ -24,7 +31,7 @@ services or API keys needed.
   docker run --name nicfinder-pg -e POSTGRES_USER=nicfinder -e POSTGRES_PASSWORD=nicfinder_dev -e POSTGRES_DB=nicfinder -p 5432:5432 -d postgres:16
   ```
 - **Shared cloud DB:** point `DATABASE_URL` at your Replit/Neon database
-  (see `REPLIT.md`) — no local install at all.
+  (see `docs/REPLIT.md`) — no local install at all.
 - **Native Postgres:** create a `nicfinder` database and matching user.
 
 **App setup:**
@@ -39,8 +46,8 @@ npm run dev                   # http://localhost:3000
 ```
 
 Then search **60614** (the Chicago pilot area). Demo accounts are listed in
-`DEMO_GUIDE.md` (admin: `admin@example.com` / `admin-demo-password`).
-**Deploying on Replit:** see `REPLIT.md` (database, secrets, Replit Auth
+`docs/DEMO_GUIDE.md` (admin: `admin@example.com` / `admin-demo-password`).
+**Deploying on Replit:** see `docs/REPLIT.md` (database, secrets, Replit Auth
 SSO, Autoscale deployment, scheduled maintenance).
 
 ## Commands
@@ -70,17 +77,17 @@ SSO, Autoscale deployment, scheduled maintenance).
 
 | File | Contents |
 | --- | --- |
-| `REPLIT.md` | Replit deployment guide (DB, SSO, Autoscale, cron) |
-| `PRODUCT_REQUIREMENTS.md` | Scope, user flows, edge cases |
-| `ARCHITECTURE.md` | Data model, latest-price policy, security, Postgres path |
-| `IMPORT_CONTRACT.md` | CSV/XLSX schema, aliases, validation, idempotency |
-| `COMMUNITY_REPUTATION.md` | Trust scoring, publication rules, abuse defenses |
-| `ELEVENLABS_CALLING_RESEARCH.md` | Future calling system research (no code) |
-| `BUSINESS_RESEARCH.md` | Market/competitor/geo/financial research |
-| `DECISIONS.md` | Assumptions and why |
-| `PROGRESS.md` | Build status, how to resume |
-| `DEMO_GUIDE.md` | Demo script with accounts |
-| `ROADMAP.md` | Post-MVP priorities |
+| `docs/REPLIT.md` | Replit deployment guide (DB, SSO, Autoscale, cron) |
+| `docs/PRODUCT_REQUIREMENTS.md` | Scope, user flows, edge cases |
+| `docs/ARCHITECTURE.md` | Data model, latest-price policy, security, Postgres path |
+| `docs/IMPORT_CONTRACT.md` | CSV/XLSX schema, aliases, validation, idempotency |
+| `docs/COMMUNITY_REPUTATION.md` | Trust scoring, publication rules, abuse defenses |
+| `docs/ELEVENLABS_CALLING_RESEARCH.md` | Future calling system research (no code) |
+| `docs/BUSINESS_RESEARCH.md` | Market/competitor/geo/financial research |
+| `docs/DECISIONS.md` | Assumptions and why |
+| `docs/PROGRESS.md` | Build status, how to resume |
+| `docs/DEMO_GUIDE.md` | Demo script with accounts |
+| `docs/ROADMAP.md` | Post-MVP priorities |
 
 ## Security & privacy notes
 

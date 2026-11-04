@@ -22,7 +22,7 @@ export default async function ImportsPage() {
     <div>
       <h1 className="text-lg font-semibold text-stone-900">Data imports</h1>
       <p className="text-sm text-stone-500 mt-1">
-        Upload CSV or XLSX observation files (see <code>IMPORT_CONTRACT.md</code> and{" "}
+        Upload CSV or XLSX observation files (see <code>docs/IMPORT_CONTRACT.md</code> and{" "}
         <code>sample-data/</code>). Files are previewed and validated before anything
         is applied; committed imports can be reversed without losing history.
       </p>

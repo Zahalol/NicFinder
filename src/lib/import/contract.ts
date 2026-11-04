@@ -1,4 +1,4 @@
-// Canonical import contract (v1). Human documentation: IMPORT_CONTRACT.md.
+// Canonical import contract (v1). Human documentation: docs/IMPORT_CONTRACT.md.
 // The ingestion engine is brand-agnostic: product lines come from the DB,
 // not from hard-coded ZYN references.
 

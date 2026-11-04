@@ -28,7 +28,7 @@ export default async function SettingsPage() {
     <div className="max-w-2xl">
       <h1 className="text-lg font-semibold text-stone-900">Verification & trust settings</h1>
       <p className="text-sm text-stone-500 mt-1">
-        All community-trust thresholds in one place (see COMMUNITY_REPUTATION.md
+        All community-trust thresholds in one place (see docs/COMMUNITY_REPUTATION.md
         for the full rules). {!isAdmin && "Moderators can view; only admins can change."}
       </p>
       <SettingsForm settings={settings} docs={FIELD_DOCS} readOnly={!isAdmin} />

@@ -243,7 +243,7 @@ model User {
   displayName   String
   // USER | MODERATOR | ADMIN
   role          String   @default("USER")
-  // Reputation score (computed, cached). See COMMUNITY_REPUTATION.md.
+  // Reputation score (computed, cached). See docs/COMMUNITY_REPUTATION.md.
   reputation    Int      @default(0)
   // SUSPENDED users cannot contribute
   status        String   @default("ACTIVE")

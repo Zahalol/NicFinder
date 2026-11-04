@@ -1,5 +1,5 @@
 // Periodic maintenance job — safe to run as often as hourly.
-// Designed for Replit Scheduled Deployments (see REPLIT.md):
+// Designed for Replit Scheduled Deployments (see docs/REPLIT.md):
 //   command: node scripts/maintenance.mjs
 //
 // What it does (all append-only/status changes, nothing deleted):
