@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import type { StoreResult } from "@/lib/search";
+import { computeTripValues, toComparable } from "@/lib/trip-value";
+import { formatCents } from "@/lib/money";
 import { PriceBadge, FreshnessBadge, DealBadge, DemoBadge } from "./badges";
 
 const StoreMap = dynamic(() => import("./StoreMap"), {
@@ -25,6 +27,10 @@ export function SearchResults({
   productSlug: string;
 }) {
   const [view, setView] = useState<"list" | "map">("list");
+  const tripValues = useMemo(
+    () => computeTripValues(results.map(toComparable)),
+    [results]
+  );
 
   return (
     <div className="mt-5">
@@ -109,6 +115,12 @@ export function SearchResults({
                         · {r.availabilitySignal.ageDays === 0 ? "today" : `${r.availabilitySignal.ageDays}d ago`}
                       </div>
                     )}
+                    {tripValues.has(r.id) && (
+                      <div className="mt-1.5 text-xs text-teal-700">
+                        Saves {formatCents(tripValues.get(r.id)!.savingsCents)} on {qty} can{qty === 1 ? "" : "s"} vs{" "}
+                        {tripValues.get(r.id)!.baselineName} — {tripValues.get(r.id)!.extraMiles} mi farther
+                      </div>
+                    )}
                   </div>
                   <PriceBadge result={r} qty={qty} />
                 </div>
@@ -116,6 +128,13 @@ export function SearchResults({
             </li>
           ))}
         </ul>
+      )}
+      {view === "list" && tripValues.size > 0 && (
+        <p className="mt-3 text-[11px] text-stone-400">
+          “Saves … vs …” compares can cost at your chosen quantity against the
+          nearest store with a definite price. Distances are straight-line;
+          fuel and time aren’t estimated.
+        </p>
       )}
     </div>
   );
