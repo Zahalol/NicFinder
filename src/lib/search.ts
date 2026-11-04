@@ -18,6 +18,7 @@ export interface StoreResult {
   isDemo: boolean;
   distanceMiles: number;
   latest: {
+    observationId: string;
     priceCents: number;
     observedAt: string;
     ageDays: number;
@@ -122,6 +123,7 @@ export async function searchStores(opts: {
       distanceMiles: Math.round(distance * 10) / 10,
       latest: latest
         ? {
+            observationId: latest.observation.id,
             priceCents: latest.observation.priceCents,
             observedAt: latest.observation.observedAt.toISOString(),
             ageDays: latest.ageDays,

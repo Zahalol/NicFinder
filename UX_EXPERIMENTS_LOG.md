@@ -356,3 +356,48 @@ recorded observation. Demo rows carry the demo chip as everywhere else.
 stores; typecheck/lint green.
 
 **Recommendation: Keep.**
+
+---
+
+## Cycle 12 — Store-page location mini-map + share button
+
+**Problem.** Store pages had no visual sense of place (only a text address
+and an external OSM link), and sharing a find meant copying the URL bar.
+
+**What changed.** A non-interactive 160px Leaflet mini-map (clean pin dot,
+OSM attribution, loading skeleton, all zoom/drag disabled so it never traps
+mobile scrolling) under the store header; a Share button next to Save using
+the native share sheet with a clipboard fallback ("Link copied ✓").
+
+**Testing.** Screenshot verified pin + layout; header actions wrap cleanly
+at 390px. Typecheck/lint/tests green.
+
+**Recommendation: Keep** (mini-map), **Keep** (share — ~40 lines, no deps).
+
+---
+
+## Cycle 13 — One-tap "✓ Still this price?" confirm from search results
+
+**Problem.** Confirming a price required opening the store page and finding
+the contribute panel — too much friction for the highest-value, lowest-effort
+community action (freshness confirmations), which the product brief calls out
+("make contributing accurate information easier").
+
+**What changed.**
+- `lib/search.ts` exposes the latest observation's id in results.
+- Signed-in members see a small "✓ Still this price?" chip in each priced
+  result card's meta row; it POSTs the existing `kind: CONFIRM` contribution
+  (same endpoint, rate limits, self-confirm guard, and reputation flow as the
+  store-page panel), flips to "Thanks ✓", and refreshes the confirm count.
+  Signed-out visitors see nothing (no nag).
+- Errors from the API (already-confirmed, rate limit, superseded price) are
+  shown inline as returned.
+
+**Why selected.** Community-flywheel: every confirmation raises the
+confidence tier (Cycle 6) and freshness of the number everyone else sees.
+
+**Testing.** Playwright signed in as a demo member: 12 chips rendered,
+clicking one recorded a real verification ("Thanks ✓" + "✓ 1 confirm"
+appears after refresh). Typecheck/lint green.
+
+**Recommendation: Keep.**

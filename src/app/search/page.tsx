@@ -7,6 +7,7 @@ import { QuickSearches } from "@/components/QuickSearches";
 import { formatCents } from "@/lib/money";
 import { compareTrip } from "@/lib/trip";
 import { prisma } from "@/lib/db";
+import { getCurrentUser } from "@/lib/auth";
 import Link from "next/link";
 
 export const metadata = { title: "Search — NicFinder" };
@@ -50,9 +51,12 @@ export default async function SearchPage({
   }
 
   const hasLocation = lat !== null && lng !== null && !Number.isNaN(lat) && !Number.isNaN(lng);
-  const search = hasLocation
-    ? await searchStores({ lat: lat!, lng: lng!, radiusMiles: radius, productSlug: product, qty, sort })
-    : null;
+  const [search, user] = await Promise.all([
+    hasLocation
+      ? searchStores({ lat: lat!, lng: lng!, radiusMiles: radius, productSlug: product, qty, sort })
+      : Promise.resolve(null),
+    getCurrentUser().catch(() => null),
+  ]);
 
   const baseParams = new URLSearchParams();
   if (q) baseParams.set("q", q);
@@ -157,6 +161,8 @@ export default async function SearchPage({
                 center={{ lat: lat!, lng: lng! }}
                 qty={qty}
                 productSlug={product}
+                productLineId={search.productLineId}
+                signedIn={Boolean(user)}
               />
             </>
           )}

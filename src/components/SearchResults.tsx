@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { StoreResult } from "@/lib/search";
 import { PriceBadge, FreshnessBadge, DealBadge, DemoBadge, ConfidenceBadge } from "./badges";
@@ -16,16 +17,82 @@ const StoreMap = dynamic(() => import("./StoreMap"), {
   ),
 });
 
+// EXPERIMENT (Cycle 13): one-tap "still this price?" confirmation for
+// signed-in members, straight from the results list.
+function QuickConfirm({
+  storeId,
+  productLineId,
+  observationId,
+}: {
+  storeId: string;
+  productLineId: string;
+  observationId: string;
+}) {
+  const router = useRouter();
+  const [state, setState] = useState<"idle" | "busy" | "done" | "error">("idle");
+  const [msg, setMsg] = useState<string | null>(null);
+
+  async function confirm(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (state === "busy" || state === "done") return;
+    setState("busy");
+    try {
+      const res = await fetch(`/api/stores/${storeId}/contributions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          kind: "CONFIRM",
+          productLineId,
+          targetObservationId: observationId,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setState("done");
+        router.refresh();
+      } else {
+        setState("error");
+        setMsg(data.error ?? "Couldn’t record that.");
+      }
+    } catch {
+      setState("error");
+      setMsg("Network error.");
+    }
+  }
+
+  if (state === "error")
+    return <span className="text-[11px] text-stone-400" title={msg ?? undefined}>{msg}</span>;
+  return (
+    <button
+      onClick={confirm}
+      disabled={state !== "idle"}
+      className={`rounded-md border px-2 py-0.5 text-[11px] font-medium transition ${
+        state === "done"
+          ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+          : "border-stone-300 text-stone-500 hover:border-teal-400 hover:text-teal-700"
+      }`}
+      aria-label="Confirm this price is still right"
+    >
+      {state === "done" ? "Thanks ✓" : state === "busy" ? "…" : "✓ Still this price?"}
+    </button>
+  );
+}
+
 function StoreCard({
   r,
   qty,
   productSlug,
+  productLineId,
+  signedIn,
   compared,
   onToggleCompare,
 }: {
   r: StoreResult;
   qty: number;
   productSlug: string;
+  productLineId?: string | null;
+  signedIn?: boolean;
   /** undefined = compare not offered for this card */
   compared?: boolean;
   onToggleCompare?: (id: string) => void;
@@ -67,6 +134,13 @@ function StoreCard({
               {r.latest.availability === "OUT_OF_STOCK" && (
                 <span className="text-red-600">reported out of stock</span>
               )}
+              {signedIn && productLineId && (
+                <QuickConfirm
+                  storeId={r.id}
+                  productLineId={productLineId}
+                  observationId={r.latest.observationId}
+                />
+              )}
             </div>
           )}
         </div>
@@ -103,11 +177,15 @@ export function SearchResults({
   center,
   qty,
   productSlug,
+  productLineId = null,
+  signedIn = false,
 }: {
   results: StoreResult[];
   center: { lat: number; lng: number };
   qty: number;
   productSlug: string;
+  productLineId?: string | null;
+  signedIn?: boolean;
 }) {
   const [view, setView] = useState<"list" | "map">("list");
   const [directoryOpen, setDirectoryOpen] = useState(false);
@@ -177,6 +255,8 @@ export function SearchResults({
                   r={r}
                   qty={qty}
                   productSlug={productSlug}
+                  productLineId={productLineId}
+                  signedIn={signedIn}
                   compared={r.latest ? compareIds.includes(r.id) : undefined}
                   onToggleCompare={
                     r.latest && priced.length >= 2 ? toggleCompare : undefined
