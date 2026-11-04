@@ -8,17 +8,24 @@ export function ReviewActions({
   commentId,
   commentStatus,
   flagId,
+  dealFlagId,
 }: {
   contributionId?: string;
   commentId?: string;
   commentStatus?: string;
   flagId?: string;
+  dealFlagId?: string;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  async function act(action: string, targetId: string, needReason = false) {
+  async function act(
+    action: string,
+    targetId: string,
+    needReason = false,
+    extra: Record<string, string> = {}
+  ) {
     let reason = "";
     if (needReason) {
       reason = window.prompt("Reason:") ?? "";
@@ -29,7 +36,7 @@ export function ReviewActions({
     const res = await fetch("/api/admin/moderation", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action, targetId, reason }),
+      body: JSON.stringify({ action, targetId, reason, ...extra }),
     });
     const json = await res.json().catch(() => ({}));
     setBusy(false);
@@ -70,6 +77,31 @@ export function ReviewActions({
           <button
             disabled={busy}
             onClick={() => act("DISMISS_FLAG", flagId, true)}
+            className="rounded border border-red-300 text-red-700 px-2 py-1 text-xs hover:bg-red-50"
+          >
+            Dismiss
+          </button>
+        </>
+      )}
+      {dealFlagId && (
+        <>
+          <button
+            disabled={busy}
+            onClick={() => act("UPHOLD_DEAL_FLAG", dealFlagId, false, { how: "ended" })}
+            className="rounded border border-teal-300 text-teal-700 px-2 py-1 text-xs hover:bg-teal-50"
+          >
+            Deal ended
+          </button>
+          <button
+            disabled={busy}
+            onClick={() => act("UPHOLD_DEAL_FLAG", dealFlagId, false, { how: "invalid" })}
+            className="rounded border border-amber-300 text-amber-700 px-2 py-1 text-xs hover:bg-amber-50"
+          >
+            Invalid data
+          </button>
+          <button
+            disabled={busy}
+            onClick={() => act("DISMISS_DEAL_FLAG", dealFlagId, true)}
             className="rounded border border-red-300 text-red-700 px-2 py-1 text-xs hover:bg-red-50"
           >
             Dismiss

@@ -13,6 +13,7 @@ import { ShareButton } from "@/components/ShareButton";
 import { ContributePanel } from "./ContributePanel";
 import { Comments } from "./Comments";
 import { FlagObservationButton } from "./FlagObservationButton";
+import { FlagDealButton } from "./FlagDealButton";
 import { PriceHistorySparkline } from "@/components/PriceHistorySparkline";
 import { searchStores } from "@/lib/search";
 
@@ -322,7 +323,8 @@ export default async function StorePage({
                 {d.expiresAt && (
                   <span className="text-stone-500"> · until {d.expiresAt.toLocaleDateString()}</span>
                 )}
-                <span className="text-xs text-stone-400"> · reported {d.observedAt.toLocaleDateString()}</span>
+                <span className="text-xs text-stone-400"> · reported {d.observedAt.toLocaleDateString()}</span>{" "}
+                <FlagDealButton storeId={store.id} dealId={d.id} signedIn={Boolean(user)} />
               </li>
             ))}
           </ul>

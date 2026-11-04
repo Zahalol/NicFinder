@@ -51,7 +51,7 @@ export default async function ReviewPage() {
       take: 50,
     }),
     prisma.contribution.findMany({
-      where: { status: "PENDING", kind: "FLAG_OBSERVATION" },
+      where: { status: "PENDING", kind: { in: ["FLAG_OBSERVATION", "FLAG_DEAL"] } },
       include: {
         user: { select: { id: true, displayName: true, reputation: true } },
         store: { select: { id: true, name: true, address: true } },
@@ -62,7 +62,19 @@ export default async function ReviewPage() {
   ]);
 
   // Load the flagged observations for context (price, date, source).
-  const flaggedObsIds = observationFlags
+  const dealFlags = observationFlags.filter((f) => f.kind === "FLAG_DEAL");
+  const obsFlags = observationFlags.filter((f) => f.kind === "FLAG_OBSERVATION");
+  const flaggedDealIds = dealFlags
+    .map((f) => f.targetObservationId)
+    .filter((x): x is string => Boolean(x));
+  const flaggedDeals = flaggedDealIds.length
+    ? await prisma.quantityDeal.findMany({
+        where: { id: { in: flaggedDealIds } },
+        include: { productLine: { select: { name: true } } },
+      })
+    : [];
+  const dealById = new Map(flaggedDeals.map((d) => [d.id, d]));
+  const flaggedObsIds = obsFlags
     .map((f) => f.targetObservationId)
     .filter((x): x is string => Boolean(x));
   const flaggedObs = flaggedObsIds.length
@@ -139,7 +151,7 @@ export default async function ReviewPage() {
 
       <section>
         <h2 className="text-lg font-semibold text-stone-900">
-          Flagged observations ({observationFlags.length})
+          Flagged observations ({obsFlags.length})
         </h2>
         <p className="text-sm text-stone-500">
           Members reporting that a specific listed observation (current or
@@ -147,10 +159,10 @@ export default async function ReviewPage() {
           (append-only — the row stays, marked invalid, with the reason).
         </p>
         <ul className="mt-3 space-y-2">
-          {observationFlags.length === 0 && (
+          {obsFlags.length === 0 && (
             <li className="text-sm text-stone-400">No observation flags.</li>
           )}
-          {observationFlags.map((f) => {
+          {obsFlags.map((f) => {
             const obs = f.targetObservationId ? obsById.get(f.targetObservationId) : undefined;
             return (
               <li key={f.id} className="rounded-lg border border-stone-200 bg-white p-3 text-sm">
@@ -186,6 +198,55 @@ export default async function ReviewPage() {
                     </p>
                   </div>
                   <ReviewActions flagId={f.id} />
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+
+      <section>
+        <h2 className="text-lg font-semibold text-stone-900">
+          Flagged deals ({dealFlags.length})
+        </h2>
+        <p className="text-sm text-stone-500">
+          Members reporting a listed deal as ended or wrong. “Ended” keeps it in
+          history as EXPIRED; “Invalid” marks it bad data.
+        </p>
+        <ul className="mt-3 space-y-2">
+          {dealFlags.length === 0 && <li className="text-sm text-stone-400">No deal flags.</li>}
+          {dealFlags.map((f) => {
+            const deal = f.targetObservationId ? dealById.get(f.targetObservationId) : undefined;
+            return (
+              <li key={f.id} className="rounded-lg border border-stone-200 bg-white p-3 text-sm">
+                <div className="flex items-start justify-between gap-3 flex-wrap">
+                  <div>
+                    <p>
+                      {deal ? (
+                        <strong>
+                          {deal.productLine.name}: buy {deal.minQty}+{" "}
+                          {deal.pricePerCanCents !== null
+                            ? `at ${formatCents(deal.pricePerCanCents)}/can`
+                            : `${formatCents(deal.discountPerCanCents)} off each`}
+                        </strong>
+                      ) : (
+                        <em>deal missing</em>
+                      )}{" "}
+                      at{" "}
+                      <Link href={`/stores/${f.store.id}`} className="text-teal-700 hover:underline">
+                        {f.store.name}
+                      </Link>
+                    </p>
+                    <p className="text-xs text-stone-500 mt-0.5">
+                      flagged by{" "}
+                      <Link href={`/users/${f.user.id}`} className="hover:underline">
+                        {f.user.displayName}
+                      </Link>{" "}
+                      (rep {f.user.reputation}) · {f.createdAt.toLocaleString()}
+                      {f.comment && <> · “{f.comment}”</>}
+                    </p>
+                  </div>
+                  <ReviewActions dealFlagId={f.id} />
                 </div>
               </li>
             );

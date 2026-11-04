@@ -12,7 +12,7 @@ import {
   addReputation,
   REP_DELTAS,
 } from "@/lib/reputation";
-import { flagObservation } from "@/lib/flags";
+import { flagObservation, flagDeal } from "@/lib/flags";
 import { reportDeal } from "@/lib/deal-reports";
 
 export async function POST(
@@ -54,6 +54,22 @@ export async function POST(
       return NextResponse.json({
         ok: true,
         message: "Thanks — a moderator will review this observation.",
+      });
+    }
+
+    // ----- FLAG a deal (no longer offered / wrong) -------------------------
+    if (kind === "FLAG_DEAL") {
+      const result = await flagDeal({
+        dealId: String(body?.dealId ?? ""),
+        storeId,
+        userId: user.id,
+        reason: String(body?.comment ?? ""),
+      });
+      if (!result.ok)
+        return NextResponse.json({ error: result.error }, { status: result.status });
+      return NextResponse.json({
+        ok: true,
+        message: "Thanks — a moderator will check this deal.",
       });
     }
 

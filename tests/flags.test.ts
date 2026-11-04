@@ -1,7 +1,15 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { prisma } from "@/lib/db";
 import { resetDb, seedProductLines } from "./helpers";
-import { flagObservation, upholdFlag, dismissFlag, FLAG_REP } from "@/lib/flags";
+import {
+  flagObservation,
+  upholdFlag,
+  dismissFlag,
+  flagDeal,
+  upholdDealFlag,
+  dismissDealFlag,
+  FLAG_REP,
+} from "@/lib/flags";
 
 async function fixtures() {
   const { zyn } = await seedProductLines();
@@ -184,5 +192,95 @@ describe("historical-observation flags", () => {
     });
     expect(deadFlag.ok).toBe(false);
     if (!deadFlag.ok) expect(deadFlag.status).toBe(409);
+  });
+});
+
+describe("deal flags", () => {
+  beforeEach(resetDb);
+
+  async function dealFixtures() {
+    const { zyn, store, flagger, moderator } = await (async () => {
+      const { zyn } = await seedProductLines();
+      const store = await prisma.store.create({ data: { name: "Deal Flag Store", isDemo: true } });
+      const flagger = await prisma.user.create({
+        data: { email: "df@test.local", displayName: "DF" },
+      });
+      const moderator = await prisma.user.create({
+        data: { email: "dfmod@test.local", displayName: "DFMod", role: "MODERATOR" },
+      });
+      return { zyn, store, flagger, moderator };
+    })();
+    const deal = await prisma.quantityDeal.create({
+      data: {
+        storeId: store.id,
+        productLineId: zyn.id,
+        minQty: 5,
+        discountPerCanCents: 100,
+        observedAt: new Date(),
+        sourceType: "IMPORT",
+      },
+    });
+    return { zyn, store, flagger, moderator, deal };
+  }
+
+  it("flag -> uphold as ended marks the deal EXPIRED and credits the flagger", async () => {
+    const { store, flagger, moderator, deal } = await dealFixtures();
+    const r = await flagDeal({
+      dealId: deal.id,
+      storeId: store.id,
+      userId: flagger.id,
+      reason: "clerk says the 5-can deal ended last week",
+    });
+    expect(r.ok).toBe(true);
+    if (!r.ok) throw new Error("flag failed");
+
+    const up = await upholdDealFlag(r.contributionId, moderator.id, "ended");
+    expect(up.ok).toBe(true);
+    const d = await prisma.quantityDeal.findUnique({ where: { id: deal.id } });
+    expect(d!.status).toBe("EXPIRED"); // existed, now over — not invalidated
+    const u = await prisma.user.findUnique({ where: { id: flagger.id } });
+    expect(u!.reputation).toBe(FLAG_REP.UPHELD);
+    // flagger got a resolution notice
+    expect(
+      await prisma.notification.count({ where: { userId: flagger.id, kind: "REPORT_RESOLVED" } })
+    ).toBe(1);
+  });
+
+  it("uphold as invalid marks INVALIDATED; dismiss leaves the deal and costs rep", async () => {
+    const { zyn, store, flagger, moderator, deal } = await dealFixtures();
+    const r1 = await flagDeal({
+      dealId: deal.id, storeId: store.id, userId: flagger.id, reason: "never existed",
+    });
+    if (!r1.ok) throw new Error("flag failed");
+    await upholdDealFlag(r1.contributionId, moderator.id, "invalid");
+    expect((await prisma.quantityDeal.findUnique({ where: { id: deal.id } }))!.status).toBe("INVALIDATED");
+
+    // second deal, dismissed flag
+    const deal2 = await prisma.quantityDeal.create({
+      data: {
+        storeId: store.id, productLineId: zyn.id, minQty: 3,
+        pricePerCanCents: 549, observedAt: new Date(), sourceType: "IMPORT",
+      },
+    });
+    const other = await prisma.user.create({ data: { email: "o2@test.local", displayName: "O2" } });
+    const r2 = await flagDeal({
+      dealId: deal2.id, storeId: store.id, userId: other.id, reason: "I think it's fake",
+    });
+    if (!r2.ok) throw new Error("flag failed");
+    expect((await dismissDealFlag(r2.contributionId, moderator.id, "")).ok).toBe(false);
+    expect((await dismissDealFlag(r2.contributionId, moderator.id, "Deal verified in person")).ok).toBe(true);
+    expect((await prisma.quantityDeal.findUnique({ where: { id: deal2.id } }))!.status).toBe("ACTIVE");
+    const u = await prisma.user.findUnique({ where: { id: other.id } });
+    expect(u!.reputation).toBe(FLAG_REP.DISMISSED);
+  });
+
+  it("rejects duplicate flags and flags on inactive deals", async () => {
+    const { store, flagger, deal } = await dealFixtures();
+    await prisma.quantityDeal.update({ where: { id: deal.id }, data: { status: "EXPIRED" } });
+    const dead = await flagDeal({
+      dealId: deal.id, storeId: store.id, userId: flagger.id, reason: "already gone",
+    });
+    expect(dead.ok).toBe(false);
+    if (!dead.ok) expect(dead.status).toBe(409);
   });
 });

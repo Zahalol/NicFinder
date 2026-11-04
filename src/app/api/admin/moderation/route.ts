@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { withStaff } from "@/lib/admin-api";
 import { prisma } from "@/lib/db";
 import { publishDispute, addReputation, REP_DELTAS } from "@/lib/reputation";
-import { upholdFlag, dismissFlag } from "@/lib/flags";
+import { upholdFlag, dismissFlag, upholdDealFlag, dismissDealFlag } from "@/lib/flags";
 import { setCommentVisibility } from "@/lib/comments";
 import { publishDealReport, rejectDealReport } from "@/lib/deal-reports";
 import { notifyReportResolved } from "@/lib/notifications";
@@ -91,6 +91,21 @@ export async function POST(req: NextRequest) {
 
     if (action === "DISMISS_FLAG") {
       const result = await dismissFlag(targetId, user.id, reason);
+      if (!result.ok)
+        return NextResponse.json({ error: result.error }, { status: result.status });
+      return NextResponse.json({ ok: true });
+    }
+
+    if (action === "UPHOLD_DEAL_FLAG") {
+      const how = b?.how === "invalid" ? "invalid" : "ended";
+      const result = await upholdDealFlag(targetId, user.id, how, reason || undefined);
+      if (!result.ok)
+        return NextResponse.json({ error: result.error }, { status: result.status });
+      return NextResponse.json({ ok: true });
+    }
+
+    if (action === "DISMISS_DEAL_FLAG") {
+      const result = await dismissDealFlag(targetId, user.id, reason);
       if (!result.ok)
         return NextResponse.json({ error: result.error }, { status: result.status });
       return NextResponse.json({ ok: true });

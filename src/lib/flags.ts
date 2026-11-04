@@ -210,3 +210,166 @@ export async function dismissFlag(
   });
   return { ok: true };
 }
+
+// --- Deal flags -------------------------------------------------------------
+// "This deal has ended / never existed." Same review-only model as
+// observation flags; the deal id rides in targetObservationId (the generic
+// target slot — corroboration CONFIRMs already store proposal ids there).
+
+export const DEAL_FLAG_KIND = "FLAG_DEAL";
+
+export async function flagDeal(opts: {
+  dealId: string;
+  storeId: string;
+  userId: string;
+  reason: string;
+}): Promise<FlagResult> {
+  const reason = opts.reason.trim().slice(0, 500);
+  if (reason.length < 5)
+    return {
+      ok: false,
+      error: "Say briefly what’s wrong with this deal (5+ characters).",
+      status: 400,
+    };
+  const deal = await prisma.quantityDeal.findUnique({ where: { id: opts.dealId } });
+  if (!deal || deal.storeId !== opts.storeId)
+    return { ok: false, error: "Deal not found.", status: 404 };
+  if (deal.status !== "ACTIVE")
+    return { ok: false, error: "This deal is no longer active.", status: 409 };
+
+  const existing = await prisma.contribution.findFirst({
+    where: {
+      kind: DEAL_FLAG_KIND,
+      targetObservationId: opts.dealId,
+      userId: opts.userId,
+      status: { in: ["PENDING", "PUBLISHED", "REJECTED"] },
+    },
+    select: { id: true },
+  });
+  if (existing)
+    return { ok: false, error: "You already flagged this deal.", status: 409 };
+
+  const contribution = await prisma.contribution.create({
+    data: {
+      userId: opts.userId,
+      storeId: opts.storeId,
+      productLineId: deal.productLineId,
+      kind: DEAL_FLAG_KIND,
+      targetObservationId: opts.dealId,
+      comment: reason,
+      status: "PENDING",
+    },
+  });
+  return { ok: true, contributionId: contribution.id };
+}
+
+/**
+ * Moderator agrees the deal is gone/wrong. `how`: "ended" marks it EXPIRED
+ * (it existed, it's over); "invalid" marks it INVALIDATED (bad data).
+ */
+export async function upholdDealFlag(
+  contributionId: string,
+  moderatorId: string,
+  how: "ended" | "invalid",
+  note?: string
+): Promise<ResolveResult> {
+  const c = await prisma.contribution.findUnique({ where: { id: contributionId } });
+  if (!c || c.kind !== DEAL_FLAG_KIND || c.status !== "PENDING" || !c.targetObservationId)
+    return { ok: false, error: "Deal flag not reviewable.", status: 409 };
+
+  await prisma.$transaction(async (tx) => {
+    await tx.quantityDeal.update({
+      where: { id: c.targetObservationId! },
+      data: { status: how === "ended" ? "EXPIRED" : "INVALIDATED" },
+    });
+    await tx.contribution.update({
+      where: { id: c.id },
+      data: {
+        status: "PUBLISHED",
+        reviewedById: moderatorId,
+        reviewNote: note || `Deal ${how === "ended" ? "marked ended" : "invalidated"}`,
+        resolvedAt: new Date(),
+      },
+    });
+    await addReputation(c.userId, FLAG_REP.UPHELD, "DEAL_FLAG_UPHELD", {
+      type: "contribution",
+      id: c.id,
+    }, tx);
+    await tx.moderationAction.create({
+      data: {
+        actorId: moderatorId,
+        action: "UPHOLD_DEAL_FLAG",
+        targetType: "contribution",
+        targetId: c.id,
+        reason: note || how,
+      },
+    });
+    const storeRow = await tx.store.findUnique({
+      where: { id: c.storeId },
+      select: { name: true },
+    });
+    await notifyReportResolved(
+      {
+        userId: c.userId,
+        storeId: c.storeId,
+        storeName: storeRow?.name ?? "a store",
+        what: "deal flag",
+        outcome: "upheld",
+      },
+      tx
+    );
+  });
+  return { ok: true };
+}
+
+export async function dismissDealFlag(
+  contributionId: string,
+  moderatorId: string,
+  reason: string
+): Promise<ResolveResult> {
+  if (!reason.trim())
+    return { ok: false, error: "A reason is required to dismiss a flag.", status: 400 };
+  const c = await prisma.contribution.findUnique({ where: { id: contributionId } });
+  if (!c || c.kind !== DEAL_FLAG_KIND || c.status !== "PENDING")
+    return { ok: false, error: "Deal flag not reviewable.", status: 409 };
+  await prisma.$transaction(async (tx) => {
+    await tx.contribution.update({
+      where: { id: c.id },
+      data: {
+        status: "REJECTED",
+        reviewedById: moderatorId,
+        reviewNote: reason.slice(0, 300),
+        resolvedAt: new Date(),
+      },
+    });
+    await addReputation(c.userId, FLAG_REP.DISMISSED, "DEAL_FLAG_DISMISSED", {
+      type: "contribution",
+      id: c.id,
+    }, tx);
+    await tx.moderationAction.create({
+      data: {
+        actorId: moderatorId,
+        action: "DISMISS_DEAL_FLAG",
+        targetType: "contribution",
+        targetId: c.id,
+        reason: reason.slice(0, 300),
+      },
+    });
+    const storeRow = await tx.store.findUnique({
+      where: { id: c.storeId },
+      select: { name: true },
+    });
+    await notifyReportResolved(
+      {
+        userId: c.userId,
+        storeId: c.storeId,
+        storeName: storeRow?.name ?? "a store",
+        what: "deal flag",
+        outcome: "dismissed",
+        note: reason.slice(0, 300),
+      },
+      tx
+    );
+  });
+  return { ok: true };
+}
