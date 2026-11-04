@@ -8,16 +8,18 @@ export function AuthForm({
   mode,
   googleEnabled,
   replitEnabled = false,
+  initialError = null,
 }: {
   mode: "login" | "signup";
   googleEnabled: boolean;
   replitEnabled?: boolean;
+  initialError?: string | null;
 }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [err, setErr] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(initialError);
   const [busy, setBusy] = useState(false);
 
   async function submit(e: React.FormEvent) {

@@ -7,6 +7,7 @@ export async function resetDb() {
     prisma.reputationEvent.deleteMany(),
     prisma.moderationAction.deleteMany(),
     prisma.auditEvent.deleteMany(),
+    prisma.commentReport.deleteMany(),
     prisma.comment.deleteMany(),
     prisma.priceObservation.deleteMany(),
     prisma.quantityDeal.deleteMany(),

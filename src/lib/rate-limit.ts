@@ -31,6 +31,21 @@ export async function countRecentComments(
 // docs/ARCHITECTURE.md for the production note).
 const buckets = new Map<string, number[]>();
 
+// Bound memory under key spraying (e.g. spoofed X-Forwarded-For values):
+// above the cap, drop the oldest-inserted buckets first. Churning the map
+// this way can only ever RELAX limits for evicted keys, never lock anyone out.
+const MAX_BUCKETS = 50_000;
+
+function evictIfNeeded() {
+  if (buckets.size <= MAX_BUCKETS) return;
+  const drop = buckets.size - MAX_BUCKETS;
+  let i = 0;
+  for (const key of buckets.keys()) {
+    buckets.delete(key);
+    if (++i >= drop) break;
+  }
+}
+
 export function memoryRateLimit(
   key: string,
   max: number,
@@ -43,6 +58,10 @@ export function memoryRateLimit(
     return false;
   }
   arr.push(now);
+  // Delete-then-set refreshes insertion order, so active keys sit at the
+  // back of the eviction queue.
+  buckets.delete(key);
   buckets.set(key, arr);
+  evictIfNeeded();
   return true;
 }

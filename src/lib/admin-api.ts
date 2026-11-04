@@ -13,10 +13,8 @@ export async function withStaff<T>(
     if (e instanceof AuthError)
       return NextResponse.json({ error: e.message }, { status: e.status });
     console.error(e);
-    return NextResponse.json(
-      { error: e instanceof Error ? e.message : "Server error." },
-      { status: 500 }
-    );
+    // Never echo internal error text (DB/Prisma messages) to the client.
+    return NextResponse.json({ error: "Server error." }, { status: 500 });
   }
 }
 
@@ -30,9 +28,7 @@ export async function withAdmin<T>(
     if (e instanceof AuthError)
       return NextResponse.json({ error: e.message }, { status: e.status });
     console.error(e);
-    return NextResponse.json(
-      { error: e instanceof Error ? e.message : "Server error." },
-      { status: 500 }
-    );
+    // Never echo internal error text (DB/Prisma messages) to the client.
+    return NextResponse.json({ error: "Server error." }, { status: 500 });
   }
 }
