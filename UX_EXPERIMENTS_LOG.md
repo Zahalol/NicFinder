@@ -110,3 +110,66 @@ function keeps it testable and removable (one card row).
 
 **Recommendation: Keep.** Unique differentiator vs the thin competitor set;
 transparent assumptions.
+
+---
+
+## Cycle 4 — Side-by-side store comparison
+
+**Problem.** Choosing between 2–3 candidate stores means bouncing between
+cards/pages and holding numbers in your head — especially with deals and
+quantity math involved.
+
+**What changed.**
+- Priced result cards get a small "+ Compare" toggle (max 3 stores, only
+  offered when ≥2 priced stores exist). Selected cards show a teal ring.
+- A sticky bottom tray lists the selection with Clear / Compare buttons.
+- `src/components/CompareDialog.tsx`: bottom-sheet (mobile) / modal (desktop)
+  attribute table — per-can at chosen qty, total, multi-can deal, distance,
+  freshness, source, confirmations, stock — with best price/distance cells
+  highlighted; Escape and backdrop close; names link to store pages.
+
+**Why selected.** Direct product-brief ask; zero backend (uses data already
+on the page); isolated: delete `CompareDialog.tsx` + the marked
+"EXPERIMENT (Cycle 4)" blocks in `SearchResults.tsx` to remove.
+
+**Testing.** Playwright click-through: select 3, tray appears, dialog renders,
+Escape closes, no page errors; 62 tests/typecheck/lint green. Screenshots in
+session scratchpad.
+
+**Recommendation: Keep** (watch usage; if nobody compares, drop the tray —
+removal is 15 minutes).
+
+---
+
+## Cycle 5 — PWA installability, app icon/favicon, map declutter
+
+**Problem.** No favicon, no manifest, no icons: the site couldn't be
+"added to home screen" as an app, and browser tabs showed a blank icon.
+On the map, ~28 unpriced stores rendered as big gray "?" chips that
+visually drowned out the handful of real price chips; stale prices looked
+identical to fresh ones; popup links dropped the product context (fixed in
+Cycle 1).
+
+**What changed.**
+- `src/app/icon.svg`: new brand mark (teal rounded square, white map pin
+  with a $ coin) — served by Next as the favicon automatically.
+- `public/icons/`: 192/512 PNGs, a maskable 512 (safe-zone padded), and a
+  180px apple-touch-icon, all rendered from the same SVG.
+- `src/app/manifest.ts`: web app manifest (standalone display, teal theme,
+  categories) → Chrome/Android install prompt eligibility; iOS metadata via
+  `appleWebApp` + apple-touch-icon; `themeColor` viewport export.
+- `src/components/StoreMap.tsx`: unpriced stores are now small neutral dots
+  (still clickable, popups intact); stale prices get a faded-teal chip;
+  fresh chips sit above dots (zIndexOffset). Legend of meaning is implicit:
+  chip = price, dot = no price yet.
+- Map view: taller on phones (55vh, min 360px) and auto-scrolls into view
+  when toggled, since the best-price card pushed it below the fold.
+
+**Why selected.** Mobile-first/PWA was a stated priority; the map was the
+weakest surface left on the core loop. No service worker yet (offline
+caching is a bigger, riskier bite — logged as a future idea).
+
+**Testing.** `/manifest.webmanifest` serves correct JSON; icons verified
+visually; map screenshot shows chips vs dots; typecheck/lint/62 tests green.
+
+**Recommendation: Keep.**

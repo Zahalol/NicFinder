@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import type { StoreResult } from "@/lib/search";
@@ -116,6 +116,13 @@ export function SearchResults({
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [compareOpen, setCompareOpen] = useState(false);
 
+  const mapWrapRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (view === "map") {
+      mapWrapRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [view]);
+
   const priced = results.filter((r) => r.latest);
   const unpriced = results.filter((r) => !r.latest);
 
@@ -159,7 +166,7 @@ export function SearchResults({
       </div>
 
       {view === "map" ? (
-        <div className="mt-4 h-[420px]">
+        <div ref={mapWrapRef} className="mt-4 h-[55vh] min-h-[360px] scroll-mt-20">
           <StoreMap results={results} center={center} qty={qty} productSlug={productSlug} />
         </div>
       ) : (

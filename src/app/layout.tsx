@@ -19,11 +19,20 @@ export const metadata: Metadata = {
     type: "website",
   },
   robots: { index: true, follow: true },
+  appleWebApp: {
+    capable: true,
+    title: "NicFinder",
+    statusBarStyle: "default",
+  },
+  icons: {
+    apple: "/icons/apple-touch-icon.png",
+  },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  themeColor: "#0d9488",
 };
 
 export default async function RootLayout({

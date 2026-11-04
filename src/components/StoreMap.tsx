@@ -8,10 +8,20 @@ import type { StoreResult } from "@/lib/search";
 import { formatCents } from "@/lib/money";
 
 // Default marker icons break under bundlers; use a simple divIcon with the price.
-function priceIcon(text: string, muted: boolean) {
+// Fresh prices: solid teal chip. Stale prices: faded teal. Stores without a
+// price: small neutral dot so they don't drown out the chips that matter.
+function priceIcon(text: string, stale: boolean) {
   return L.divIcon({
     className: "",
-    html: `<div style="background:${muted ? "#a8a29e" : "#0d9488"};color:white;border-radius:8px;padding:2px 7px;font-size:12px;font-weight:600;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.3);transform:translate(-50%,-100%);">${text}</div>`,
+    html: `<div style="background:${stale ? "#5eead4" : "#0d9488"};color:${stale ? "#134e4a" : "white"};border-radius:8px;padding:2px 7px;font-size:12px;font-weight:600;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.3);transform:translate(-50%,-100%);${stale ? "opacity:.85;" : ""}">${text}</div>`,
+    iconSize: [0, 0],
+  });
+}
+
+function dotIcon() {
+  return L.divIcon({
+    className: "",
+    html: `<div style="width:10px;height:10px;background:#d6d3d1;border:1.5px solid #78716c;border-radius:50%;transform:translate(-50%,-50%);"></div>`,
     iconSize: [0, 0],
   });
 }
@@ -50,12 +60,13 @@ export default function StoreMap({
             ? formatCents(r.effective.perCanCents)
             : r.latest
               ? formatCents(r.latest.priceCents)
-              : "?";
+              : null;
           return (
             <Marker
               key={r.id}
               position={[r.latitude!, r.longitude!]}
-              icon={priceIcon(label, !r.latest)}
+              icon={label ? priceIcon(label, r.latest?.freshness === "stale") : dotIcon()}
+              zIndexOffset={label ? 1000 : 0}
             >
               <Popup>
                 <div style={{ minWidth: 160 }}>
