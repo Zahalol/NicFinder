@@ -17,7 +17,7 @@ Status: `todo` | `in-progress` | `done` | `blocked` | `rejected`.
 | 10 | Import contract fuzz tests (malformed CSV/XLSX, huge files, weird encodings, CRLF, BOM) | Med — robustness | S-M | High | None | done |
 | 11 | Price reliability score (age + source + corroboration + disputes), transparent formula | Med | M | Med | False precision | done |
 | 12 | No-map low-clutter quick compare mode for mobile | Low-Med | S | Med | Duplicate of list view? | partially covered by 'Priced only' filter |
-| 13 | Admin pilot economics dashboard (coverage, obs age, est. acquisition cost from configurable assumptions) | Low-Med | M | Low | Speculative | todo |
+| 13 | Admin pilot economics dashboard (coverage, obs age, est. acquisition cost from configurable assumptions) | Low-Med | M | Low | Speculative | done |
 | 14 | Benchmark search with 10k synthetic stores; index/queries as justified | Med | M | Med | Needs careful measurement | done |
 | 15 | PWA manifest + basic offline shell | Low | S | Low | Complexity creep | todo |
 | 16 | In-app price-watch alerts (no email), building on watchlist | Med | M | Med | Needs notification UI | done |

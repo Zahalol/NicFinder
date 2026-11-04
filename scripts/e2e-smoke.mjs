@@ -244,6 +244,7 @@ try {
     ["/admin/imports", "sample-import.csv"],
     ["/admin/coverage", "Coverage demand"],
     ["/admin/analytics", "Price range by ZIP"],
+    ["/admin/economics", "Pilot economics"],
   ]) {
     await page.goto(`${BASE}${path2}`);
     check(`${path2} renders`, (await page.locator(`text=${marker}`).count()) > 0);

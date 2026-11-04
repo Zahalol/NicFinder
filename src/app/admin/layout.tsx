@@ -23,6 +23,7 @@ export default async function AdminLayout({
     { href: "/admin/review", label: "Review queue" },
     { href: "/admin/coverage", label: "Coverage demand" },
     { href: "/admin/analytics", label: "Analytics" },
+    { href: "/admin/economics", label: "Economics" },
     { href: "/admin/settings", label: "Settings" },
   ];
 
