@@ -46,6 +46,36 @@ defense-in-depth, availability), **Low** (hygiene).
 
 ---
 
+## 2026-11-04 — Wave 3: timing oracle, settings cache, toolchain advisories
+
+### M-10 (Medium) Login response time revealed whether an account exists
+- **Finding**: a login for an unknown email returned immediately (no scrypt
+  work), while a known email cost ~50–100 ms of key derivation — a timing
+  oracle for account enumeration (the signup 409 already reveals existence,
+  but login probing is quieter and not signup-rate-limited).
+- **Fix**: unknown-account path now verifies against a fixed dummy scrypt
+  hash so both paths pay the same derivation cost.
+
+### P-1 (Performance) Settings fetched from the DB on every request
+- **Finding**: `getSettings()` is called on nearly every page/API request
+  (search, contributions, SEO pages) and hit the database each time.
+- **Fix**: 10-second per-process cache; writes refresh the writing process
+  immediately, other instances converge within the TTL. Disabled under
+  tests (which reset the DB between cases).
+
+### L-3 (Low) Dev-toolchain advisories cleared where non-breaking
+- vitest 3 → 4.1.12 (clears **2 critical** advisories: tinypool prototype
+  pollution → RCE, @vitest/mocker path traversal — dev-only but worth
+  zeroing). 66/66 tests pass on v4 unchanged.
+- Remaining 13 advisories are all transitive pins inside next@15 (postcss),
+  prisma (deepmerge-ts), exceljs (uuid) and typescript-eslint (minimatch):
+  each fix requires a breaking major of the parent (next 16 / prisma 7 /
+  exceljs 3-downgrade). Deferred deliberately; none is reachable with
+  untrusted input in production (postcss/minimatch are build-time; exceljs
+  parses staff-only uploads; deepmerge-ts is prisma CLI config).
+
+---
+
 ## 2026-11-04 — Wave 1: audit + first hardening pass
 
 Baseline at start: commit `2e3de05`, 53/53 vitest, lint/typecheck/build green.

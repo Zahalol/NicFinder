@@ -8,6 +8,11 @@ import {
 } from "@/lib/auth";
 import { memoryRateLimit } from "@/lib/rate-limit";
 
+// A valid-format scrypt hash of a throwaway password, used only to equalize
+// response timing when the account does not exist (never matches real input).
+const DUMMY_HASH =
+  "scrypt:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:3a7e3146ab2f858e133243bcd464332940994b9d8bc1c826f9ab7d16ea595291d18f8b02b61bdeb318308b983ebc0150146344cf621547a8111709df054946d6";
+
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0] ?? "local";
   if (!memoryRateLimit(`login:ip:${ip}`, 20, 900_000)) {
@@ -29,7 +34,12 @@ export async function POST(req: NextRequest) {
     { error: "Invalid email or password." },
     { status: 401 }
   );
-  if (!user || !user.passwordHash) return generic;
+  if (!user || !user.passwordHash) {
+    // Equalize timing with the real-password path: verify against a fixed
+    // dummy hash so "account exists" is not inferable from response time.
+    await verifyPassword(password, DUMMY_HASH);
+    return generic;
+  }
   if (!(await verifyPassword(password, user.passwordHash))) return generic;
   if (user.status !== "ACTIVE")
     return NextResponse.json({ error: "This account is suspended." }, { status: 403 });
