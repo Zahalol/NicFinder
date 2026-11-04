@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { StoreResult } from "@/lib/search";
-import { PriceBadge, FreshnessBadge, DealBadge, DemoBadge, ConfidenceBadge } from "./badges";
+import { PriceBadge, DealBadge, DemoBadge, ConfidenceBadge } from "./badges";
 import { CompareDialog } from "./CompareDialog";
 
 const MAX_COMPARE = 3;
@@ -118,6 +118,7 @@ function StoreCard({
           {r.latest && (
             <div className="mt-1.5 flex items-center gap-2 text-xs text-stone-500 flex-wrap">
               <ConfidenceBadge
+                showAge
                 input={{
                   sourceType: r.latest.sourceType,
                   ageDays: r.latest.ageDays,
@@ -125,7 +126,9 @@ function StoreCard({
                   disputeCount: r.latest.disputeCount,
                 }}
               />
-              <FreshnessBadge latest={r.latest} />
+              {r.latest.freshness === "stale" && (
+                <span className="text-amber-700">may be outdated</span>
+              )}
               {r.latest.confirmCount > 0 && (
                 <span className="text-teal-700">
                   ✓ {r.latest.confirmCount} confirm{r.latest.confirmCount > 1 ? "s" : ""}

@@ -9,9 +9,17 @@ const TIER_STYLES = {
 } as const;
 
 /** Glanceable price-confidence pill; the reasons are in the tooltip. */
-export function ConfidenceBadge({ input }: { input: ConfidenceInput }) {
+export function ConfidenceBadge({
+  input,
+  showAge = false,
+}: {
+  input: ConfidenceInput;
+  showAge?: boolean;
+}) {
   const c = computeConfidence(input);
   const s = TIER_STYLES[c.tier];
+  const age =
+    input.ageDays === 0 ? "today" : `${input.ageDays}d ago`;
   return (
     <span
       title={`Why: ${c.reasons.join(" · ")}`}
@@ -19,6 +27,7 @@ export function ConfidenceBadge({ input }: { input: ConfidenceInput }) {
     >
       <span className={`h-1.5 w-1.5 rounded-full ${s.dot}`} aria-hidden />
       {s.label}
+      {showAge && <span className="opacity-70">· {age}</span>}
     </span>
   );
 }
