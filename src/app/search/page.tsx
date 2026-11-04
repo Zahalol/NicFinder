@@ -4,6 +4,7 @@ import { SearchBox } from "@/components/SearchBox";
 import { SearchResults } from "@/components/SearchResults";
 import { CoverageRequestButton } from "@/components/CoverageRequestButton";
 import { formatCents } from "@/lib/money";
+import { compareTrip } from "@/lib/trip";
 import { prisma } from "@/lib/db";
 import Link from "next/link";
 
@@ -216,6 +217,20 @@ function BestPriceCard({
   const max = Math.max(...prices);
   const spread = max - best.effective.perCanCents!;
 
+  // "Worth the trip?" — only when a *different*, closer store also has a
+  // price and skipping it for the best price means extra driving.
+  const nearest = [...priced].sort((a, b) => a.distanceMiles - b.distanceMiles)[0];
+  const trip =
+    nearest.id !== best.id
+      ? compareTrip({
+          bestPerCanCents: best.effective.perCanCents!,
+          bestDistanceMiles: best.distanceMiles,
+          altPerCanCents: nearest.effective.perCanCents!,
+          altDistanceMiles: nearest.distanceMiles,
+          qty,
+        })
+      : null;
+
   return (
     <Link
       href={`/stores/${best.id}?product=${product}`}
@@ -249,6 +264,28 @@ function BestPriceCard({
           )}
         </div>
       </div>
+
+      {trip && (
+        <div className="mt-3 border-t border-teal-200/60 pt-2.5 text-xs text-stone-600 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+          <span className="font-medium text-stone-700">Worth the trip?</span>
+          <span>
+            vs {nearest.name} ({nearest.distanceMiles} mi): save{" "}
+            <strong className="text-stone-800">{formatCents(trip.savingsCents)}</strong>
+            {qty > 1 ? ` on ${qty} cans` : ""} for +{trip.extraRoundTripMiles} mi round trip
+            (≈{formatCents(trip.drivingCostCents)} driving
+            <span className="text-stone-400">*</span>)
+            {" — "}
+            {trip.netCents > 0 ? (
+              <strong className="text-teal-700">worth the detour</strong>
+            ) : (
+              <strong className="text-amber-700">the closer store may win</strong>
+            )}
+          </span>
+          <span className="w-full text-[10px] text-stone-400">
+            *estimated at the IRS standard mileage rate (70¢/mi, fuel + wear)
+          </span>
+        </div>
+      )}
     </Link>
   );
 }

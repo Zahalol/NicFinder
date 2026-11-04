@@ -79,3 +79,34 @@ the declining-price sparkline + trend caption on Demo Fuel Stop #1.
 
 **Recommendation: Keep.** Small, honest (plots only real recorded
 observations), reads instantly.
+
+---
+
+## Cycle 3 — "Worth the trip?" savings-vs-driving math
+
+**Problem.** The best price is often not the nearest store. GasBuddy-style
+apps leave the "is the detour actually worth it?" math to the user; for
+multi-can buyers this is the decision that matters.
+
+**What changed.**
+- `src/lib/trip.ts`: pure `compareTrip()` — total savings at the chosen
+  quantity vs the nearest priced store, extra *round-trip* miles, driving
+  cost at the IRS standard mileage rate (70¢/mi, documented in-code and
+  in the UI footnote), and the net verdict.
+- Best-price card on `/search` now shows one extra line when the best-priced
+  store is farther than the nearest priced store and saves money:
+  "Worth the trip? vs <nearest> (0.3 mi): save $2.50 on 5 cans for +0.4 mi
+  round trip (≈$0.28 driving) — **worth the detour**" (or "the closer store
+  may win" in amber when net is negative).
+- `tests/trip.test.ts`: null cases (best is nearest / no savings / bad qty),
+  exact math, and the qty-scaling property (1 can not worth it, 10 worth it).
+
+**Why selected.** Directly serves the stated "savings vs driving distance"
+product idea; quantity-aware so it rewards the multi-can use case; pure
+function keeps it testable and removable (one card row).
+
+**Testing.** 62 vitest green; screenshots confirm sensible copy at qty=1
+(hidden when meaningless) and qty=5.
+
+**Recommendation: Keep.** Unique differentiator vs the thin competitor set;
+transparent assumptions.
