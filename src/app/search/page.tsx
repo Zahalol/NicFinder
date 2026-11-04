@@ -1,4 +1,5 @@
 import { geocode, nearestZip } from "@/lib/geocode";
+import { suggestZips } from "@/lib/zip-suggest";
 import { searchStores, type SortKey } from "@/lib/search";
 import { SearchBox } from "@/components/SearchBox";
 import { SearchResults } from "@/components/SearchResults";
@@ -102,7 +103,23 @@ export default async function SearchPage({
       {geocodeFailed && (
         <div className="mt-8 max-w-xl mx-auto rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-6 text-center">
           <h2 className="font-medium text-stone-900 dark:text-stone-100">We couldn’t locate “{q}”</h2>
-          <p className="mt-2 text-sm text-stone-600 dark:text-stone-400">
+          {suggestZips(q).length > 0 ? (
+            <div className="mt-3">
+              <p className="text-sm text-stone-600 dark:text-stone-400">Did you mean:</p>
+              <p className="mt-2 flex flex-wrap justify-center gap-2">
+                {suggestZips(q).map((sgn) => (
+                  <Link
+                    key={sgn.zip}
+                    href={`/search?q=${sgn.zip}`}
+                    className="rounded-full border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-900 px-3 py-1.5 text-sm text-teal-700 dark:text-teal-400 hover:border-teal-400"
+                  >
+                    {sgn.zip} <span className="text-stone-500">({sgn.city}, {sgn.state})</span>
+                  </Link>
+                ))}
+              </p>
+            </div>
+          ) : null}
+          <p className="mt-3 text-sm text-stone-600 dark:text-stone-400">
             Try a 5-digit ZIP code (ZIP search works even offline) or a fuller
             street address. Address lookup uses OpenStreetMap and may be
             briefly unavailable.

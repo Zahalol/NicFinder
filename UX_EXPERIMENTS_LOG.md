@@ -501,3 +501,31 @@ now it's explained to users and search engines in one place.
 (light+dark via shared classes); typecheck/lint/tests green.
 
 **Recommendation: Keep.**
+
+---
+
+## Cycle 18 — Filter memory
+
+**What changed.** `FilterMemory` (client, null-rendering) records explicit
+product/cans/radius/sort choices to localStorage and re-applies them via
+`router.replace` to fresh searches that omit them. Verified: search with
+qty=5/radius=10/sort=price, then a bare `?q=60657` search lands on
+`...&qty=5&radius=10&sort=price`. Private-mode safe; defaults untouched.
+
+**Recommendation: Keep** (watch for confusion; removal is one file + one
+call site).
+
+---
+
+## Cycle 19 — "Did you mean" ZIP recovery
+
+**What changed.** `src/lib/zip-suggest.ts`: for a 5-digit query the bundled
+dataset can't locate, generate one-digit-replacement and adjacent-swap
+variants (≤49 lookups), keep real ZIPs, rank by shared prefix (same
+region). The geocode-failure card now offers up to 3 "Did you mean
+60614 (Chicago, IL)?" chips. `tests/zip-suggest.test.ts` covers non-ZIP
+input, variant validity, regional ranking, and never echoing the input
+(72 tests total).
+
+**Recommendation: Keep.** Honest recovery: suggestions are real places,
+clearly offered as alternatives.
