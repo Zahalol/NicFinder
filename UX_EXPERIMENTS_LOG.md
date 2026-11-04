@@ -310,3 +310,29 @@ store's number).
 cheapest highlight, confidence badges, freshness text. Typecheck/lint green.
 
 **Recommendation: Keep.**
+
+---
+
+## Cycle 10 — ZIP SEO landing-page enrichment
+
+**Problem.** `/zyn-prices/[zip]` pages (the main acquisition channel) buried
+the answer: a visitor from Google had to scan a table to learn what ZYN
+costs in the area, and search engines had no structured answer to quote.
+
+**What changed.**
+- Stats strip up top: Cheapest / Median / Highest / Last update, computed
+  from the same reported prices the table shows.
+- Cheapest callout now also names the best multi-can deal in the area.
+- FAQPage JSON-LD ("How much does a can of ZYN cost in {city} {zip}?") with
+  an honest computed answer including the price range, median, and the
+  usual caveats — only emitted when real reported prices exist.
+- Nearby-ZIP chips labeled with city names ("Chicago 60657" vs bare "60657").
+
+**Why selected.** #5 in ranked backlog; organic search is the only viable
+acquisition channel (nicotine ads banned), and the answer-first format +
+structured data target featured snippets without any fabricated data.
+
+**Testing.** JSON-LD verified present and well-formed in rendered HTML;
+mobile screenshot shows stats cards + deal callout; typecheck/lint green.
+
+**Recommendation: Keep.**

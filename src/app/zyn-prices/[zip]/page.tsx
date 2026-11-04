@@ -48,7 +48,22 @@ export default async function ZipLandingPage({
   });
   const priced = results.filter((r) => r.latest);
 
-  // Other covered ZIPs for internal linking.
+  // Summary stats over reported prices (results are already price-sorted).
+  const prices = priced.map((r) => r.latest!.priceCents);
+  const stats =
+    prices.length > 0
+      ? {
+          low: prices[0],
+          high: prices[prices.length - 1],
+          median: prices[Math.floor((prices.length - 1) / 2)],
+          freshestDays: Math.min(...priced.map((r) => r.latest!.ageDays)),
+        }
+      : null;
+  const bestDeal = priced
+    .filter((r) => r.deal)
+    .sort((a, b) => a.latest!.priceCents - b.latest!.priceCents)[0];
+
+  // Other covered ZIPs for internal linking, labeled with their city.
   const otherZips = (
     await prisma.store.findMany({
       where: { status: "ACTIVE", zip: { not: null, notIn: [zip] }, observations: { some: { status: "ACTIVE" } } },
@@ -58,7 +73,27 @@ export default async function ZipLandingPage({
     })
   )
     .map((s) => s.zip!)
-    .sort();
+    .sort()
+    .map((z) => ({ zip: z, city: zipInfo(z)?.city ?? null }));
+
+  // Structured data: honest, computed from the same numbers the page shows.
+  const jsonLd =
+    stats !== null
+      ? {
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          mainEntity: [
+            {
+              "@type": "Question",
+              name: `How much does a can of ZYN cost in ${info.city}, ${info.state} ${zip}?`,
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: `Reported prices at ${priced.length} store${priced.length === 1 ? "" : "s"} near ${zip} currently range from ${formatCents(stats.low)} to ${formatCents(stats.high)} per can (median ${formatCents(stats.median)}). Prices are community- and staff-reported, usually exclude tax, and change often — check the live listing for freshness.`,
+              },
+            },
+          ],
+        }
+      : null;
 
   return (
     <div className="py-8 max-w-3xl mx-auto">
@@ -77,10 +112,50 @@ export default async function ZipLandingPage({
         Prices are community- and import-verified and may exclude tax.
       </p>
 
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      )}
+
+      {stats && (
+        <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {[
+            ["Cheapest", formatCents(stats.low)],
+            ["Median", formatCents(stats.median)],
+            ["Highest", formatCents(stats.high)],
+            [
+              "Last update",
+              stats.freshestDays === 0 ? "today" : `${stats.freshestDays}d ago`,
+            ],
+          ].map(([label, value]) => (
+            <div key={label} className="rounded-xl border border-stone-200 bg-white px-3 py-2.5">
+              <div className="text-[10px] font-medium uppercase tracking-wider text-stone-400">
+                {label}
+              </div>
+              <div className="text-lg font-semibold text-stone-900">{value}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {priced.length > 0 && (
         <p className="mt-3 inline-block rounded-lg bg-teal-50 border border-teal-200 px-3 py-2 text-sm text-teal-900">
           Cheapest reported: <strong>{formatCents(priced[0].latest!.priceCents)}</strong> at{" "}
           <Link href={`/stores/${priced[0].id}`} className="underline">{priced[0].name}</Link>
+          {bestDeal?.deal && (
+            <>
+              {" · "}best multi-can deal:{" "}
+              <Link href={`/stores/${bestDeal.id}`} className="underline">
+                {bestDeal.deal.minQty}+ cans{" "}
+                {bestDeal.deal.pricePerCanCents !== null
+                  ? `at ${formatCents(bestDeal.deal.pricePerCanCents)} each`
+                  : `save ${formatCents(bestDeal.deal.discountPerCanCents)} per can`}{" "}
+                at {bestDeal.name}
+              </Link>
+            </>
+          )}
         </p>
       )}
 
@@ -143,11 +218,11 @@ export default async function ZipLandingPage({
           <p className="mt-2 flex flex-wrap gap-2">
             {otherZips.map((z) => (
               <Link
-                key={z}
-                href={`/zyn-prices/${z}`}
+                key={z.zip}
+                href={`/zyn-prices/${z.zip}`}
                 className="rounded-lg border border-stone-200 bg-white px-2.5 py-1 text-sm text-stone-600 hover:border-teal-300"
               >
-                {z}
+                {z.city ? `${z.city} ${z.zip}` : z.zip}
               </Link>
             ))}
           </p>
