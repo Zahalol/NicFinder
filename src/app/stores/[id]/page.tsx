@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { getSettings } from "@/lib/settings";
 import { selectLatestPrice } from "@/lib/prices";
+import { effectivePerCanCents, totalCents, type DealInput } from "@/lib/deals";
 import { formatCents } from "@/lib/money";
 import { DemoBadge, ConfidenceBadge } from "@/components/badges";
 import { computeConfidence } from "@/lib/confidence";
@@ -13,6 +14,69 @@ import { ContributePanel } from "./ContributePanel";
 import { Comments } from "./Comments";
 
 export const dynamic = "force-dynamic";
+
+/** Compact what-it-costs strip: totals at common quantities, deal-aware. */
+function QtyCostTable({
+  regularCents,
+  deal,
+}: {
+  regularCents: number;
+  deal: DealInput | null;
+}) {
+  const qtys = [1, 3, 5, 10];
+  const cells = qtys.map((qty) => {
+    const eff = effectivePerCanCents(regularCents, deal, qty);
+    const total = totalCents(regularCents, deal, qty);
+    return { qty, eff, total };
+  });
+  // Without a deal every row is just multiplication — not worth the pixels.
+  if (!deal) return null;
+  const anyUnknown = cells.some((c) => c.total === null);
+
+  return (
+    <div className="mt-3 border-t border-stone-100 pt-2.5">
+      <p className="text-[10px] font-medium uppercase tracking-wider text-stone-400">
+        What you&apos;d pay
+      </p>
+      <div className="mt-1.5 grid grid-cols-4 gap-1.5 text-center">
+        {cells.map(({ qty, eff, total }) => (
+          <div
+            key={qty}
+            className={`rounded-lg border px-1 py-1.5 ${
+              eff.usedDeal
+                ? "border-teal-200 bg-teal-50/60"
+                : "border-stone-150 bg-stone-50"
+            }`}
+          >
+            <div className="text-[10px] text-stone-400">
+              {qty} can{qty > 1 ? "s" : ""}
+            </div>
+            {total !== null ? (
+              <>
+                <div className="text-sm font-semibold text-stone-800">
+                  {formatCents(total)}
+                </div>
+                <div className="text-[10px] text-stone-500">
+                  {formatCents(eff.perCanCents)}/can
+                  {eff.usedDeal ? " · deal" : ""}
+                </div>
+              </>
+            ) : (
+              <div className="text-sm text-stone-400" title="Deal terms at this quantity are unknown">
+                ?
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+      {anyUnknown && (
+        <p className="mt-1 text-[10px] text-stone-400">
+          ? = the reported deal&apos;s terms at that quantity are unknown — we don&apos;t guess.
+        </p>
+      )}
+    </div>
+  );
+}
 
 function TrendLine({ history }: { history: SparkPoint[] }) {
   const trend = trendSummary(history);
@@ -92,6 +156,21 @@ export default async function StorePage({
     history: store.observations
       .filter((o) => o.productLineId === line.id && o.observedAt.getTime() >= historyCutoff)
       .map((o): SparkPoint => ({ t: o.observedAt.getTime(), cents: o.priceCents })),
+    deal: ((d) =>
+      d
+        ? {
+            minQty: d.minQty,
+            pricePerCanCents: d.pricePerCanCents,
+            discountPerCanCents: d.discountPerCanCents,
+            appliesAboveMinQty: d.appliesAboveMinQty,
+          }
+        : null)(
+      store.deals.find(
+        (d) =>
+          d.productLineId === line.id &&
+          (d.expiresAt === null || d.expiresAt >= new Date())
+      )
+    ),
   }));
 
   const mapsUrl =
@@ -131,7 +210,7 @@ export default async function StorePage({
 
       {/* Current prices per product line */}
       <div className="mt-6 grid sm:grid-cols-2 gap-4">
-        {latestByLine.map(({ line, latest, history }) => (
+        {latestByLine.map(({ line, latest, history, deal }) => (
           <div key={line.id} className="rounded-xl border border-stone-200 bg-white p-5">
             <div className="flex items-center justify-between gap-2">
               <h2 className="text-sm font-medium text-stone-500">{line.name}</h2>
@@ -189,6 +268,7 @@ export default async function StorePage({
                     disputeCount: latest.disputeCount,
                   }).reasons.join(" · ")}
                 </p>
+                <QtyCostTable regularCents={latest.observation.priceCents} deal={deal} />
                 {history.length >= 2 && (
                   <div className="mt-3 border-t border-stone-100 pt-2">
                     <PriceSparkline points={history} />

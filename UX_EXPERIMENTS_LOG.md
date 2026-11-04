@@ -260,3 +260,28 @@ friction (retyping a ZIP) for ~70 lines of isolated code.
 search the row shows "60614 · clear"; chips navigate. Typecheck/lint green.
 
 **Recommendation: Keep.**
+
+---
+
+## Cycle 8 — "What you'd pay" quantity table on store pages
+
+**Problem.** Deals were described in prose ("buy 5+ — $1.00 off per can")
+and the search page's qty toggle was the only way to see multi-can totals —
+on a store page a heavy buyer still had to do arithmetic.
+
+**What changed.** Store-page product cards with an active deal now show a
+4-cell strip (1 / 3 / 5 / 10 cans) with total, per-can, and a teal tint on
+deal-applied cells, computed through the existing `lib/deals.ts` math —
+including its honesty rules: quantities whose deal terms are unknown render
+"?" with a "we don't guess" footnote rather than extrapolating. Stores
+without a deal skip the strip (it would be bare multiplication).
+
+**Why selected.** #3 in ranked backlog; serves the multi-can buyer persona
+explicitly named in the product brief; reuses tested deal math (no new
+logic to verify beyond rendering).
+
+**Testing.** Screenshots of both deal shapes: discount-above-min
+(5/10 teal) and unknown-above-min (shows "?" at 5/10). Typecheck/lint
+green; 68 tests unaffected.
+
+**Recommendation: Keep.**
