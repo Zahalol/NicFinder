@@ -227,9 +227,15 @@ try {
   );
 
   // Desktop (default viewport) shows the list+map split with no toggle;
-  // mobile widths keep a Map toggle. Handle both.
-  const mapToggle = page.locator("button", { hasText: "Map" });
-  if ((await mapToggle.count()) > 0) await mapToggle.first().click();
+  // mobile widths keep a Map toggle. The toggle exists in the SSR HTML and
+  // is removed when hydration detects a desktop width, so wait for
+  // hydration first and only click if the map isn't already there.
+  await page.waitForTimeout(1200);
+  if ((await page.locator(".leaflet-container").count()) === 0) {
+    const mapToggle = page.locator("button", { hasText: "Map" });
+    if ((await mapToggle.count()) > 0)
+      await mapToggle.first().click({ timeout: 5000 }).catch(() => {});
+  }
   await page.waitForTimeout(1500);
   check("map container renders", (await page.locator(".leaflet-container").count()) > 0);
 
