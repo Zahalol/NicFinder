@@ -96,8 +96,17 @@ try {
   const storeLinks = await page.locator('a[href^="/stores/"]').count();
   check("shows store cards", storeLinks > 0, `(found ${storeLinks})`);
   check("shows demo-data labeling", (await page.locator("text=demo data").count()) > 0);
+  // Unpriced stores are grouped behind an expandable directory section; the
+  // honest signal is the explicit "no reported price yet" summary + the
+  // "No price yet" cards once expanded.
+  const directoryToggle = page.locator("button", { hasText: /no reported price yet/ });
   check(
-    "shows honest no-price state for unverified stores",
+    "shows honest no-price directory summary",
+    (await directoryToggle.count()) > 0
+  );
+  await directoryToggle.first().click();
+  check(
+    "expanding the directory reveals no-price cards",
     (await page.locator("text=No price yet").count()) > 0
   );
   check(
@@ -113,7 +122,7 @@ try {
   const bodyText = await page.textContent("body");
   check(
     "Ultra view loads with its own (sparser) prices",
-    bodyText.includes("No price yet") && bodyText.includes("$7.49")
+    bodyText.includes("no reported price yet") && bodyText.includes("$7.49")
   );
 
   // 3. Store detail + watchlist authz
