@@ -466,6 +466,24 @@ export default async function StorePage({
         </div>
       )}
 
+      {/* Stale-price nudge: the honest flywheel — ask the people who are
+          already looking at this store to refresh the number. */}
+      {latestByLine.some(({ latest }) => latest?.freshness === "stale") && (
+        <div className="mt-4 rounded-xl border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/50 p-4 text-sm text-amber-900 dark:text-amber-200">
+          {(() => {
+            const stale = latestByLine.find(({ latest }) => latest?.freshness === "stale")!;
+            return (
+              <>
+                The {stale.line.name} price here is{" "}
+                <strong>{stale.latest!.ageDays} days old</strong> and may be
+                outdated. Been here recently? Confirm it or report what you
+                paid below — it takes ten seconds and helps everyone nearby.
+              </>
+            );
+          })()}
+        </div>
+      )}
+
       {/* Contribute */}
       <ContributePanel
         storeId={store.id}

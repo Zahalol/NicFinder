@@ -5,12 +5,21 @@ An informational service for adults 21+ — **no sales, checkout, delivery, or
 nicotine marketing**. Browse free; sign in to confirm or correct prices.
 
 The site works like a calmer GasBuddy for pouches: search any US address or
-ZIP, see nearby stores on a list or map, compare single-can prices and
-multi-can deal pricing, and see exactly how fresh and trustworthy every
-number is. Prices arrive by **file import** (CSV/XLSX from a future calling
-system — see `docs/IMPORT_CONTRACT.md`), by **community reports**, and by
-**manual admin entry**. There is deliberately **no calling code** in this
-application (`docs/ELEVENLABS_CALLING_RESEARCH.md` covers that future workstream).
+ZIP (with "near me", recent-search chips, and ZIP-typo recovery), see nearby
+stores as a list beside a sticky live map (desktop) or a toggled map
+(mobile), compare single-can prices and multi-can deal pricing at your
+quantity, and see exactly how fresh and trustworthy every number is — each
+price carries a transparent **confidence pill** (source + age +
+confirmations), a history **sparkline with trend**, and a "worth the trip?"
+savings-vs-driving verdict. Members confirm a price in one tap from the
+results list, compare up to three stores side by side, keep a watchlist,
+and browse recent **price drops**. The app installs as a PWA (with an
+honest offline page — cached prices are never shown as live) and follows
+the OS dark-mode preference. Prices arrive by **file import** (CSV/XLSX
+from a future calling system — see `docs/IMPORT_CONTRACT.md`), by
+**community reports**, and by **manual admin entry**. There is deliberately
+**no calling code** in this application
+(`docs/ELEVENLABS_CALLING_RESEARCH.md` covers that future workstream).
 
 <p align="center">
   <img src="docs/screenshots/03-search-list.png" alt="Search results with best-price card" width="80%">
@@ -79,6 +88,7 @@ SSO, Autoscale deployment, scheduled maintenance).
 | --- | --- |
 | `HANDOFF.md` | Entry point for the next session: state, open items, gotchas |
 | `DEVLOG.md` | Dated log of finished work, decisions, and lessons |
+| `UX_EXPERIMENTS_LOG.md` | UX/product experiment log: what, why, testing, keep/discard |
 | `docs/REPLIT.md` | Replit deployment guide (DB, SSO, Autoscale, cron) |
 | `docs/PRODUCT_REQUIREMENTS.md` | Scope, user flows, edge cases |
 | `docs/ARCHITECTURE.md` | Data model, latest-price policy, security, Postgres path |

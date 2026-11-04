@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { rememberSearch } from "./QuickSearches";
 
 export function SearchBox({
@@ -14,6 +14,22 @@ export function SearchBox({
   const router = useRouter();
   const [q, setQ] = useState(initialQuery);
   const [locating, setLocating] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // "/" focuses the search box (unless already typing somewhere).
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key !== "/" || e.metaKey || e.ctrlKey || e.altKey) return;
+      const t = e.target as HTMLElement | null;
+      if (t && /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return;
+      if (t?.isContentEditable) return;
+      e.preventDefault();
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   function submit(e?: React.FormEvent) {
     e?.preventDefault();
@@ -41,6 +57,7 @@ export function SearchBox({
   return (
     <form onSubmit={submit} className="flex gap-2 max-w-xl mx-auto">
       <input
+        ref={inputRef}
         type="text"
         value={q}
         onChange={(e) => setQ(e.target.value)}

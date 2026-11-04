@@ -629,3 +629,28 @@ recorded observations — nothing inferred.
 prices; typecheck/lint green; prod build + page render verified.
 
 **Recommendation: Keep.**
+
+---
+
+## Cycle 25 — README refresh, stale-price nudge, "/" search shortcut
+
+**What changed.**
+- README's product paragraph now describes the shipped experience
+  (split view, confidence pills, trip math, compare, watchlist, price
+  drops, PWA, dark mode) and the doc map lists this log.
+- Store pages with a stale price show an amber nudge ("price is N days old
+  — been here recently? confirm or report below"), pointing the people most
+  able to fix a number at the ten-second fix.
+- Pressing "/" anywhere (outside a text field) focuses the search box.
+
+**Testing.** Nudge verified on the 35-day-old demo store; "/" focuses the
+input on search/home; build green.
+
+**Recommendation: Keep.**
+
+### Round-4 idea backlog (ranked, remaining)
+1. ~~README refresh / stale nudge / "/" shortcut~~ — built (Cycle 25).
+2. Nearest-covered-area suggestion on distant no-coverage searches.
+3. Compare selection persistence across filter navigations (sessionStorage).
+4. Watchlist deal badges + per-store "worth the trip" vs cheapest saved.
+5. View Transitions polish on search→store navigation.
