@@ -25,3 +25,18 @@ Status: `todo` | `in-progress` | `done` | `blocked` | `rejected`.
 | 18 | Accessibility sweep: focus traps, aria on map/list toggle, contrast | Med | S-M | High | — | todo |
 | 19 | SEO store-page metadata + structured data review (21+ informational constraints) | Low-Med | S | Med | Legal care | done |
 | 20 | Cross-platform setup validation (Windows CRLF, docs accuracy) | Low | S | High | Can't test Windows here | todo |
+
+## Second tranche (generated 2026-11-04 ~23:40 UTC after first backlog exhausted)
+
+| # | Idea | Impact | Effort | Confidence | Risks | Status |
+|---|------|--------|--------|------------|-------|--------|
+| 21 | "Nearby alternatives" on store pages: up to 3 stores within 2mi with current price + distance, cheaper flagged | Med-High — keeps users inside the comparison loop | S-M | High | None | todo |
+| 22 | Pending-dispute visibility on store page ("N reports awaiting review/corroboration") + /how-it-works trust explainer | Med — roadmap asked for pending vs published clarity | M | Med | Copy quality | todo |
+| 23 | Admin CSV export of current displayed prices (owner backup / spreadsheet workflows) | Med | S | High | None | todo |
+| 24 | PWA manifest + icons (installable, no service worker complexity) | Low | S | Med | Complexity creep if SW added | todo |
+| 25 | User profile credibility: clearer reputation explanation on /users/[id] | Low-Med | S | Med | — | todo |
+| 26 | Comment editing (editedAt exists in schema, no UI) | Low | S | Med | — | todo |
+| 27 | Watchlist quick-compare: compare two saved stores from /account | Low | S | Low | duplicate of /compare entry | todo |
+| 28 | Store-page share/copy-link affordance with OG metadata check | Low | S | Med | — | todo |
+| 29 | Maintenance job: hook duplicate scan + notification pruning | Low-Med | S | Med | tsx dependency in cron | todo |
+| 30 | DEVLOG/HANDOFF refresh + owner summary (end-of-session) | High (handoff) | S | High | — | todo |
