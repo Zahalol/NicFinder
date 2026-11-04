@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { formatCents } from "@/lib/money";
 import { getSettings } from "@/lib/settings";
 import { NotificationsPanel } from "./NotificationsPanel";
+import { SettingsPanel } from "./SettingsPanel";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Your account — NicFinder" };
@@ -49,6 +50,9 @@ export default async function AccountPage() {
       take: 20,
     }),
   ]);
+  const sessionCount = await prisma.authSession.count({
+    where: { userId: user.id, expiresAt: { gte: new Date() } },
+  });
 
   const trusted = user.reputation >= settings.trustedReputation;
 
@@ -77,6 +81,12 @@ export default async function AccountPage() {
           </div>
         </div>
       </div>
+
+      <SettingsPanel
+        displayName={user.displayName}
+        hasPassword={Boolean(user.passwordHash)}
+        sessionCount={sessionCount}
+      />
 
       <NotificationsPanel
         items={notifications.map((n) => ({
