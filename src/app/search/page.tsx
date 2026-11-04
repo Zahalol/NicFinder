@@ -92,44 +92,48 @@ export default async function SearchPage({
 
       {hasLocation && search && (
         <>
-          <div className="mt-5 flex flex-wrap items-center gap-2 text-sm">
-            <span className="text-stone-500">
-              Near <span className="text-stone-800">{locationLabel ?? "selected point"}</span>
-              {approximate && " (ZIP center)"} ·
-            </span>
-            {/* Product toggle */}
-            <span className="inline-flex rounded-lg border border-stone-300 overflow-hidden">
-              <Link href={href({ product: "zyn" })} className={`px-3 py-1 ${product === "zyn" ? "bg-stone-900 text-white" : "bg-white text-stone-600"}`}>ZYN</Link>
-              <Link href={href({ product: "zyn-ultra" })} className={`px-3 py-1 ${product === "zyn-ultra" ? "bg-stone-900 text-white" : "bg-white text-stone-600"}`}>ZYN Ultra</Link>
-            </span>
-            {/* Quantity */}
-            <label className="text-stone-500 ml-1">Buying</label>
-            <span className="inline-flex rounded-lg border border-stone-300 overflow-hidden">
+          <p className="mt-4 text-sm text-stone-500">
+            Near <span className="text-stone-800 font-medium">{locationLabel ?? "selected point"}</span>
+            {approximate && <span className="text-stone-400"> (ZIP center)</span>}
+          </p>
+
+          {/* Filter bar: labeled control groups, horizontally scrollable on mobile */}
+          <div
+            className="mt-3 flex items-end gap-4 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            role="group"
+            aria-label="Search filters"
+          >
+            <FilterGroup label="Product">
+              <FilterPill href={href({ product: "zyn" })} active={product === "zyn"}>ZYN</FilterPill>
+              <FilterPill href={href({ product: "zyn-ultra" })} active={product === "zyn-ultra"}>Ultra</FilterPill>
+            </FilterGroup>
+            <FilterGroup label="Cans">
               {QTYS.map((n) => (
-                <Link key={n} href={href({ qty: n })} className={`px-2.5 py-1 ${qty === n ? "bg-teal-600 text-white" : "bg-white text-stone-600"}`}>
+                <FilterPill key={n} href={href({ qty: n })} active={qty === n} accent>
                   {n}
-                </Link>
+                </FilterPill>
               ))}
-            </span>
-            <span className="text-stone-500">can{qty > 1 ? "s" : ""}</span>
-            {/* Radius */}
-            <label className="text-stone-500 ml-1">within</label>
-            <span className="inline-flex rounded-lg border border-stone-300 overflow-hidden">
+            </FilterGroup>
+            <FilterGroup label="Within">
               {RADII.map((r) => (
-                <Link key={r} href={href({ radius: r })} className={`px-2.5 py-1 ${radius === r ? "bg-stone-900 text-white" : "bg-white text-stone-600"}`}>
-                  {r}mi
-                </Link>
+                <FilterPill key={r} href={href({ radius: r })} active={radius === r}>
+                  {r} mi
+                </FilterPill>
               ))}
-            </span>
-            {/* Sort */}
-            <label className="text-stone-500 ml-1">sort</label>
-            <span className="inline-flex rounded-lg border border-stone-300 overflow-hidden">
-              {(["distance", "price", "recency"] as const).map((s) => (
-                <Link key={s} href={href({ sort: s })} className={`px-2.5 py-1 capitalize ${sort === s ? "bg-stone-900 text-white" : "bg-white text-stone-600"}`}>
-                  {s}
-                </Link>
+            </FilterGroup>
+            <FilterGroup label="Sort by">
+              {(
+                [
+                  ["distance", "Nearest"],
+                  ["price", "Cheapest"],
+                  ["recency", "Newest"],
+                ] as const
+              ).map(([s, label]) => (
+                <FilterPill key={s} href={href({ sort: s })} active={sort === s}>
+                  {label}
+                </FilterPill>
               ))}
-            </span>
+            </FilterGroup>
           </div>
 
           {search.results.length === 0 ? (
@@ -148,6 +152,48 @@ export default async function SearchPage({
         </>
       )}
     </div>
+  );
+}
+
+/** A labeled group of filter pills. */
+function FilterGroup({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="shrink-0">
+      <p className="text-[10px] font-medium uppercase tracking-wider text-stone-400 mb-1">
+        {label}
+      </p>
+      <div className="inline-flex rounded-lg border border-stone-300 overflow-hidden bg-white">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function FilterPill({
+  href,
+  active,
+  accent = false,
+  children,
+}: {
+  href: string;
+  active: boolean;
+  accent?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      aria-current={active ? "true" : undefined}
+      className={`px-3 py-1.5 text-sm whitespace-nowrap transition-colors ${
+        active
+          ? accent
+            ? "bg-teal-600 text-white"
+            : "bg-stone-900 text-white"
+          : "bg-white text-stone-600 hover:bg-stone-50"
+      }`}
+    >
+      {children}
+    </Link>
   );
 }
 

@@ -20,10 +20,12 @@ export default function StoreMap({
   results,
   center,
   qty,
+  productSlug = "zyn",
 }: {
   results: StoreResult[];
   center: { lat: number; lng: number };
   qty: number;
+  productSlug?: string;
 }) {
   return (
     <MapContainer
@@ -77,7 +79,7 @@ export default function StoreMap({
                     <span style={{ color: "#a8a29e" }}>No price reported yet</span>
                   )}
                   <br />
-                  <Link href={`/stores/${r.id}`}>Details →</Link>
+                  <Link href={`/stores/${r.id}?product=${productSlug}`}>Details →</Link>
                 </div>
               </Popup>
             </Marker>
