@@ -34,7 +34,7 @@ Status: `todo` | `in-progress` | `done` | `blocked` | `rejected`.
 | 22 | Pending-dispute visibility on store page ("N reports awaiting review/corroboration") + /how-it-works trust explainer | Med — roadmap asked for pending vs published clarity | M | Med | Copy quality | done |
 | 23 | Admin CSV export of current displayed prices (owner backup / spreadsheet workflows) | Med | S | High | None | done |
 | 24 | PWA manifest + icons (installable, no service worker complexity) | Low | S | Med | Complexity creep if SW added | todo |
-| 25 | User profile credibility: clearer reputation explanation on /users/[id] | Low-Med | S | Med | — | todo |
+| 25 | User profile credibility: clearer reputation explanation on /users/[id] | Low-Med | S | Med | — | done |
 | 26 | Comment editing (editedAt exists in schema, no UI) | Low | S | Med | — | todo |
 | 27 | Watchlist quick-compare: compare two saved stores from /account | Low | S | Low | duplicate of /compare entry | todo |
 | 28 | Store-page share/copy-link affordance with OG metadata check | Low | S | Med | — | todo |
