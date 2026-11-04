@@ -4,6 +4,8 @@ import { SearchBox } from "@/components/SearchBox";
 import { SearchResults } from "@/components/SearchResults";
 import { CoverageRequestButton } from "@/components/CoverageRequestButton";
 import { QuickSearches } from "@/components/QuickSearches";
+import { FilterMemory } from "@/components/FilterMemory";
+import { Suspense } from "react";
 import { formatCents } from "@/lib/money";
 import { compareTrip } from "@/lib/trip";
 import { prisma } from "@/lib/db";
@@ -77,6 +79,9 @@ export default async function SearchPage({
 
   return (
     <div className="py-6">
+      <Suspense fallback={null}>
+        <FilterMemory />
+      </Suspense>
       <SearchBox initialQuery={q} />
 
       {!q && !hasLocation && (
