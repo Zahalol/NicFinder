@@ -601,3 +601,31 @@ exercises the whole flow with the SW registered).
 
 **Recommendation: Keep.** The "no stale prices ever" rule makes this a
 safe-by-design PWA completion rather than a caching risk.
+
+---
+
+## Interlude — committed screenshot tour regenerated
+
+All 17 `docs/screenshots/` images (embedded by the README) still showed the
+pre-session UI. Recaptured everything from a pristine-seeded production
+build at 2×, added 3 new shots (compare dialog, dark search, dark store),
+and rewrote the tour README descriptions.
+
+---
+
+## Cycle 24 — "Recent price drops" page
+
+**What changed.** `/price-drops`: stores whose newest report in the last 14
+days is lower than their previous recorded observation, shown as
+old-price-struck-through → new price with the delta; sorted by biggest
+drop; honest empty state inviting reports; linked from the homepage feed
+("See recent price drops →") and the sitemap. Every entry is a pair of real
+recorded observations — nothing inferred.
+
+**Why selected.** Return-visit hook + long-tail SEO ("zyn price drop
+<area>"), nearly free on top of the Cycle 11 delta machinery.
+
+**Testing.** Screenshot shows the two seeded-history drops with struck
+prices; typecheck/lint green; prod build + page render verified.
+
+**Recommendation: Keep.**

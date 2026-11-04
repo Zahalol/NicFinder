@@ -128,6 +128,11 @@ export default async function HomePage() {
               </li>
             ))}
           </ul>
+          <p className="mt-2 text-center">
+            <Link href="/price-drops" className="text-xs text-teal-700 dark:text-teal-400 hover:underline">
+              See recent price drops →
+            </Link>
+          </p>
         </div>
       )}
 
