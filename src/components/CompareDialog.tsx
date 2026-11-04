@@ -4,7 +4,7 @@
 // purely client-side — remove this file + the compare hooks in
 // SearchResults.tsx to drop the feature.
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import Link from "next/link";
 import type { StoreResult } from "@/lib/search";
 import { formatCents } from "@/lib/money";
@@ -30,7 +30,9 @@ export function CompareDialog({
   productSlug: string;
   onClose: () => void;
 }) {
+  const closeRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
+    closeRef.current?.focus();
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
@@ -145,6 +147,7 @@ export function CompareDialog({
         <div className="sticky top-0 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 px-4 py-3 flex items-center justify-between">
           <h2 className="font-semibold text-stone-900 dark:text-stone-100">Compare stores</h2>
           <button
+            ref={closeRef}
             onClick={onClose}
             aria-label="Close comparison"
             className="rounded-lg px-2.5 py-1 text-stone-500 hover:bg-stone-100 dark:hover:bg-stone-800 text-xl leading-none"

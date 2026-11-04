@@ -175,8 +175,8 @@ export default async function SearchPage({
 /** A labeled group of filter pills. */
 function FilterGroup({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="shrink-0">
-      <p className="text-[10px] font-medium uppercase tracking-wider text-stone-400 mb-1">
+    <div className="shrink-0" role="group" aria-label={label}>
+      <p className="text-[10px] font-medium uppercase tracking-wider text-stone-500 mb-1" aria-hidden>
         {label}
       </p>
       <div className="inline-flex rounded-lg border border-stone-300 dark:border-stone-700 overflow-hidden bg-white dark:bg-stone-900">

@@ -232,12 +232,14 @@ export function SearchResults({
         <div className="inline-flex rounded-lg border border-stone-300 dark:border-stone-700 overflow-hidden text-sm">
           <button
             onClick={() => setView("list")}
+            aria-pressed={view === "list"}
             className={`px-4 py-1.5 ${view === "list" ? "bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900" : "bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-400"}`}
           >
             List
           </button>
           <button
             onClick={() => setView("map")}
+            aria-pressed={view === "map"}
             className={`px-4 py-1.5 ${view === "map" ? "bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900" : "bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-400"}`}
           >
             Map
