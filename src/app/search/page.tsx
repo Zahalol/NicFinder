@@ -1,5 +1,6 @@
 import { geocode, nearestZip } from "@/lib/geocode";
 import { suggestZips } from "@/lib/zip-suggest";
+import { haversineMiles } from "@/lib/geo";
 import { searchStores, type SortKey } from "@/lib/search";
 import { SearchBox } from "@/components/SearchBox";
 import { SearchResults } from "@/components/SearchResults";
@@ -346,6 +347,31 @@ async function NoCoverage({
     ? await prisma.coverageRequest.count({ where: { zip } })
     : 0;
 
+  // Nearest covered area, suggested only when it's realistically reachable
+  // (an honest "the pilot is 20 mi east", never "drive 1,700 mi").
+  const NEARBY_SUGGEST_MILES = 100;
+  const covered = await prisma.store.findMany({
+    where: {
+      status: "ACTIVE",
+      latitude: { not: null },
+      longitude: { not: null },
+      observations: { some: { status: "ACTIVE" } },
+    },
+    select: { city: true, state: true, zip: true, latitude: true, longitude: true },
+    take: 500,
+  });
+  let nearestCovered: { label: string; zip: string; miles: number } | null = null;
+  for (const s of covered) {
+    const d = haversineMiles(lat, lng, s.latitude!, s.longitude!);
+    if (d <= NEARBY_SUGGEST_MILES && (!nearestCovered || d < nearestCovered.miles) && s.zip) {
+      nearestCovered = {
+        label: [s.city, s.state].filter(Boolean).join(", "),
+        zip: s.zip,
+        miles: Math.round(d),
+      };
+    }
+  }
+
   return (
     <div className="mt-10 max-w-xl mx-auto rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-6 text-center">
       <h2 className="font-medium text-stone-900 dark:text-stone-100">No coverage here yet</h2>
@@ -355,6 +381,17 @@ async function NoCoverage({
         we haven’t covered — try widening the radius or searching a Chicago
         ZIP like 60614.
       </p>
+      {nearestCovered && (
+        <p className="mt-3 text-sm">
+          <Link
+            href={`/search?q=${nearestCovered.zip}`}
+            className="text-teal-700 dark:text-teal-400 underline"
+          >
+            Nearest covered area: {nearestCovered.label} {nearestCovered.zip}
+          </Link>{" "}
+          <span className="text-stone-500">(~{nearestCovered.miles} mi from here)</span>
+        </p>
+      )}
       <CoverageRequestButton zip={zip} lat={lat} lng={lng} initialCount={requestCount} />
     </div>
   );
