@@ -405,12 +405,10 @@ try {
     }, storeMeta);
     check("flag affordance present for signed-in member", flagged === true);
   }
-  await ctx2.close();
-
   // Moderation UI journey: member reports a deal → admin clicks
   // "Approve & publish" in the review queue → deal appears on the store page.
   const dealTarget = storeMeta; // the watched store from the trust loop
-  const dealReported = await page.evaluate(async (sid) => {
+  const dealReported = await member.evaluate(async (sid) => {
     const html = await (await fetch(`/stores/${sid}`)).text();
     const line = (html.match(/value="([a-z0-9]{20,})"/) || [])[1];
     const r = await fetch(`/api/stores/${sid}/contributions`, {
@@ -444,6 +442,8 @@ try {
     dealShown = storePage.includes("e2e journey deal");
   }
   check("approved deal appears on the store page", dealShown);
+
+  await ctx2.close();
 
   // Dark mode regression guard: a dark-preferring browser gets a dark body.
   const darkCtx = await browser.newContext({ colorScheme: "dark" });
