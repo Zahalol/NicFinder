@@ -8,7 +8,7 @@ finished work, decisions, and lessons. Current state and open items live in HAND
 ## 2026-11-04/05 — Session 2 (autonomous UX & product)
 
 **Done**
-- 27 evaluate→build→test→critique cycles on the customer experience, each
+- 40 evaluate→build→test→critique cycles on the customer experience, each
   committed separately with before/after Playwright screenshots and logged in
   `UX_EXPERIMENTS_LOG.md` (what, why, testing, keep/discard). Highlights:
   mobile filter-bar redesign + priced-first results; desktop list+sticky-map
@@ -24,8 +24,15 @@ finished work, decisions, and lessons. Current state and open items live in HAND
   network-first SW + /offline); OS dark mode (admin pinned light);
   accessibility pass (skip link, focus-visible, aria); 20-image screenshot
   tour regenerated from a production build.
-- Tests grew 53 → 72 (confidence, trip math, sparkline trend, zip-suggest);
-  e2e suite updated for the new layouts and kept at 37 checks, all green.
+- Tests grew 53 → 73 (confidence, trip math incl. exact totals, sparkline
+  trend, zip-suggest); e2e suite extended from 35 to 50 checks covering the
+  new features (compare, confirm, signup, notes, PWA, suggestions), all green.
+- Later cycles: covered-areas index, Ultra column on ZIP pages, per-store and
+  per-ZIP dynamic OG images (bundled OFL fonts), store-name search matches,
+  price-drops page, accessibility round 2 (live regions, reduced motion,
+  dialog focus trap), footer nav, and a closing adversarial code review
+  (10 findings fixed — incl. REVERSED-observation baselines in the
+  price-change feeds and an unstyled offline fallback).
 - Fixed inherited bugs: `/admin/coverage` page silently dropped by a bare
   `coverage/` gitignore (anchored + restored); age-gate dismissal raced a
   slow server refresh (now hides on cookie POST success); map popups lost

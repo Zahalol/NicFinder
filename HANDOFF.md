@@ -5,9 +5,9 @@ _Date: 2026-11-05 — Session 2 (autonomous UX/product session, branch `claude/b
 
 - NicFinder (ZYN price-comparison site, Chicago pilot, 21+ informational) is a
   **complete, verified MVP on PostgreSQL** with a substantially upgraded
-  customer experience from 27 autonomous UX/product cycles (all documented
+  customer experience from 40 autonomous UX/product cycles (all documented
   with rationale, testing, and keep/discard calls in `UX_EXPERIMENTS_LOG.md`).
-- All gates green at the branch tip: **72 vitest tests, 50-check Playwright
+- All gates green at the branch tip: **73 vitest tests, 50-check Playwright
   e2e, lint, typecheck, prod build.**
 - Session-2 UX additions (all additive; prior features intact): desktop
   list+sticky-map split view with map→list sync; redesigned mobile filter
@@ -19,10 +19,15 @@ _Date: 2026-11-05 — Session 2 (autonomous UX/product session, branch `claude/b
   cheaper-nearby links and stale-price nudges on store pages; watchlist
   dashboard upgrade; quick-search chips (near me / recents / neighborhoods);
   filter memory; ZIP-typo "did you mean"; nearest-covered-area suggestion;
-  `/price-drops`; `/about`; enriched ZIP SEO pages (stats + FAQ JSON-LD);
-  store-page metadata/JSON-LD/breadcrumbs; PWA (manifest, icons, honest
-  network-first service worker + `/offline`); dark mode; accessibility pass;
-  regenerated 20-image screenshot tour.
+  `/price-drops`; `/about`; `/zyn-prices` covered-areas index; enriched ZIP
+  SEO pages (stats + FAQ JSON-LD, Ultra column); store-page metadata/JSON-LD/
+  breadcrumbs and per-store + per-ZIP dynamic OG images (fonts bundled under
+  src/assets/fonts, OFL); store-name search matches; PWA (manifest, icons,
+  honest network-first service worker + self-contained `/offline`); dark
+  mode; two accessibility passes (skip link, focus rings, live regions,
+  reduced motion, dialog focus trap); regenerated 20-image screenshot tour;
+  and a closing adversarial code review (10 findings, all addressed —
+  notably REVERSED-observation baselines in the price-change feeds).
 - Fixed from session 1: `/admin/coverage` page had been silently gitignored
   by a bare `coverage/` pattern (now anchored to `/coverage/`, page restored);
   age gate now dismisses instantly on cookie set (was a >1s flake).
@@ -37,8 +42,8 @@ _Date: 2026-11-05 — Session 2 (autonomous UX/product session, branch `claude/b
 - [ ] Email verification / password reset not implemented (documented limitation)
 - [ ] Owner to review `UX_EXPERIMENTS_LOG.md` recommendations (everything is
       marked Keep; compare tray + filter memory flagged "watch usage")
-- [ ] Round-4 backlog leftovers: watchlist "worth the trip vs cheapest
-      saved", View Transitions polish
+- [ ] Backlog leftovers: View Transitions polish; nearest-covered-area scan
+      optimization at scale (noted in UX log cycle 38)
 
 ## How to run things
 ```
@@ -50,7 +55,7 @@ npx prisma migrate deploy
 npm run db:seed             # demo users + Chicago directory + demo prices/history
 npm run dev                 # http://localhost:3000
 
-npm test                    # 72 tests (needs nicfinder_test DB)
+npm test                    # 73 tests (needs nicfinder_test DB)
 npm run build && npm run e2e  # 50-check browser smoke on port 3100
 ```
 Demo logins: docs/DEMO_GUIDE.md (admin@example.com / admin-demo-password).
@@ -79,6 +84,6 @@ Demo logins: docs/DEMO_GUIDE.md (admin@example.com / admin-demo-password).
 ```
 Project: /home/user/NicFinder (github.com/Zahalol/NicFinder, branch claude/beautiful-keller-yyipbw)
 Read first: HANDOFF.md, UX_EXPERIMENTS_LOG.md, README.md
-State: verified MVP + 27 UX/product cycles, all gates green, not yet deployed.
+State: verified MVP + 40 UX/product cycles, all gates green, not yet deployed.
 Next: owner review of experiments; Replit deployment per docs/REPLIT.md.
 ```
