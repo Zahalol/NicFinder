@@ -20,6 +20,7 @@ export default async function AdminLayout({
     { href: "/admin", label: "Overview" },
     { href: "/admin/imports", label: "Imports" },
     { href: "/admin/stores", label: "Stores" },
+    { href: "/admin/collect", label: "Collect" },
     { href: "/admin/review", label: "Review queue" },
     { href: "/admin/coverage", label: "Coverage demand" },
     { href: "/admin/analytics", label: "Analytics" },

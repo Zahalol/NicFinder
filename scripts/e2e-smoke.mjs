@@ -255,6 +255,7 @@ try {
     ["/admin/coverage", "Coverage demand"],
     ["/admin/analytics", "Price range by ZIP"],
     ["/admin/economics", "Pilot economics"],
+    ["/admin/collect", "Collect prices"],
   ]) {
     await page.goto(`${BASE}${path2}`);
     check(`${path2} renders`, (await page.locator(`text=${marker}`).count()) > 0);
