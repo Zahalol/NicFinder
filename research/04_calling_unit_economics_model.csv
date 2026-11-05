@@ -1,0 +1,37 @@
+section,parameter,conservative,base,optimistic,unit,source_or_basis
+price,ElevenLabs agent minute,0.08,0.08,0.08,USD/min,ElevenLabs pricing page via repo doc 2026-11-04 + 2026 secondary sources (assumed per-second proration; unverified)
+price,Twilio US outbound,0.014,0.014,0.014,USD/min (rounded up to whole minutes),Twilio US voice pricing page; whole-minute rounding from third-party billing test
+price,Twilio Media Streams (assumed applies),0.0044,0.0044,0.0044,USD/min,Twilio pricing (repo doc); applicability to native integration unverified
+price,Twilio AMD,0.0075,0.0075,0.0075,USD per answered call,Twilio AMD GA announcement
+price,Twilio regulatory/tax uplift,10%,10%,10%,multiplier on Twilio,assumption
+price,LLM,0.02,0.005,0.002,USD/agent-min,assumption; single secondary source cites 0.0005-0.0012 for small models
+price,Line-type lookup,0.008,0.008,0.008,USD/number/cycle,Twilio Lookup pricing page
+price,Phone number,1.15,1.15,1.15,USD/month,Twilio pricing
+price,Trust Hub/CNAM/misc,10,10,10,USD/month,assumption (fees unconfirmed)
+price,ElevenLabs plan floor,22,22,22,USD/month,Creator plan (275 min incl.) per repo doc
+funnel,Call connects (not busy/failed),0.95,0.95,0.97,share of attempts,assumption
+funnel,Human answers | connected,0.40,0.55,0.70,share,anchored on 411 Locals small-business study (37.8% human-answered) adjusted up for staffed c-stores; assumption
+funnel,Voicemail/IVR share of non-human connects,0.6,0.5,0.4,share,assumption
+funnel,Willing and able to quote | human,0.40,0.60,0.75,share,assumption (AI disclosure and busy clerks)
+funnel,Correct product/qty/tax captured | cooperative,0.75,0.85,0.93,share,assumption (15 vs 20-pouch can confusion and Ultra vs regular)
+funnel,Extraction accepted (confidence) | captured,0.85,0.92,0.97,share,assumption
+funnel,Accurate in independent audit | accepted,0.80,0.90,0.95,share,assumption; PHR 2009 pilot found phone-reported cigarette prices not valid vs in-store
+duration,Voicemail/IVR billed agent seconds,8,6,5,seconds,assumption
+duration,Refusal call,25,20,15,seconds,assumption incl ~10-12 s disclosure
+duration,Successful call,90,60,45,seconds,assumption incl disclosure + read-back
+qa,Audit sample of accepted prices,15%,10%,5%,share,policy
+qa,Cost per audit,1.50,1.00,0.75,USD,human callback or field check share
+qa,Human transcript review,15% of cooperative calls x 1 min @ $20/h,same,same,,policy
+result,Yield: accurate prices per dial attempt,0.078,0.221,0.436,prices/attempt,model
+result,Variable cost per attempt (calls only),0.061,0.056,0.059,USD,model
+result,All-in variable cost per attempt (incl QA review lookup share),0.093,0.098,0.104,USD,model
+result,Cost per model-generated price (calls only),0.53,0.21,0.12,USD,model
+result,Cost per ACCURATE usable price (variable),1.20,0.45,0.24,USD,model
+result,Accurate prices per eligible store (6 attempts over 2 weeks + one refusal retry),0.265,0.487,0.696,share,model
+result,Eligible after line-type scrub,0.70,0.85,0.92,share of listed stores,assumption
+result,100 distinct accurate prices: total cost (incl fixed),180,64,51,USD,model
+result,1000 distinct accurate prices: total cost,1697,622,291,USD,model
+result,10000 distinct accurate prices: total cost (3 months fixed),11140,4847,2828,USD,model
+result,Monthly refresh per 1000 known stores (2 attempts): cost,183,179,170,USD/month,model
+result,Monthly refresh: share of stores refreshed accurately,0.19,0.44,0.69,share,model
+result,Monthly refresh: cost per accurate refreshed price,0.97,0.41,0.25,USD,model
