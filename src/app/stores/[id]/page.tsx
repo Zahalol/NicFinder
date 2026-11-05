@@ -10,6 +10,8 @@ import { formatPhoneDisplay } from "@/lib/normalize";
 import { DemoBadge, ReliabilityBadge } from "@/components/badges";
 import { assessReliability } from "@/lib/reliability";
 import { BackLink } from "@/components/BackLink";
+import { MiniMap } from "@/components/MiniMap";
+import { effectivePerCanCents, totalCents, type DealInput } from "@/lib/deals";
 import { SaveStoreButton } from "@/components/SaveStoreButton";
 import { ShareButton } from "@/components/ShareButton";
 import { ContributePanel } from "./ContributePanel";
@@ -42,6 +44,69 @@ export async function generateMetadata({
     // Fictional demo stores must never be indexed as if they were real places.
     robots: store.isDemo ? { index: false, follow: false } : undefined,
   };
+}
+
+/** Compact what-it-costs strip: totals at common quantities, deal-aware. */
+function QtyCostTable({
+  regularCents,
+  deal,
+}: {
+  regularCents: number;
+  deal: DealInput | null;
+}) {
+  const qtys = [1, 3, 5, 10];
+  const cells = qtys.map((qty) => {
+    const eff = effectivePerCanCents(regularCents, deal, qty);
+    const total = totalCents(regularCents, deal, qty);
+    return { qty, eff, total };
+  });
+  // Without a deal every row is just multiplication — not worth the pixels.
+  if (!deal) return null;
+  const anyUnknown = cells.some((c) => c.total === null);
+
+  return (
+    <div className="mt-3 border-t border-stone-100 dark:border-stone-800 pt-2.5">
+      <p className="text-[10px] font-medium uppercase tracking-wider text-stone-400 dark:text-stone-500">
+        What you&apos;d pay
+      </p>
+      <div className="mt-1.5 grid grid-cols-4 gap-1.5 text-center">
+        {cells.map(({ qty, eff, total }) => (
+          <div
+            key={qty}
+            className={`rounded-lg border px-1 py-1.5 ${
+              eff.usedDeal
+                ? "border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-950/60"
+                : "border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-900"
+            }`}
+          >
+            <div className="text-[10px] text-stone-400">
+              {qty} can{qty > 1 ? "s" : ""}
+            </div>
+            {total !== null ? (
+              <>
+                <div className="text-sm font-semibold text-stone-800 dark:text-stone-200">
+                  {formatCents(total)}
+                </div>
+                <div className="text-[10px] text-stone-500">
+                  {formatCents(eff.perCanCents)}/can
+                  {eff.usedDeal ? " · deal" : ""}
+                </div>
+              </>
+            ) : (
+              <div className="text-sm text-stone-400" title="Deal terms at this quantity are unknown">
+                ?
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+      {anyUnknown && (
+        <p className="mt-1 text-[10px] text-stone-400">
+          ? = the reported deal&apos;s terms at that quantity are unknown — we don&apos;t guess.
+        </p>
+      )}
+    </div>
+  );
 }
 
 export default async function StorePage({
@@ -109,6 +174,20 @@ export default async function StorePage({
     line,
     latest: selectLatestPrice(activeByLine[i], settings),
     avail: selectLatestAvailability(activeByLine[i], settings),
+    // Current deal for this line (for the deal-aware "what you'd pay" strip).
+    deal: ((d): DealInput | null =>
+      d
+        ? {
+            minQty: d.minQty,
+            pricePerCanCents: d.pricePerCanCents,
+            discountPerCanCents: d.discountPerCanCents,
+            appliesAboveMinQty: d.appliesAboveMinQty,
+          }
+        : null)(
+      store.deals.find(
+        (d) => d.productLineId === line.id && (d.expiresAt === null || d.expiresAt >= new Date())
+      )
+    ),
   }));
 
   // Up to 3 nearby alternatives within 2 miles, reusing the exact search
@@ -165,9 +244,37 @@ export default async function StorePage({
         ...(store.phone ? { telephone: store.phone } : {}),
       }
     : null;
+  // Breadcrumbs (real stores only, like the LocalBusiness block above).
+  const ldBase = process.env.APP_URL ?? "http://localhost:3000";
+  const breadcrumbLd = !store.isDemo
+    ? {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "NicFinder", item: ldBase },
+          ...(store.zip
+            ? [
+                {
+                  "@type": "ListItem",
+                  position: 2,
+                  name: `ZYN prices in ${store.zip}`,
+                  item: `${ldBase}/zyn-prices/${store.zip}`,
+                },
+              ]
+            : []),
+          { "@type": "ListItem", position: store.zip ? 3 : 2, name: store.name },
+        ],
+      }
+    : null;
 
   return (
     <div className="py-6 max-w-3xl mx-auto">
+      {breadcrumbLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: jsonLdString(breadcrumbLd) }}
+        />
+      )}
       {jsonLd && (
         <script
           type="application/ld+json"
@@ -187,7 +294,16 @@ export default async function StorePage({
           <p className="text-stone-500 dark:text-stone-400 mt-1">
             {store.address}
             {store.city ? `, ${store.city}` : ""}
-            {store.state ? `, ${store.state}` : ""} {store.zip ?? ""}
+            {store.state ? `, ${store.state}` : ""}{" "}
+            {store.zip ? (
+              <Link
+                href={`/zyn-prices/${store.zip}`}
+                className="underline decoration-stone-300 dark:decoration-stone-600 hover:text-teal-700 dark:hover:text-teal-400"
+                title={`All ZYN prices in ${store.zip}`}
+              >
+                {store.zip}
+              </Link>
+            ) : null}
           </p>
           <p className="mt-0.5 flex flex-wrap gap-x-4 text-sm">
             {mapsUrl && (
@@ -214,9 +330,15 @@ export default async function StorePage({
         </p>
       )}
 
+      {store.latitude !== null && store.longitude !== null && (
+        <div className="mt-4">
+          <MiniMap lat={store.latitude} lng={store.longitude} />
+        </div>
+      )}
+
       {/* Current prices per product line */}
       <div className="mt-6 grid sm:grid-cols-2 gap-4">
-        {latestByLine.map(({ line, latest, avail }) => (
+        {latestByLine.map(({ line, latest, avail, deal }) => (
           <div key={line.id} className="rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-5">
             <h2 className="text-sm font-medium text-stone-500 dark:text-stone-400">{line.name}</h2>
             {latest ? (
@@ -271,6 +393,7 @@ export default async function StorePage({
                       {avail.availability === "NOT_CARRIED" ? "no longer carried" : "out of stock"}
                     </p>
                   )}
+                <QtyCostTable regularCents={latest.observation.priceCents} deal={deal} />
               </>
             ) : avail && avail.availability === "NOT_CARRIED" ? (
               <div className="mt-1">

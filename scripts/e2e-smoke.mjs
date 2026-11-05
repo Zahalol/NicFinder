@@ -207,6 +207,30 @@ try {
   await page.goto(`${BASE}/admin`);
   check("guest /admin redirects to login", page.url().includes("/login"));
 
+  // Store-page extras ported from beautiful-keller: deal-aware "what you'd
+  // pay" strip, location mini-map, ZIP linking to its area page.
+  const fuelHref = await page
+    .goto(`${BASE}/search?q=60614&radius=5`)
+    .then(() =>
+      page.locator("a", { hasText: "Demo Fuel Stop #1" }).first().getAttribute("href")
+    )
+    .catch(() => null);
+  if (fuelHref) {
+    await page.goto(`${BASE}${fuelHref.split("?")[0]}`);
+    await page.waitForTimeout(1200);
+    check(
+      "deal store shows the 'what you'd pay' strip",
+      (await page.locator("text=What you'd pay").count()) > 0
+    );
+    check("store page mini-map renders", (await page.locator(".leaflet-container").count()) > 0);
+    check(
+      "store ZIP links to its area page",
+      (await page.locator('a[href="/zyn-prices/60614"]').count()) > 0
+    );
+  } else {
+    check("deal store reachable from search", false);
+  }
+
   // 4. Coverage request on an uncovered area
   console.log("Coverage request…");
   await page.goto(`${BASE}/search?q=10001`);
