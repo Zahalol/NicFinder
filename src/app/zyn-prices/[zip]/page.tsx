@@ -39,15 +39,30 @@ export default async function ZipLandingPage({
   const info = zipInfo(zip);
   if (!centroid || !info) notFound();
 
-  const { results } = await searchStores({
-    lat: centroid.latitude,
-    lng: centroid.longitude,
-    radiusMiles: 5,
-    productSlug: "zyn",
-    qty: 1,
-    sort: "price",
-  });
+  const [{ results }, ultraSearch] = await Promise.all([
+    searchStores({
+      lat: centroid.latitude,
+      lng: centroid.longitude,
+      radiusMiles: 5,
+      productSlug: "zyn",
+      qty: 1,
+      sort: "price",
+    }),
+    searchStores({
+      lat: centroid.latitude,
+      lng: centroid.longitude,
+      radiusMiles: 5,
+      productSlug: "zyn-ultra",
+      qty: 1,
+      sort: "price",
+    }),
+  ]);
   const priced = results.filter((r) => r.latest);
+  // Ultra prices by store id (never inherited from regular ZYN).
+  const ultraByStore = new Map(
+    ultraSearch.results.filter((r) => r.latest).map((r) => [r.id, r.latest!])
+  );
+  const anyUltra = ultraByStore.size > 0;
 
   // Summary stats over reported prices (results are already price-sorted).
   const prices = priced.map((r) => r.latest!.priceCents);
@@ -178,6 +193,7 @@ export default async function ZipLandingPage({
               <th className="py-2 pr-2">Store</th>
               <th className="py-2 pr-2">Address</th>
               <th className="py-2 pr-2">ZYN price</th>
+              {anyUltra && <th className="py-2 pr-2">Ultra</th>}
               <th className="py-2">Reported</th>
             </tr>
           </thead>
@@ -196,6 +212,15 @@ export default async function ZipLandingPage({
                 <td className="py-2 pr-2 font-semibold text-stone-900 dark:text-stone-100">
                   {r.latest ? formatCents(r.latest.priceCents) : <span className="font-normal text-stone-400">not reported</span>}
                 </td>
+                {anyUltra && (
+                  <td className="py-2 pr-2 text-stone-700 dark:text-stone-300">
+                    {ultraByStore.has(r.id) ? (
+                      formatCents(ultraByStore.get(r.id)!.priceCents)
+                    ) : (
+                      <span className="text-stone-400">—</span>
+                    )}
+                  </td>
+                )}
                 <td className="py-2 text-stone-500">
                   {r.latest ? `${r.latest.ageDays}d ago` : "—"}
                 </td>
