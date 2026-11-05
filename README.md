@@ -79,6 +79,8 @@ SSO, Autoscale deployment, scheduled maintenance).
 | --- | --- |
 | `HANDOFF.md` | Entry point for the next session: state, open items, gotchas |
 | `DEVLOG.md` | Dated log of finished work, decisions, and lessons |
+| `AUTONOMOUS_WORKLOG.md` | 2026-11-04/05 autonomous session — per-cycle evidence & recommendations |
+| `AUTONOMOUS_BACKLOG.md` | Remaining ranked improvement ideas from that session |
 | `docs/REPLIT.md` | Replit deployment guide (DB, SSO, Autoscale, cron) |
 | `docs/PRODUCT_REQUIREMENTS.md` | Scope, user flows, edge cases |
 | `docs/ARCHITECTURE.md` | Data model, latest-price policy, security, Postgres path |
