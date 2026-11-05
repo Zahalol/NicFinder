@@ -104,11 +104,13 @@ export default async function SearchPage({
       {geocodeFailed && (
         <div className="mt-8 max-w-xl mx-auto rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-6 text-center">
           <h2 className="font-medium text-stone-900 dark:text-stone-100">We couldn’t locate “{q}”</h2>
-          {suggestZips(q).length > 0 ? (
+          {(() => {
+            const suggestions = suggestZips(q);
+            return suggestions.length > 0 ? (
             <div className="mt-3">
               <p className="text-sm text-stone-600 dark:text-stone-400">Did you mean:</p>
               <p className="mt-2 flex flex-wrap justify-center gap-2">
-                {suggestZips(q).map((sgn) => (
+                {suggestions.map((sgn) => (
                   <Link
                     key={sgn.zip}
                     href={`/search?q=${sgn.zip}`}
@@ -119,7 +121,8 @@ export default async function SearchPage({
                 ))}
               </p>
             </div>
-          ) : null}
+          ) : null;
+          })()}
           <p className="mt-3 text-sm text-stone-600 dark:text-stone-400">
             Try a 5-digit ZIP code (ZIP search works even offline) or a fuller
             street address. Address lookup uses OpenStreetMap and may be
@@ -267,6 +270,8 @@ function BestPriceCard({
           altPerCanCents: nearest.effective.perCanCents!,
           altDistanceMiles: nearest.distanceMiles,
           qty,
+          bestTotalCents: best.effective.totalCents,
+          altTotalCents: nearest.effective.totalCents,
         })
       : null;
 

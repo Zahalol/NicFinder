@@ -12,8 +12,15 @@ export const alt = "NicFinder — ZYN price comparison for this store";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-async function font(file: string) {
-  return readFile(path.join(process.cwd(), "src/assets/fonts", file));
+// Fonts are immutable per deploy — read once per process, not per request.
+const fontCache = new Map<string, Promise<Buffer>>();
+function font(file: string) {
+  let p = fontCache.get(file);
+  if (!p) {
+    p = readFile(path.join(process.cwd(), "src/assets/fonts", file));
+    fontCache.set(file, p);
+  }
+  return p;
 }
 
 export default async function OgImage({ params }: { params: Promise<{ id: string }> }) {

@@ -47,6 +47,8 @@ export default async function HomePage() {
         where: {
           storeId: o.storeId,
           productLineId: o.productLineId,
+          // only prices that were legitimately displayed at some point
+          status: { in: ["ACTIVE", "SUPERSEDED"] },
           observedAt: { lt: o.observedAt },
         },
         orderBy: { observedAt: "desc" },

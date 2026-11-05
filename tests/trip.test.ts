@@ -62,6 +62,19 @@ describe("compareTrip", () => {
     expect(res!.netCents).toBe(res!.savingsCents - res!.drivingCostCents);
   });
 
+  it("prefers exact totals over rounded per-can × qty when provided", () => {
+    const res = compareTrip({
+      bestPerCanCents: 633, // rounded per-can of a mixed deal
+      bestDistanceMiles: 2,
+      altPerCanCents: 699,
+      altDistanceMiles: 0.5,
+      qty: 10,
+      bestTotalCents: 6327, // exact mixed total (not 6330)
+      altTotalCents: 6990,
+    });
+    expect(res!.savingsCents).toBe(6990 - 6327);
+  });
+
   it("scales savings with quantity (1 can may not be worth it, 10 may be)", () => {
     const base = {
       bestPerCanCents: 559,

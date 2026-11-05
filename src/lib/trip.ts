@@ -30,12 +30,18 @@ export function compareTrip(opts: {
   altPerCanCents: number;
   altDistanceMiles: number;
   qty: number;
+  /** Exact totals when the caller has them (mixed deals round per-can). */
+  bestTotalCents?: number | null;
+  altTotalCents?: number | null;
 }): TripComparison | null {
   const { bestPerCanCents, bestDistanceMiles, altPerCanCents, altDistanceMiles, qty } = opts;
   if (!Number.isFinite(qty) || qty < 1) return null;
   const extraOneWay = bestDistanceMiles - altDistanceMiles;
   if (extraOneWay <= 0) return null; // best price is also the nearer store
-  const savingsCents = (altPerCanCents - bestPerCanCents) * qty;
+  const savingsCents =
+    opts.bestTotalCents != null && opts.altTotalCents != null
+      ? opts.altTotalCents - opts.bestTotalCents
+      : (altPerCanCents - bestPerCanCents) * qty;
   if (savingsCents <= 0) return null;
   const extraRoundTripMiles = Math.round(extraOneWay * 2 * 10) / 10;
   const drivingCostCents = Math.round(extraRoundTripMiles * DRIVING_COST_CENTS_PER_MILE);

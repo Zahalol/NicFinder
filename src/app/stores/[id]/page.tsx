@@ -242,6 +242,7 @@ export default async function StorePage({
 
   // Structured data: the store as a local business (directory facts only —
   // no prices in markup; they vary and may exclude tax) + breadcrumbs.
+  const ldBase = process.env.APP_URL ?? "http://localhost:3000";
   const storeLd = {
     "@context": "https://schema.org",
     "@graph": [
@@ -268,14 +269,14 @@ export default async function StorePage({
       {
         "@type": "BreadcrumbList",
         itemListElement: [
-          { "@type": "ListItem", position: 1, name: "NicFinder", item: "/" },
+          { "@type": "ListItem", position: 1, name: "NicFinder", item: ldBase },
           ...(store.zip
             ? [
                 {
                   "@type": "ListItem",
                   position: 2,
                   name: `ZYN prices in ${store.zip}`,
-                  item: `/zyn-prices/${store.zip}`,
+                  item: `${ldBase}/zyn-prices/${store.zip}`,
                 },
               ]
             : []),
@@ -335,7 +336,7 @@ export default async function StorePage({
 
       {store.latitude !== null && store.longitude !== null && (
         <div className="mt-4">
-          <MiniMap lat={store.latitude} lng={store.longitude} name={store.name} />
+          <MiniMap lat={store.latitude} lng={store.longitude} />
         </div>
       )}
 

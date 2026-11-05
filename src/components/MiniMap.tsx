@@ -10,10 +10,10 @@ const Inner = dynamic(() => import("./MiniMapInner"), {
   loading: () => <div className="h-40 rounded-xl bg-stone-100 dark:bg-stone-800 animate-pulse" />,
 });
 
-export function MiniMap({ lat, lng, name }: { lat: number; lng: number; name: string }) {
+export function MiniMap({ lat, lng }: { lat: number; lng: number }) {
   return (
     <div className="h-40">
-      <Inner lat={lat} lng={lng} name={name} />
+      <Inner lat={lat} lng={lng} />
     </div>
   );
 }

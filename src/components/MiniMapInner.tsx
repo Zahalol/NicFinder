@@ -10,7 +10,6 @@ export default function MiniMapInner({
 }: {
   lat: number;
   lng: number;
-  name?: string;
 }) {
   const icon = L.divIcon({
     className: "",

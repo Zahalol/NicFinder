@@ -37,25 +37,34 @@ export default async function PriceDropsPage() {
     },
   });
 
+  // Baselines are restricted to observations that were legitimately shown
+  // at some point (ACTIVE/SUPERSEDED) — never REVERSED import rows, which
+  // would fabricate a "drop" against a price that never validly existed.
+  const prevs = await Promise.all(
+    recent.map((o) =>
+      prisma.priceObservation.findFirst({
+        where: {
+          storeId: o.storeId,
+          productLineId: o.productLineId,
+          status: { in: ["ACTIVE", "SUPERSEDED"] },
+          observedAt: { lt: o.observedAt },
+        },
+        orderBy: { observedAt: "desc" },
+        select: { priceCents: true },
+      })
+    )
+  );
   const drops: Array<{
     o: (typeof recent)[number];
     prevCents: number;
     deltaCents: number;
   }> = [];
-  for (const o of recent) {
-    const prev = await prisma.priceObservation.findFirst({
-      where: {
-        storeId: o.storeId,
-        productLineId: o.productLineId,
-        observedAt: { lt: o.observedAt },
-      },
-      orderBy: { observedAt: "desc" },
-      select: { priceCents: true },
-    });
+  recent.forEach((o, i) => {
+    const prev = prevs[i];
     if (prev && o.priceCents < prev.priceCents) {
       drops.push({ o, prevCents: prev.priceCents, deltaCents: o.priceCents - prev.priceCents });
     }
-  }
+  });
   drops.sort((a, b) => a.deltaCents - b.deltaCents);
 
   return (
