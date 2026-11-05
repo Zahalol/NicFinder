@@ -8,6 +8,7 @@ import { prisma } from "@/lib/db";
 import { geocodeZip, zipInfo } from "@/lib/geocode";
 import { searchStores } from "@/lib/search";
 import { formatCents } from "@/lib/money";
+import { CoverageRequestButton } from "@/components/CoverageRequestButton";
 
 // Server-rendered per request (the root layout reads the age cookie, which
 // opts the tree into dynamic rendering). Crawlers receive the full HTML —
@@ -47,6 +48,7 @@ export default async function ZipLandingPage({
     sort: "price",
   });
   const priced = results.filter((r) => r.latest);
+  const requestCount = await prisma.coverageRequest.count({ where: { zip } });
 
   // Other covered ZIPs for internal linking.
   const otherZips = (
@@ -87,12 +89,12 @@ export default async function ZipLandingPage({
       {results.length === 0 ? (
         <div className="mt-8 rounded-xl border border-stone-200 bg-white p-6">
           <p className="text-sm text-stone-600">
-            We don’t track stores in this area yet.{" "}
-            <Link href={`/search?q=${zip}`} className="text-teal-700 underline">
-              Search this ZIP
-            </Link>{" "}
-            to request coverage — we expand to the most-requested areas first.
+            We don’t track stores in this area yet — we expand to the
+            most-requested areas first.
           </p>
+          <div className="mt-3">
+            <CoverageRequestButton zip={zip} initialCount={requestCount} />
+          </div>
         </div>
       ) : (
         <table className="mt-6 w-full text-sm">
@@ -138,6 +140,12 @@ export default async function ZipLandingPage({
             ))}
           </tbody>
         </table>
+      )}
+
+      {results.length > 0 && priced.length === 0 && (
+        <div className="mt-4">
+          <CoverageRequestButton zip={zip} initialCount={requestCount} />
+        </div>
       )}
 
       <p className="mt-6">
