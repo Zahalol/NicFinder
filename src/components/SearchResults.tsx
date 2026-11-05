@@ -61,13 +61,22 @@ export function SearchResults({
     () => computeTripValues(results.map(toComparable)),
     [results]
   );
+  const [nameFilter, setNameFilter] = useState("");
   const pricedCount = results.filter((r) => r.latest).length;
   // "Priced only" keeps availability-signal stores visible: "not carried"
   // is information, hiding it would misrepresent coverage.
-  const visible =
+  const base =
     pricedOnly && pricedCount > 0
       ? results.filter((r) => r.latest || r.availabilitySignal)
       : results;
+  const needle = nameFilter.trim().toLowerCase();
+  const visible = needle
+    ? base.filter(
+        (r) =>
+          r.name.toLowerCase().includes(needle) ||
+          (r.address ?? "").toLowerCase().includes(needle)
+      )
+    : base;
 
   return (
     <div className="mt-5">
@@ -109,6 +118,20 @@ export function SearchResults({
         </div>
       </div>
 
+      {view === "list" && results.length > 8 && (
+        <input
+          value={nameFilter}
+          onChange={(e) => setNameFilter(e.target.value)}
+          placeholder="Filter by store name or street…"
+          aria-label="Filter results by store name or street"
+          className="mt-3 w-full max-w-xs rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-sm"
+        />
+      )}
+      {view === "list" && needle && visible.length === 0 && (
+        <p className="mt-3 text-sm text-stone-400">
+          No stores match “{nameFilter.trim()}” here.
+        </p>
+      )}
       {view === "map" ? (
         <div className="mt-4 h-[420px]">
           <StoreMap results={results} center={center} qty={qty} />

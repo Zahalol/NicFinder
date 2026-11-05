@@ -2,6 +2,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireUser, AuthError } from "@/lib/auth";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(
   req: NextRequest,
@@ -9,6 +10,8 @@ export async function POST(
 ) {
   try {
     const user = await requireUser();
+    if (!(await rateLimit(`comment-edit:${user.id}`, 20, 3600_000)))
+      return NextResponse.json({ error: "Too many edits — try later." }, { status: 429 });
     const { id } = await params;
     const comment = await prisma.comment.findUnique({ where: { id } });
     if (!comment || comment.status !== "VISIBLE")
