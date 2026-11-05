@@ -49,7 +49,7 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
-      - name: Tests (vitest, 80 unit/integration)
+      - name: Tests (vitest unit/integration)
         run: npm test
 
       - name: Production build
