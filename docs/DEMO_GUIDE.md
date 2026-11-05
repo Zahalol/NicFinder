@@ -90,7 +90,8 @@ A 10-minute walkthrough of every key flow. Setup: see README quick start.
 8. **/admin/coverage** — demand by ZIP vs store/price coverage (expansion
    planning); **/admin/economics** — real coverage stats + a what-if calling
    cost calculator (initiates nothing); **/admin/stores** — duplicate scan
-   button and a CSV export of current displayed prices.
+   button, a CSV export of current displayed prices, and per-store
+   retire/restore (retired stores keep full history).
 
 ## 4. Proving the quality gates
 

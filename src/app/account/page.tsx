@@ -29,7 +29,9 @@ export default async function AccountPage() {
       take: 10,
     }),
     prisma.savedStore.findMany({
-      where: { userId: user.id },
+      // Retired/merged stores drop off the watchlist view (their rows stay,
+      // so restoring a store brings it back automatically).
+      where: { userId: user.id, store: { status: "ACTIVE" } },
       include: {
         store: {
           include: {
