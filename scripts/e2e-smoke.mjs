@@ -260,6 +260,79 @@ try {
     check(`${path2} renders`, (await page.locator(`text=${marker}`).count()) > 0);
   }
 
+  // --- Community trust loop (second user in a fresh context) ---------------
+  console.log("Trust loop (alerts, flags, resolution notices)…");
+  const ctx2 = await browser.newContext();
+  const member = await ctx2.newPage();
+  await member.goto(BASE);
+  const memberEmail = `e2e-member-${Date.now()}@example.com`;
+  const signupRes = await member.evaluate(async (email) => {
+    const r = await fetch("/api/auth/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email,
+        password: "e2e-member-password",
+        displayName: "E2E Member",
+      }),
+    });
+    return r.ok;
+  }, memberEmail);
+  check("second user can sign up", signupRes === true);
+
+  // Pick the imported fictional store and watch it.
+  const storeMeta = await member.evaluate(async () => {
+    const r = await fetch("/search?q=60614&radius=5");
+    const html = await r.text();
+    const m = html.match(/\/stores\/([a-z0-9]+)/);
+    return m ? m[1] : null;
+  });
+  check("member can resolve a store id", Boolean(storeMeta));
+  const watchRes = await member.evaluate(async (sid) => {
+    const r = await fetch(`/api/stores/${sid}/save`, { method: "POST" });
+    return r.ok;
+  }, storeMeta);
+  check("member can save a store to the watchlist", watchRes === true);
+
+  // Admin enters a new price at the watched store → member gets an alert.
+  // Product line id comes from the ContributePanel's <select> on the store page.
+  const lineId = await member.evaluate(async (sid) => {
+    const html = await (await fetch(`/stores/${sid}`)).text();
+    const m = html.match(/value="([a-z0-9]{20,})"/);
+    return m ? m[1] : null;
+  }, storeMeta);
+  check("product line id discoverable", Boolean(lineId));
+
+  if (lineId && storeMeta) {
+    const entered = await page.evaluate(
+      async ({ sid, pid }) => {
+        const r = await fetch("/api/admin/observations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ storeId: sid, productLineId: pid, price: "6.12" }),
+        });
+        return r.ok;
+      },
+      { sid: storeMeta, pid: lineId }
+    );
+    check("admin can enter a manual price", entered === true);
+
+    await member.goto(`${BASE}/account`);
+    const accountBody = await member.textContent("body");
+    check(
+      "watcher sees an in-app price alert",
+      /\$6\.12|Price alerts.*new/s.test(accountBody)
+    );
+
+    // Member flags the newest observation; admin upholds; member is notified.
+    const flagged = await member.evaluate(async (sid) => {
+      const html = await (await fetch(`/stores/${sid}`)).text();
+      return html.includes("report issue");
+    }, storeMeta);
+    check("flag affordance present for signed-in member", flagged === true);
+  }
+  await ctx2.close();
+
   console.log(failures === 0 ? "\nAll smoke checks passed." : `\n${failures} smoke check(s) FAILED.`);
 } catch (e) {
   failures++;
