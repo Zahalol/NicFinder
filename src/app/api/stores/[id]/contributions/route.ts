@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
-import { requireUser, AuthError } from "@/lib/auth";
+import { requireUser, AuthError, stableIpHash } from "@/lib/auth";
 import { getSettings } from "@/lib/settings";
 import { parsePriceToCents } from "@/lib/money";
 import { countRecentContributions } from "@/lib/rate-limit";
@@ -23,6 +23,9 @@ export async function POST(
     const user = await requireUser();
     const { id: storeId } = await params;
     const settings = await getSettings();
+    const ipHash = stableIpHash(
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local"
+    );
 
     const recent = await countRecentContributions(user.id);
     if (recent >= settings.contributionRateLimitPerHour) {
@@ -224,6 +227,7 @@ export async function POST(
             status: "PUBLISHED",
             resolvedAt: new Date(),
             comment: body?.comment ? String(body.comment).slice(0, 500) : null,
+            ipHash,
           },
         });
         const published = await maybePublishCorroborated(openProposal.id, settings);
@@ -255,6 +259,7 @@ export async function POST(
           storeId,
           productLineId,
           kind: "DISPUTE",
+          ipHash,
           proposedPriceCents: priceCents,
           proposedQty: body?.proposedQty ? Number(body.proposedQty) : null,
           comment: body?.comment ? String(body.comment).slice(0, 500) : null,

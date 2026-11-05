@@ -139,11 +139,28 @@ export async function maybePublishCorroborated(
       status: "PUBLISHED",
       userId: { not: contribution.userId },
     },
-    select: { userId: true },
+    select: { userId: true, ipHash: true },
     distinct: ["userId"],
   });
 
-  if (corroborators.length < settings.corroborationsRequired) return false;
+  // Independence is distinct ACCOUNTS on distinct NETWORKS: two accounts
+  // corroborating from the same salted IP hash count once, and none of them
+  // may share the proposer's hash (sockpuppet guard). A null hash (unknown
+  // origin, e.g. legacy rows) still counts — this tightens, never bricks.
+  const seenHashes = new Set<string>();
+  if (contribution.ipHash) seenHashes.add(contribution.ipHash);
+  let independent = 0;
+  for (const c of corroborators) {
+    if (c.ipHash === null) {
+      independent++;
+      continue;
+    }
+    if (seenHashes.has(c.ipHash)) continue;
+    seenHashes.add(c.ipHash);
+    independent++;
+  }
+
+  if (independent < settings.corroborationsRequired) return false;
 
   await publishDispute(contribution.id, "corroborated");
   return true;

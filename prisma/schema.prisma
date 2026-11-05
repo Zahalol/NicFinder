@@ -365,6 +365,9 @@ model Contribution {
   proposedQty   Int?
   proposedDealJson String?
   comment       String?
+  // sha256(ip + SESSION_SECRET) — stable salted hash (never a raw IP) used
+  // only to require corroborations to come from distinct networks.
+  ipHash        String?
   // PENDING | PUBLISHED | CORROBORATING (needs more confirmations) | REJECTED | RETRACTED
   status        String   @default("PENDING")
   reviewedById  String?
