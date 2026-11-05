@@ -359,9 +359,44 @@ try {
   }
 
   await page.goto(`${BASE}/search?q=60614&radius=5`);
-  await page.locator("button", { hasText: "Map" }).first().click();
+  // Desktop (default viewport) shows the list+map split with no toggle;
+  // mobile widths keep a Map toggle. The toggle is in the SSR HTML and is
+  // removed when hydration detects a desktop width, so wait for hydration
+  // and only click if the map isn't already there.
+  await page.waitForTimeout(1200);
+  if ((await page.locator(".leaflet-container").count()) === 0) {
+    const mapToggle = page.locator("button", { hasText: "Map" });
+    if ((await mapToggle.count()) > 0)
+      await mapToggle.first().click({ timeout: 5000 }).catch(() => {});
+  }
   await page.waitForTimeout(1500);
   check("map container renders", (await page.locator(".leaflet-container").count()) > 0);
+  // Desktop split view: list and map together; a pin click highlights its card.
+  check(
+    "desktop shows list beside the map",
+    (await page.locator('li a[href^="/stores/"]').count()) > 0
+  );
+  // Markers are zero-size divIcons; the visible chip is the inner div.
+  const pin = page.locator(".leaflet-marker-icon > div").first();
+  if ((await pin.count()) > 0) {
+    await pin.click().catch(() => {});
+    await page.waitForTimeout(400);
+  }
+  check(
+    "map pin click highlights its list card",
+    (await page.locator("li.ring-2").count()) > 0
+  );
+  // Mobile widths keep the List/Map toggle.
+  const mobile = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  await mobile.addCookies(await page.context().cookies());
+  const mpage = await mobile.newPage();
+  await mpage.goto(`${BASE}/search?q=60614&radius=5`);
+  await mpage.waitForTimeout(1200);
+  check(
+    "mobile keeps the List/Map toggle",
+    (await mpage.locator('[aria-label="Result view"] button').count()) === 2
+  );
+  await mobile.close();
 
   // Admin endpoint round-trips: collect save (availability-only), hours,
   // retire + restore — all against a throwaway store.

@@ -2,6 +2,8 @@ import { geocode, nearestZip } from "@/lib/geocode";
 import { suggestZips } from "@/lib/zip-suggest";
 import { haversineMiles } from "@/lib/geo";
 import { QuickSearches } from "@/components/QuickSearches";
+import { FilterMemory } from "@/components/FilterMemory";
+import { Suspense } from "react";
 import { searchStores, type SortKey } from "@/lib/search";
 import { SearchBox } from "@/components/SearchBox";
 import { SearchResults } from "@/components/SearchResults";
@@ -128,6 +130,10 @@ export default async function SearchPage({
 
   return (
     <div className="py-6">
+      {/* Re-applies the visitor's last filter choices (stored on this device). */}
+      <Suspense fallback={null}>
+        <FilterMemory />
+      </Suspense>
       <SearchBox initialQuery={q} />
 
       {!q && !hasLocation && (

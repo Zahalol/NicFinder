@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import Link from "next/link";
@@ -104,6 +104,34 @@ export function SearchResults({
   productLineId?: string | null;
 }) {
   const [view, setView] = useState<"list" | "map">("list");
+  // Large screens show list + sticky map side by side (no toggle). SSR
+  // renders the mobile toggle layout; desktop upgrades on hydration.
+  const [isDesktop, setIsDesktop] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const update = () => setIsDesktop(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+  const showList = isDesktop || view === "list";
+  const showMap = isDesktop || view === "map";
+  // Map pin click → highlight and scroll to that store's card.
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const cardRefs = useRef<Map<string, HTMLLIElement>>(new Map());
+  function selectFromMap(id: string) {
+    if (!isDesktop) setView("list"); // the card lives in the list view
+    setActiveId(id);
+  }
+  useEffect(() => {
+    if (!activeId) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    cardRefs.current
+      .get(activeId)
+      ?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "center" });
+    const t = setTimeout(() => setActiveId(null), 2500);
+    return () => clearTimeout(t);
+  }, [activeId]);
   const [pricedOnly, setPricedOnlyState] = useState(initialPricedOnly);
   // Keep the filter in the URL (?priced=1) so refreshes and shared links
   // preserve it — history.replaceState avoids a server round-trip.
@@ -189,6 +217,7 @@ export function SearchResults({
               Priced only
             </button>
           )}
+          {!isDesktop && (
           <div className="inline-flex rounded-lg border border-stone-300 dark:border-stone-600 overflow-hidden text-sm" role="group" aria-label="Result view">
             <button
               onClick={() => setView("list")}
@@ -205,10 +234,11 @@ export function SearchResults({
               Map
             </button>
           </div>
+          )}
         </div>
       </div>
 
-      {view === "list" && results.length > 8 && (
+      {showList && results.length > 8 && (
         <input
           value={nameFilter}
           onChange={(e) => setNameFilter(e.target.value)}
@@ -217,19 +247,27 @@ export function SearchResults({
           className="mt-3 w-full max-w-xs rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 px-3 py-1.5 text-sm"
         />
       )}
-      {view === "list" && needle && visible.length === 0 && (
+      {showList && needle && visible.length === 0 && (
         <p className="mt-3 text-sm text-stone-400">
           No stores match “{nameFilter.trim()}” here.
         </p>
       )}
-      {view === "map" ? (
-        <div className="mt-4 h-[420px]">
-          <StoreMap results={results} center={center} qty={qty} />
-        </div>
-      ) : (
-        <ul className="mt-4 space-y-3">
+      <div
+        className={
+          isDesktop ? "mt-4 grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-start gap-5" : undefined
+        }
+      >
+      {showList && (
+        <ul className={`space-y-3 ${isDesktop ? "min-w-0" : "mt-4"}`}>
           {visible.map((r) => (
-            <li key={r.id}>
+            <li
+              key={r.id}
+              ref={(el) => {
+                if (el) cardRefs.current.set(r.id, el);
+                else cardRefs.current.delete(r.id);
+              }}
+              className={activeId === r.id ? "rounded-xl ring-2 ring-teal-500 transition" : undefined}
+            >
               <Link
                 href={`/stores/${r.id}?product=${productSlug}`}
                 className="block rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-4 hover:border-teal-400 hover:shadow-sm transition"
@@ -339,7 +377,23 @@ export function SearchResults({
           ))}
         </ul>
       )}
-      {view === "list" && tripValues.size > 0 && (
+      {showMap && (
+        <div
+          className={
+            isDesktop ? "sticky top-4 h-[calc(100vh-2rem)] max-h-[720px]" : "mt-4 h-[420px]"
+          }
+        >
+          <StoreMap
+            results={results}
+            center={center}
+            qty={qty}
+            productSlug={productSlug}
+            onSelect={selectFromMap}
+          />
+        </div>
+      )}
+      </div>
+      {showList && tripValues.size > 0 && (
         <p className="mt-3 text-[11px] text-stone-400">
           “Saves … vs …” compares can cost at your chosen quantity against the
           nearest store with a definite price. Distances are straight-line;
