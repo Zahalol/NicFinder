@@ -68,7 +68,7 @@ function QtyCostTable({
             className={`rounded-lg border px-1 py-1.5 ${
               eff.usedDeal
                 ? "border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-950/60"
-                : "border-stone-150 bg-stone-50 dark:bg-stone-900"
+                : "border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-900"
             }`}
           >
             <div className="text-[10px] text-stone-400">
