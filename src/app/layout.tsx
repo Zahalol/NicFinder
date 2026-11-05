@@ -64,8 +64,13 @@ export default async function RootLayout({
         {!ageConfirmed && <AgeGateOverlay />}
         {demoMode && (
           <div className="bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200 text-center text-xs px-3 py-1.5 border-b border-amber-200 dark:border-amber-900">
-            Demonstration data — prices shown on fictional “Demo” stores are
-            synthetic. Real stores listed have no verified current prices yet.
+            <span className="sm:hidden">
+              Demo data — prices on fictional “Demo” stores are synthetic.
+            </span>
+            <span className="hidden sm:inline">
+              Demonstration data — prices shown on fictional “Demo” stores are
+              synthetic. Real stores listed have no verified current prices yet.
+            </span>
           </div>
         )}
         <header className="border-b border-stone-200 dark:border-stone-800 bg-white/90 dark:bg-stone-950/90 backdrop-blur sticky top-0 z-40">
