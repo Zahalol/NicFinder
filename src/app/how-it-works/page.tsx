@@ -12,16 +12,16 @@ export const metadata = {
 export default function HowItWorksPage() {
   return (
     <div className="py-8 max-w-2xl mx-auto">
-      <h1 className="text-2xl font-semibold text-stone-900">How NicFinder works</h1>
-      <p className="mt-2 text-stone-600">
+      <h1 className="text-2xl font-semibold text-stone-900 dark:text-stone-100">How NicFinder works</h1>
+      <p className="mt-2 text-stone-600 dark:text-stone-400">
         NicFinder is an informational price-comparison service for adults 21+.
         We don’t sell nicotine products, process orders, or take money from
         stores. This page explains where every number on the site comes from.
       </p>
 
       <section className="mt-8">
-        <h2 className="text-lg font-medium text-stone-900">Where prices come from</h2>
-        <ul className="mt-2 space-y-2 text-sm text-stone-700">
+        <h2 className="text-lg font-medium text-stone-900 dark:text-stone-100">Where prices come from</h2>
+        <ul className="mt-2 space-y-2 text-sm text-stone-700 dark:text-stone-300">
           <li>
             <strong>Data imports</strong> — spreadsheets of observed shelf
             prices (for example from store calls), validated row by row.
@@ -37,7 +37,7 @@ export default function HowItWorksPage() {
             always attributed and audited.
           </li>
         </ul>
-        <p className="mt-2 text-sm text-stone-600">
+        <p className="mt-2 text-sm text-stone-600 dark:text-stone-400">
           Every price is an <em>observation</em> with a date and source — never
           an estimate. If a store has no recent observation we say “no recent
           price” rather than inventing one, and a store reported as not
@@ -48,10 +48,10 @@ export default function HowItWorksPage() {
       </section>
 
       <section className="mt-8">
-        <h2 className="text-lg font-medium text-stone-900">
+        <h2 className="text-lg font-medium text-stone-900 dark:text-stone-100">
           Freshness and confidence labels
         </h2>
-        <p className="mt-2 text-sm text-stone-700">
+        <p className="mt-2 text-sm text-stone-700 dark:text-stone-300">
           Each displayed price carries its age (“updated 2d ago”, or a stale
           warning once it’s older than the configured threshold) and a
           confidence chip — <strong>high</strong>, <strong>medium</strong> or{" "}
@@ -64,10 +64,10 @@ export default function HowItWorksPage() {
       </section>
 
       <section className="mt-8">
-        <h2 className="text-lg font-medium text-stone-900">
+        <h2 className="text-lg font-medium text-stone-900 dark:text-stone-100">
           What happens when you report a price
         </h2>
-        <ol className="mt-2 list-decimal space-y-2 pl-5 text-sm text-stone-700">
+        <ol className="mt-2 list-decimal space-y-2 pl-5 text-sm text-stone-700 dark:text-stone-300">
           <li>
             <strong>Confirming</strong> the displayed price records a
             verification on that observation (one per person, with a cooldown
@@ -87,15 +87,15 @@ export default function HowItWorksPage() {
             keeping it visible in history with the reason.
           </li>
         </ol>
-        <p className="mt-2 text-sm text-stone-600">
+        <p className="mt-2 text-sm text-stone-600 dark:text-stone-400">
           Store pages show how many reports are still pending, so you can tell
           the difference between “verified quiet” and “changes in flight”.
         </p>
       </section>
 
       <section className="mt-8">
-        <h2 className="text-lg font-medium text-stone-900">Reputation</h2>
-        <p className="mt-2 text-sm text-stone-700">
+        <h2 className="text-lg font-medium text-stone-900 dark:text-stone-100">Reputation</h2>
+        <p className="mt-2 text-sm text-stone-700 dark:text-stone-300">
           Contributors earn reputation when their reports hold up — published
           corrections, confirmations that stay accurate — and lose it when
           reports are rejected, disproved, or abusive. Higher reputation
@@ -105,8 +105,8 @@ export default function HowItWorksPage() {
       </section>
 
       <section className="mt-8">
-        <h2 className="text-lg font-medium text-stone-900">What we don’t do</h2>
-        <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-stone-700">
+        <h2 className="text-lg font-medium text-stone-900 dark:text-stone-100">What we don’t do</h2>
+        <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-stone-700 dark:text-stone-300">
           <li>No sales, delivery, or purchase facilitation — information only.</li>
           <li>No invented prices, trends, or availability.</li>
           <li>No content aimed at anyone under 21.</li>
@@ -117,9 +117,9 @@ export default function HowItWorksPage() {
         </ul>
       </section>
 
-      <p className="mt-10 text-sm text-stone-500">
+      <p className="mt-10 text-sm text-stone-500 dark:text-stone-400">
         Spot something wrong?{" "}
-        <Link href="/search" className="text-teal-700 underline">
+        <Link href="/search" className="text-teal-700 dark:text-teal-400 underline">
           Find the store
         </Link>{" "}
         and use Confirm / Report a different price — that’s exactly what keeps

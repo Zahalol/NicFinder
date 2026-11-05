@@ -31,11 +31,11 @@ export function DuplicateScanButton() {
       <button
         onClick={scan}
         disabled={busy}
-        className="rounded-lg border border-stone-300 px-3 py-1.5 text-sm text-stone-600 hover:bg-stone-50 disabled:opacity-50"
+        className="rounded-lg border border-stone-300 dark:border-stone-600 px-3 py-1.5 text-sm text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-800 disabled:opacity-50"
       >
         {busy ? "Scanning…" : "Scan for duplicates"}
       </button>
-      {msg && <span className="text-xs text-stone-500">{msg}</span>}
+      {msg && <span className="text-xs text-stone-500 dark:text-stone-400">{msg}</span>}
     </span>
   );
 }

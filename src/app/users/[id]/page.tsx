@@ -59,18 +59,18 @@ export default async function PublicProfile({
 
   return (
     <div className="py-8 max-w-2xl mx-auto">
-      <h1 className="flex items-center gap-2 text-2xl font-semibold text-stone-900">
+      <h1 className="flex items-center gap-2 text-2xl font-semibold text-stone-900 dark:text-stone-100">
         {user.displayName}
         {trusted && (
           <span
-            className="rounded bg-teal-50 border border-teal-200 px-1.5 py-0.5 text-[11px] font-medium text-teal-700"
+            className="rounded bg-teal-50 dark:bg-teal-950 border border-teal-200 dark:border-teal-800 px-1.5 py-0.5 text-[11px] font-medium text-teal-700 dark:text-teal-400"
             title={`Reputation ${user.reputation} (threshold ${settings.trustedReputation}): in-guardrail price reports publish without waiting for corroboration.`}
           >
             trusted contributor
           </span>
         )}
       </h1>
-      <p className="mt-1 text-sm text-stone-500">
+      <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
         Member since {user.createdAt.toLocaleDateString()}
       </p>
 
@@ -84,33 +84,33 @@ export default async function PublicProfile({
             value: accuracy !== null ? `${accuracy}%` : "—",
           },
         ].map((t) => (
-          <div key={t.label} className="rounded-xl border border-stone-200 bg-white p-4">
-            <div className="text-2xl font-semibold text-stone-900">{t.value}</div>
-            <div className="mt-0.5 text-xs text-stone-500">{t.label}</div>
+          <div key={t.label} className="rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-4">
+            <div className="text-2xl font-semibold text-stone-900 dark:text-stone-100">{t.value}</div>
+            <div className="mt-0.5 text-xs text-stone-500 dark:text-stone-400">{t.label}</div>
           </div>
         ))}
       </div>
 
-      <p className="mt-3 text-xs text-stone-500">
+      <p className="mt-3 text-xs text-stone-500 dark:text-stone-400">
         {pending > 0 && `${pending} report${pending === 1 ? "" : "s"} currently awaiting review. `}
         {accuracy !== null &&
           `Accuracy is published ÷ (published + not accepted) over all reviewed reports. `}
         Reputation rises when reports hold up and falls when they don’t —{" "}
-        <Link href="/how-it-works" className="text-teal-700 underline">
+        <Link href="/how-it-works" className="text-teal-700 dark:text-teal-400 underline">
           how verification works
         </Link>
         .
       </p>
 
-      <h2 className="mt-6 font-medium text-stone-900">Recent published activity</h2>
-      <ul className="mt-2 space-y-1.5 text-sm text-stone-600">
+      <h2 className="mt-6 font-medium text-stone-900 dark:text-stone-100">Recent published activity</h2>
+      <ul className="mt-2 space-y-1.5 text-sm text-stone-600 dark:text-stone-400">
         {user.contributions.length === 0 && (
           <li className="text-stone-400">No published contributions yet.</li>
         )}
         {user.contributions.map((c) => (
           <li key={c.id}>
             {KIND_LABEL[c.kind] ?? "Contributed at"}{" "}
-            <Link href={`/stores/${c.store.id}`} className="text-teal-700 hover:underline">
+            <Link href={`/stores/${c.store.id}`} className="text-teal-700 dark:text-teal-400 hover:underline">
               {c.store.name}
             </Link>{" "}
             <span className="text-stone-400">· {c.createdAt.toLocaleDateString()}</span>

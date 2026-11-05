@@ -40,8 +40,8 @@ export function StoreStatusButton({
       disabled={busy}
       className={`rounded border px-1.5 py-0.5 text-[11px] disabled:opacity-50 ${
         mode === "retire"
-          ? "border-stone-200 text-stone-400 hover:border-red-300 hover:text-red-600"
-          : "border-teal-300 text-teal-700 hover:bg-teal-50"
+          ? "border-stone-200 dark:border-stone-700 text-stone-400 hover:border-red-300 hover:text-red-600"
+          : "border-teal-300 dark:border-teal-700 text-teal-700 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-950"
       }`}
       title={
         mode === "retire"

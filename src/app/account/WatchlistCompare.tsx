@@ -24,19 +24,19 @@ export function WatchlistCompare({ items }: { items: WatchItem[] }) {
 
   return (
     <>
-      <ul className="mt-2 divide-y divide-stone-100 rounded-xl border border-stone-200 bg-white">
+      <ul className="mt-2 divide-y divide-stone-100 dark:divide-stone-800 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900">
         {items.map((s) => (
           <li key={s.storeId} className="p-3 text-sm flex items-center justify-between gap-2">
             <span className="min-w-0">
               <Link
                 href={`/stores/${s.storeId}`}
-                className="text-teal-700 hover:underline font-medium"
+                className="text-teal-700 dark:text-teal-400 hover:underline font-medium"
               >
                 {s.name}
               </Link>{" "}
-              <span className="text-stone-500">{s.address}</span>
+              <span className="text-stone-500 dark:text-stone-400">{s.address}</span>
             </span>
-            <span className="flex shrink-0 items-center gap-2 text-stone-700">
+            <span className="flex shrink-0 items-center gap-2 text-stone-700 dark:text-stone-300">
               {s.priceLabel ? (
                 <span>
                   {s.priceLabel}
@@ -52,7 +52,7 @@ export function WatchlistCompare({ items }: { items: WatchItem[] }) {
                   className={`rounded border px-1.5 py-0.5 text-[11px] ${
                     picked.includes(s.storeId)
                       ? "border-teal-600 bg-teal-600 text-white"
-                      : "border-stone-200 bg-white text-stone-400 hover:border-stone-300 hover:text-stone-600"
+                      : "border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 text-stone-400 hover:border-stone-300 hover:text-stone-600"
                   }`}
                 >
                   {picked.includes(s.storeId) ? "✓" : "compare"}
@@ -72,7 +72,7 @@ export function WatchlistCompare({ items }: { items: WatchItem[] }) {
               Compare side-by-side
             </Link>
           ) : (
-            <span className="text-stone-500">Pick one more saved store to compare.</span>
+            <span className="text-stone-500 dark:text-stone-400">Pick one more saved store to compare.</span>
           )}
         </p>
       )}

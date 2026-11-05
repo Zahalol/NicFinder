@@ -67,10 +67,10 @@ export function PriceHistorySparkline({
         role="img"
       >
         {/* recessive min/max gridlines */}
-        <line x1={PAD.left} x2={W - PAD.right} y1={y(pMax)} y2={y(pMax)} stroke="#e7e5e4" strokeWidth="1" />
-        <line x1={PAD.left} x2={W - PAD.right} y1={y(pMin)} y2={y(pMin)} stroke="#e7e5e4" strokeWidth="1" />
+        <line x1={PAD.left} x2={W - PAD.right} y1={y(pMax)} y2={y(pMax)} strokeWidth="1" className="stroke-stone-200 dark:stroke-stone-700" />
+        <line x1={PAD.left} x2={W - PAD.right} y1={y(pMin)} y2={y(pMin)} strokeWidth="1" className="stroke-stone-200 dark:stroke-stone-700" />
         {/* displayed-price step line (faint — derived, not measured) */}
-        <path d={d} fill="none" stroke="#0d9488" strokeOpacity="0.35" strokeWidth="2" />
+        <path d={d} fill="none" strokeOpacity="0.35" strokeWidth="2" className="stroke-teal-600 dark:stroke-teal-400" />
         {/* observation dots */}
         {sorted.map((p, i) => (
           <circle
@@ -78,8 +78,7 @@ export function PriceHistorySparkline({
             cx={x(p.observedAt.getTime())}
             cy={y(p.priceCents)}
             r="4"
-            fill="#0d9488"
-            stroke="#ffffff"
+            className="fill-teal-600 dark:fill-teal-400 stroke-white dark:stroke-stone-900"
             strokeWidth="2"
           >
             <title>
@@ -88,26 +87,26 @@ export function PriceHistorySparkline({
           </circle>
         ))}
         {/* direct labels: min/max on the left, latest on the right — text tokens */}
-        <text x={PAD.left - 6} y={y(pMax) + 4} textAnchor="end" fontSize="11" fill="#78716c">
+        <text x={PAD.left - 6} y={y(pMax) + 4} textAnchor="end" fontSize="11" className="fill-stone-500 dark:fill-stone-400">
           {formatCents(pMax)}
         </text>
-        <text x={PAD.left - 6} y={y(pMin) + 4} textAnchor="end" fontSize="11" fill="#78716c">
+        <text x={PAD.left - 6} y={y(pMin) + 4} textAnchor="end" fontSize="11" className="fill-stone-500 dark:fill-stone-400">
           {formatCents(pMin)}
         </text>
         <text
           x={x(latest.observedAt.getTime()) + 8}
           y={y(latest.priceCents) + 4}
           fontSize="11"
-          fill="#44403c"
+          className="fill-stone-700 dark:fill-stone-200"
           fontWeight="600"
         >
           {formatCents(latest.priceCents)}
         </text>
         {/* x extent labels */}
-        <text x={PAD.left} y={H - 4} fontSize="10" fill="#a8a29e">
+        <text x={PAD.left} y={H - 4} fontSize="10" className="fill-stone-400">
           {fmtDate(sorted[0].observedAt)}
         </text>
-        <text x={W - PAD.right} y={H - 4} textAnchor="end" fontSize="10" fill="#a8a29e">
+        <text x={W - PAD.right} y={H - 4} textAnchor="end" fontSize="10" className="fill-stone-400">
           {fmtDate(latest.observedAt)}
         </text>
       </svg>

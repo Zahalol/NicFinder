@@ -39,27 +39,27 @@ export function SettingsForm({
     <form onSubmit={save} className="mt-4 space-y-3">
       {Object.keys(settings).map((key) => (
         <div key={key} className="flex items-center gap-3">
-          <label className="w-64 text-sm font-mono text-stone-700">{key}</label>
+          <label className="w-64 text-sm font-mono text-stone-700 dark:text-stone-300">{key}</label>
           <input
             value={values[key]}
             onChange={(e) => setValues({ ...values, [key]: e.target.value })}
             disabled={readOnly}
             inputMode="decimal"
-            className="w-24 rounded-lg border border-stone-300 px-2 py-1 text-sm disabled:bg-stone-100"
+            className="w-24 rounded-lg border border-stone-300 dark:border-stone-600 px-2 py-1 text-sm disabled:bg-stone-100"
           />
-          <span className="text-xs text-stone-500 flex-1">{docs[key]}</span>
+          <span className="text-xs text-stone-500 dark:text-stone-400 flex-1">{docs[key]}</span>
         </div>
       ))}
       {!readOnly && (
         <div className="flex items-center gap-3 pt-2">
           <button
             disabled={busy}
-            className="rounded-lg bg-stone-900 text-white px-4 py-2 text-sm disabled:opacity-50"
+            className="rounded-lg bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 px-4 py-2 text-sm disabled:opacity-50"
           >
             Save settings
           </button>
-          {msg && <span className="text-sm text-teal-700">{msg}</span>}
-          {err && <span className="text-sm text-red-600">{err}</span>}
+          {msg && <span className="text-sm text-teal-700 dark:text-teal-400">{msg}</span>}
+          {err && <span className="text-sm text-red-600 dark:text-red-400">{err}</span>}
         </div>
       )}
     </form>

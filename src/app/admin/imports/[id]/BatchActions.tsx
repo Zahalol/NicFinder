@@ -44,10 +44,10 @@ export function BatchActions({
 
   return (
     <div className="flex items-center gap-2">
-      {err && <span className="text-sm text-red-600">{err}</span>}
+      {err && <span className="text-sm text-red-600 dark:text-red-400">{err}</span>}
       <a
         href={`/api/admin/imports/${batchId}/errors`}
-        className="rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-sm text-stone-700 hover:bg-stone-50"
+        className="rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 px-3 py-1.5 text-sm text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-800"
       >
         Error report (CSV)
       </a>
@@ -64,7 +64,7 @@ export function BatchActions({
         <button
           onClick={reverse}
           disabled={busy}
-          className="rounded-lg border border-red-300 text-red-700 px-4 py-1.5 text-sm font-medium hover:bg-red-50 disabled:opacity-50"
+          className="rounded-lg border border-red-300 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-1.5 text-sm font-medium hover:bg-red-50 dark:hover:bg-red-950 disabled:opacity-50"
         >
           Reverse import
         </button>

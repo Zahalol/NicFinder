@@ -63,9 +63,9 @@ export default async function AdminOverview() {
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         {cards.map((c) => {
           const inner = (
-            <div className="rounded-xl border border-stone-200 bg-white p-4 h-full hover:border-teal-300">
-              <div className="text-2xl font-semibold text-stone-900">{c.value}</div>
-              <div className="text-xs text-stone-500">{c.label}</div>
+            <div className="rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-4 h-full hover:border-teal-300">
+              <div className="text-2xl font-semibold text-stone-900 dark:text-stone-100">{c.value}</div>
+              <div className="text-xs text-stone-500 dark:text-stone-400">{c.label}</div>
               {c.hint && <div className="text-[11px] text-stone-400 mt-0.5">{c.hint}</div>}
             </div>
           );
@@ -77,8 +77,8 @@ export default async function AdminOverview() {
         })}
       </div>
 
-      <h2 className="mt-8 font-medium text-stone-900">Recent audit log</h2>
-      <ul className="mt-2 text-sm text-stone-600 space-y-1">
+      <h2 className="mt-8 font-medium text-stone-900 dark:text-stone-100">Recent audit log</h2>
+      <ul className="mt-2 text-sm text-stone-600 dark:text-stone-400 space-y-1">
         {recentAudit.length === 0 && <li className="text-stone-400">No events yet.</li>}
         {recentAudit.map((e) => (
           <li key={e.id} className="flex gap-2">

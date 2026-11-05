@@ -24,7 +24,7 @@ export function ShareButton({ title }: { title: string }) {
   return (
     <button
       onClick={share}
-      className="rounded-lg border border-stone-300 bg-white px-2.5 py-1 text-xs text-stone-600 hover:bg-stone-50"
+      className="rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 px-2.5 py-1 text-xs text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-800"
       title="Share this store page"
     >
       {copied ? "Link copied ✓" : "Share"}

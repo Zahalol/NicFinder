@@ -49,27 +49,27 @@ export default async function RootLayout({
         </a>
         {!ageConfirmed && <AgeGateOverlay />}
         {demoMode && (
-          <div className="bg-amber-100 text-amber-900 text-center text-xs px-3 py-1.5 border-b border-amber-200">
+          <div className="bg-amber-100 dark:bg-amber-900 text-amber-900 dark:text-amber-200 text-center text-xs px-3 py-1.5 border-b border-amber-200 dark:border-amber-800">
             Demonstration data — prices shown on fictional “Demo” stores are
             synthetic. Real stores listed have no verified current prices yet.
           </div>
         )}
-        <header className="border-b border-stone-200 bg-white/90 backdrop-blur sticky top-0 z-40">
+        <header className="border-b border-stone-200 dark:border-stone-700 bg-white/90 dark:bg-stone-900/90 backdrop-blur sticky top-0 z-40">
           <div className="mx-auto max-w-5xl px-4 h-14 flex items-center justify-between gap-3">
-            <Link href="/" className="font-semibold tracking-tight text-lg text-stone-900">
+            <Link href="/" className="font-semibold tracking-tight text-lg text-stone-900 dark:text-stone-100">
               Nic<span className="text-teal-600">Finder</span>
             </Link>
             <nav className="flex items-center gap-3 text-sm">
               {user ? (
                 <>
                   {(user.role === "ADMIN" || user.role === "MODERATOR") && (
-                    <Link href="/admin" className="text-stone-500 hover:text-stone-900">
+                    <Link href="/admin" className="text-stone-500 dark:text-stone-400 hover:text-stone-900">
                       Admin
                     </Link>
                   )}
                   <Link
                     href="/account#notifications"
-                    className="relative text-stone-600 hover:text-stone-900"
+                    className="relative text-stone-600 dark:text-stone-400 hover:text-stone-900"
                     aria-label={`Notifications: ${unread} unread`}
                     title={`${unread} unread notification${unread === 1 ? "" : "s"}`}
                   >
@@ -80,19 +80,19 @@ export default async function RootLayout({
                       </span>
                     )}
                   </Link>
-                  <Link href="/account" className="text-stone-600 hover:text-stone-900">
+                  <Link href="/account" className="text-stone-600 dark:text-stone-400 hover:text-stone-900">
                     {user.displayName}
                   </Link>
                   <LogoutButton />
                 </>
               ) : (
                 <>
-                  <Link href="/login" className="text-stone-600 hover:text-stone-900">
+                  <Link href="/login" className="text-stone-600 dark:text-stone-400 hover:text-stone-900">
                     Sign in
                   </Link>
                   <Link
                     href="/signup"
-                    className="rounded-lg bg-stone-900 text-white px-3 py-1.5 hover:bg-stone-700"
+                    className="rounded-lg bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 px-3 py-1.5 hover:bg-stone-700 dark:hover:bg-stone-300"
                   >
                     Sign up
                   </Link>
@@ -102,10 +102,10 @@ export default async function RootLayout({
           </div>
         </header>
         <main id="main" className="mx-auto max-w-5xl px-4 pb-16">{children}</main>
-        <footer className="border-t border-stone-200 mt-8">
-          <div className="mx-auto max-w-5xl px-4 py-6 text-xs text-stone-500 space-y-2">
+        <footer className="border-t border-stone-200 dark:border-stone-700 mt-8">
+          <div className="mx-auto max-w-5xl px-4 py-6 text-xs text-stone-500 dark:text-stone-400 space-y-2">
             <p>
-              <Link href="/how-it-works" className="text-teal-700 underline">
+              <Link href="/how-it-works" className="text-teal-700 dark:text-teal-400 underline">
                 How NicFinder works
               </Link>{" "}
               — where prices come from, freshness and confidence labels, and

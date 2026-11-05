@@ -33,18 +33,18 @@ export function EconomicsCalculator({ stats }: { stats: EconomicsStats }) {
   const perStoreMonthly = stores > 0 ? monthlyCost / stores : 0;
 
   const field =
-    "w-24 rounded-lg border border-stone-300 px-2 py-1.5 text-sm text-right";
+    "w-24 rounded-lg border border-stone-300 dark:border-stone-600 px-2 py-1.5 text-sm text-right";
 
   return (
-    <div className="mt-4 rounded-xl border border-stone-200 bg-white p-5">
-      <h2 className="font-medium text-stone-900">What-if: automated call refresh</h2>
-      <p className="mt-0.5 text-xs text-stone-500">
+    <div className="mt-4 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-5">
+      <h2 className="font-medium text-stone-900 dark:text-stone-100">What-if: automated call refresh</h2>
+      <p className="mt-0.5 text-xs text-stone-500 dark:text-stone-400">
         Projection only — nothing here initiates calls. Change the assumptions;
         every output updates from exactly these four numbers.
       </p>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        <label className="flex items-center justify-between gap-3 text-sm text-stone-700">
+        <label className="flex items-center justify-between gap-3 text-sm text-stone-700 dark:text-stone-300">
           Stores to keep priced
           <input
             type="number"
@@ -54,7 +54,7 @@ export function EconomicsCalculator({ stats }: { stats: EconomicsStats }) {
             className={field}
           />
         </label>
-        <label className="flex items-center justify-between gap-3 text-sm text-stone-700">
+        <label className="flex items-center justify-between gap-3 text-sm text-stone-700 dark:text-stone-300">
           Refresh every (days)
           <input
             type="number"
@@ -64,7 +64,7 @@ export function EconomicsCalculator({ stats }: { stats: EconomicsStats }) {
             className={field}
           />
         </label>
-        <label className="flex items-center justify-between gap-3 text-sm text-stone-700">
+        <label className="flex items-center justify-between gap-3 text-sm text-stone-700 dark:text-stone-300">
           Cost per dial (USD)
           <input
             type="number"
@@ -75,7 +75,7 @@ export function EconomicsCalculator({ stats }: { stats: EconomicsStats }) {
             className={field}
           />
         </label>
-        <label className="flex items-center justify-between gap-3 text-sm text-stone-700">
+        <label className="flex items-center justify-between gap-3 text-sm text-stone-700 dark:text-stone-300">
           Answered-and-priced rate (%)
           <input
             type="number"
@@ -98,9 +98,9 @@ export function EconomicsCalculator({ stats }: { stats: EconomicsStats }) {
           { label: "Projected monthly cost", value: money(monthlyCost) },
           { label: "Cost per store / month", value: money(perStoreMonthly) },
         ].map((t) => (
-          <div key={t.label} className="rounded-lg bg-stone-50 p-3">
-            <div className="text-xl font-semibold text-stone-900">{t.value}</div>
-            <div className="mt-0.5 text-[11px] text-stone-500">{t.label}</div>
+          <div key={t.label} className="rounded-lg bg-stone-50 dark:bg-stone-800 p-3">
+            <div className="text-xl font-semibold text-stone-900 dark:text-stone-100">{t.value}</div>
+            <div className="mt-0.5 text-[11px] text-stone-500 dark:text-stone-400">{t.label}</div>
           </div>
         ))}
       </div>

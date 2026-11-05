@@ -20,7 +20,7 @@ export function FlagObservationButton({
 
   if (!signedIn) return null;
   if (state === "done")
-    return <span className="text-[11px] text-teal-700">{msg ?? "Flagged"}</span>;
+    return <span className="text-[11px] text-teal-700 dark:text-teal-400">{msg ?? "Flagged"}</span>;
 
   async function flag() {
     const reason = window.prompt(

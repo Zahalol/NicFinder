@@ -95,15 +95,15 @@ export default async function SearchPage({
       <SearchBox initialQuery={q} />
 
       {!q && !hasLocation && (
-        <p className="mt-8 text-center text-stone-500 text-sm">
+        <p className="mt-8 text-center text-stone-500 dark:text-stone-400 text-sm">
           Enter a ZIP code or address to find nearby prices.
         </p>
       )}
 
       {geocodeFailed && (
-        <div className="mt-8 max-w-xl mx-auto rounded-xl border border-stone-200 bg-white p-6 text-center">
-          <h2 className="font-medium text-stone-900">We couldn’t locate “{q}”</h2>
-          <p className="mt-2 text-sm text-stone-600">
+        <div className="mt-8 max-w-xl mx-auto rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-6 text-center">
+          <h2 className="font-medium text-stone-900 dark:text-stone-100">We couldn’t locate “{q}”</h2>
+          <p className="mt-2 text-sm text-stone-600 dark:text-stone-400">
             Try a 5-digit ZIP code (ZIP search works even offline) or a fuller
             street address. Address lookup uses OpenStreetMap and may be
             briefly unavailable.
@@ -114,47 +114,47 @@ export default async function SearchPage({
       {hasLocation && search && (
         <>
           <div className="mt-5 flex flex-wrap items-center gap-2 text-sm">
-            <span className="text-stone-500">
-              Near <span className="text-stone-800">{locationLabel ?? "selected point"}</span>
+            <span className="text-stone-500 dark:text-stone-400">
+              Near <span className="text-stone-800 dark:text-stone-200">{locationLabel ?? "selected point"}</span>
               {approximate && " (ZIP center)"} ·
             </span>
             {/* Product toggle — rendered from active product lines */}
-            <span className="inline-flex rounded-lg border border-stone-300 overflow-hidden">
+            <span className="inline-flex rounded-lg border border-stone-300 dark:border-stone-600 overflow-hidden">
               {productLines.map((l) => (
                 <Link
                   key={l.slug}
                   href={href({ product: l.slug })}
                   aria-current={product === l.slug ? "true" : undefined}
-                  className={`px-3 py-1 whitespace-nowrap ${product === l.slug ? "bg-stone-900 text-white" : "bg-white text-stone-600"}`}
+                  className={`px-3 py-1 whitespace-nowrap ${product === l.slug ? "bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900" : "bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-400"}`}
                 >
                   {l.name.replace(" (regular)", "")}
                 </Link>
               ))}
             </span>
             {/* Quantity */}
-            <label className="text-stone-500 ml-1">Buying</label>
-            <span className="inline-flex rounded-lg border border-stone-300 overflow-hidden">
+            <label className="text-stone-500 dark:text-stone-400 ml-1">Buying</label>
+            <span className="inline-flex rounded-lg border border-stone-300 dark:border-stone-600 overflow-hidden">
               {QTYS.map((n) => (
-                <Link key={n} href={href({ qty: n })} aria-current={qty === n ? "true" : undefined} className={`px-2.5 py-1 ${qty === n ? "bg-teal-600 text-white" : "bg-white text-stone-600"}`}>
+                <Link key={n} href={href({ qty: n })} aria-current={qty === n ? "true" : undefined} className={`px-2.5 py-1 ${qty === n ? "bg-teal-600 text-white" : "bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-400"}`}>
                   {n}
                 </Link>
               ))}
             </span>
-            <span className="text-stone-500">can{qty > 1 ? "s" : ""}</span>
+            <span className="text-stone-500 dark:text-stone-400">can{qty > 1 ? "s" : ""}</span>
             {/* Radius */}
-            <label className="text-stone-500 ml-1">within</label>
-            <span className="inline-flex rounded-lg border border-stone-300 overflow-hidden">
+            <label className="text-stone-500 dark:text-stone-400 ml-1">within</label>
+            <span className="inline-flex rounded-lg border border-stone-300 dark:border-stone-600 overflow-hidden">
               {RADII.map((r) => (
-                <Link key={r} href={href({ radius: r })} aria-current={radius === r ? "true" : undefined} className={`px-2.5 py-1 ${radius === r ? "bg-stone-900 text-white" : "bg-white text-stone-600"}`}>
+                <Link key={r} href={href({ radius: r })} aria-current={radius === r ? "true" : undefined} className={`px-2.5 py-1 ${radius === r ? "bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900" : "bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-400"}`}>
                   {r}mi
                 </Link>
               ))}
             </span>
             {/* Sort */}
-            <label className="text-stone-500 ml-1">sort</label>
-            <span className="inline-flex rounded-lg border border-stone-300 overflow-hidden">
+            <label className="text-stone-500 dark:text-stone-400 ml-1">sort</label>
+            <span className="inline-flex rounded-lg border border-stone-300 dark:border-stone-600 overflow-hidden">
               {(["distance", "price", "recency"] as const).map((s) => (
-                <Link key={s} href={href({ sort: s })} aria-current={sort === s ? "true" : undefined} className={`px-2.5 py-1 capitalize ${sort === s ? "bg-stone-900 text-white" : "bg-white text-stone-600"}`}>
+                <Link key={s} href={href({ sort: s })} aria-current={sort === s ? "true" : undefined} className={`px-2.5 py-1 capitalize ${sort === s ? "bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900" : "bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-400"}`}>
                   {s}
                 </Link>
               ))}
@@ -205,31 +205,31 @@ function BestPriceCard({
   return (
     <Link
       href={`/stores/${best.id}?product=${product}`}
-      className="mt-5 block rounded-2xl border border-teal-200 bg-gradient-to-r from-teal-50 to-emerald-50 p-5 hover:border-teal-400 transition"
+      className="mt-5 block rounded-2xl border border-teal-200 dark:border-teal-800 bg-gradient-to-r from-teal-50 dark:from-teal-950 to-emerald-50 dark:to-emerald-950 p-5 hover:border-teal-400 transition"
     >
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-teal-700">
+          <p className="text-xs font-medium uppercase tracking-wide text-teal-700 dark:text-teal-400">
             Best price nearby{qty > 1 ? ` (buying ${qty})` : ""}
           </p>
-          <p className="mt-1 text-lg font-semibold text-stone-900">
+          <p className="mt-1 text-lg font-semibold text-stone-900 dark:text-stone-100">
             {best.name}
             {best.isDemo && (
-              <span className="ml-2 align-middle rounded bg-amber-100 text-amber-800 text-[10px] font-medium px-1.5 py-0.5 uppercase">demo data</span>
+              <span className="ml-2 align-middle rounded bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-300 text-[10px] font-medium px-1.5 py-0.5 uppercase">demo data</span>
             )}
           </p>
-          <p className="text-sm text-stone-500">
+          <p className="text-sm text-stone-500 dark:text-stone-400">
             {best.address} · {best.distanceMiles} mi
             {best.effective.usedDeal && " · multi-can deal applied"}
           </p>
         </div>
         <div className="text-right">
-          <div className="text-3xl font-semibold text-teal-700">
+          <div className="text-3xl font-semibold text-teal-700 dark:text-teal-400">
             {formatCents(best.effective.perCanCents)}
-            <span className="text-sm font-normal text-stone-500">/can</span>
+            <span className="text-sm font-normal text-stone-500 dark:text-stone-400">/can</span>
           </div>
           {spread > 0 && priced.length > 1 && (
-            <div className="text-xs text-stone-500">
+            <div className="text-xs text-stone-500 dark:text-stone-400">
               up to {formatCents(spread)} cheaper than nearby stores
             </div>
           )}
@@ -258,9 +258,9 @@ async function NoCoverage({
     : 0;
 
   return (
-    <div className="mt-10 max-w-xl mx-auto rounded-xl border border-stone-200 bg-white p-6 text-center">
-      <h2 className="font-medium text-stone-900">No coverage here yet</h2>
-      <p className="mt-2 text-sm text-stone-600">
+    <div className="mt-10 max-w-xl mx-auto rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-6 text-center">
+      <h2 className="font-medium text-stone-900 dark:text-stone-100">No coverage here yet</h2>
+      <p className="mt-2 text-sm text-stone-600 dark:text-stone-400">
         We don’t track any stores within {radius} miles of this location. Our
         pilot area is Chicago, IL. We never guess or invent prices for stores
         we haven’t covered — try widening the radius or searching a Chicago

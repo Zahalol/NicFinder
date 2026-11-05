@@ -31,22 +31,22 @@ export function ManualEntry({
   }
 
   return (
-    <div className="mt-4 rounded-xl border border-stone-200 bg-white p-4">
+    <div className="mt-4 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-4">
       <div className="flex gap-2 text-sm">
         <button
           onClick={() => setOpen(open === "price" ? "none" : "price")}
-          className="rounded-lg border border-stone-300 px-3 py-1.5 hover:bg-stone-50"
+          className="rounded-lg border border-stone-300 dark:border-stone-600 px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-stone-800"
         >
           + Manual price entry
         </button>
         <button
           onClick={() => setOpen(open === "store" ? "none" : "store")}
-          className="rounded-lg border border-stone-300 px-3 py-1.5 hover:bg-stone-50"
+          className="rounded-lg border border-stone-300 dark:border-stone-600 px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-stone-800"
         >
           + New store
         </button>
-        {msg && <span className="text-teal-700 self-center">{msg}</span>}
-        {err && <span className="text-red-600 self-center">{err}</span>}
+        {msg && <span className="text-teal-700 dark:text-teal-400 self-center">{msg}</span>}
+        {err && <span className="text-red-600 dark:text-red-400 self-center">{err}</span>}
       </div>
 
       {open === "price" && (
@@ -65,26 +65,26 @@ export function ManualEntry({
             if (ok) (e.target as HTMLFormElement).reset();
           }}
         >
-          <select name="storeId" required className="rounded-lg border border-stone-300 px-2 py-1.5 max-w-60 bg-white">
+          <select name="storeId" required className="rounded-lg border border-stone-300 dark:border-stone-600 px-2 py-1.5 max-w-60 bg-white dark:bg-stone-900">
             <option value="">Store…</option>
             {stores.map((s) => (
               <option key={s.id} value={s.id}>{s.name} — {s.address}</option>
             ))}
           </select>
-          <select name="productLineId" required className="rounded-lg border border-stone-300 px-2 py-1.5 bg-white">
+          <select name="productLineId" required className="rounded-lg border border-stone-300 dark:border-stone-600 px-2 py-1.5 bg-white dark:bg-stone-900">
             {productLines.map((l) => (
               <option key={l.id} value={l.id}>{l.name}</option>
             ))}
           </select>
-          <input name="price" required placeholder="6.49" inputMode="decimal" className="w-20 rounded-lg border border-stone-300 px-2 py-1.5" />
-          <select name="availability" className="rounded-lg border border-stone-300 px-2 py-1.5 bg-white">
+          <input name="price" required placeholder="6.49" inputMode="decimal" className="w-20 rounded-lg border border-stone-300 dark:border-stone-600 px-2 py-1.5" />
+          <select name="availability" className="rounded-lg border border-stone-300 dark:border-stone-600 px-2 py-1.5 bg-white dark:bg-stone-900">
             <option value="IN_STOCK">in stock</option>
             <option value="OUT_OF_STOCK">out of stock</option>
             <option value="NOT_CARRIED">not carried</option>
             <option value="UNKNOWN">unknown</option>
           </select>
-          <input name="notes" placeholder="note (optional)" className="rounded-lg border border-stone-300 px-2 py-1.5 w-48" />
-          <button className="rounded-lg bg-stone-900 text-white px-3 py-1.5">Save</button>
+          <input name="notes" placeholder="note (optional)" className="rounded-lg border border-stone-300 dark:border-stone-600 px-2 py-1.5 w-48" />
+          <button className="rounded-lg bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 px-3 py-1.5">Save</button>
         </form>
       )}
 
@@ -107,15 +107,15 @@ export function ManualEntry({
             if (ok) (e.target as HTMLFormElement).reset();
           }}
         >
-          <input name="name" required placeholder="Name" className="rounded-lg border border-stone-300 px-2 py-1.5" />
-          <input name="address" placeholder="Street address" className="rounded-lg border border-stone-300 px-2 py-1.5 w-56" />
-          <input name="city" placeholder="City" className="rounded-lg border border-stone-300 px-2 py-1.5 w-28" />
-          <input name="state" placeholder="IL" maxLength={2} className="rounded-lg border border-stone-300 px-2 py-1.5 w-12" />
-          <input name="zip" placeholder="ZIP" className="rounded-lg border border-stone-300 px-2 py-1.5 w-20" />
-          <input name="latitude" placeholder="lat" className="rounded-lg border border-stone-300 px-2 py-1.5 w-24" />
-          <input name="longitude" placeholder="lng" className="rounded-lg border border-stone-300 px-2 py-1.5 w-24" />
-          <input name="phone" placeholder="phone" className="rounded-lg border border-stone-300 px-2 py-1.5 w-32" />
-          <button className="rounded-lg bg-stone-900 text-white px-3 py-1.5">Create</button>
+          <input name="name" required placeholder="Name" className="rounded-lg border border-stone-300 dark:border-stone-600 px-2 py-1.5" />
+          <input name="address" placeholder="Street address" className="rounded-lg border border-stone-300 dark:border-stone-600 px-2 py-1.5 w-56" />
+          <input name="city" placeholder="City" className="rounded-lg border border-stone-300 dark:border-stone-600 px-2 py-1.5 w-28" />
+          <input name="state" placeholder="IL" maxLength={2} className="rounded-lg border border-stone-300 dark:border-stone-600 px-2 py-1.5 w-12" />
+          <input name="zip" placeholder="ZIP" className="rounded-lg border border-stone-300 dark:border-stone-600 px-2 py-1.5 w-20" />
+          <input name="latitude" placeholder="lat" className="rounded-lg border border-stone-300 dark:border-stone-600 px-2 py-1.5 w-24" />
+          <input name="longitude" placeholder="lng" className="rounded-lg border border-stone-300 dark:border-stone-600 px-2 py-1.5 w-24" />
+          <input name="phone" placeholder="phone" className="rounded-lg border border-stone-300 dark:border-stone-600 px-2 py-1.5 w-32" />
+          <button className="rounded-lg bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 px-3 py-1.5">Create</button>
         </form>
       )}
     </div>

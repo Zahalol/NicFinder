@@ -38,7 +38,7 @@ export function EditHoursButton({
     <button
       onClick={edit}
       disabled={busy}
-      className="rounded border border-stone-200 px-1.5 py-0.5 text-[11px] text-stone-400 hover:border-stone-300 hover:text-stone-600 disabled:opacity-50"
+      className="rounded border border-stone-200 dark:border-stone-700 px-1.5 py-0.5 text-[11px] text-stone-400 hover:border-stone-300 hover:text-stone-600 disabled:opacity-50"
       title={hours ? `Hours: ${hours}` : "Set opening hours"}
     >
       {hours ? "hours ✓" : "hours"}

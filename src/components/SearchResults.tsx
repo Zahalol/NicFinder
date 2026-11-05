@@ -11,7 +11,7 @@ import { PriceBadge, FreshnessBadge, DealBadge, DemoBadge, ReliabilityBadge } fr
 const StoreMap = dynamic(() => import("./StoreMap"), {
   ssr: false,
   loading: () => (
-    <div className="h-[420px] rounded-xl bg-stone-100 animate-pulse" />
+    <div className="h-[420px] rounded-xl bg-stone-100 dark:bg-stone-800 animate-pulse" />
   ),
 });
 
@@ -100,7 +100,7 @@ export function SearchResults({
   return (
     <div className="mt-5">
       <div className="flex items-center justify-between gap-2 flex-wrap">
-        <p className="text-sm text-stone-500">
+        <p className="text-sm text-stone-500 dark:text-stone-400">
           {results.length} store{results.length === 1 ? "" : "s"} ·{" "}
           {pricedCount} with reported prices
         </p>
@@ -112,24 +112,24 @@ export function SearchResults({
               className={`rounded-lg border px-3 py-1.5 text-sm ${
                 pricedOnly
                   ? "border-teal-600 bg-teal-600 text-white"
-                  : "border-stone-300 bg-white text-stone-600 hover:bg-stone-50"
+                  : "border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-800"
               }`}
             >
               Priced only
             </button>
           )}
-          <div className="inline-flex rounded-lg border border-stone-300 overflow-hidden text-sm" role="group" aria-label="Result view">
+          <div className="inline-flex rounded-lg border border-stone-300 dark:border-stone-600 overflow-hidden text-sm" role="group" aria-label="Result view">
             <button
               onClick={() => setView("list")}
               aria-pressed={view === "list"}
-              className={`px-4 py-1.5 ${view === "list" ? "bg-stone-900 text-white" : "bg-white text-stone-600"}`}
+              className={`px-4 py-1.5 ${view === "list" ? "bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900" : "bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-400"}`}
             >
               List
             </button>
             <button
               onClick={() => setView("map")}
               aria-pressed={view === "map"}
-              className={`px-4 py-1.5 ${view === "map" ? "bg-stone-900 text-white" : "bg-white text-stone-600"}`}
+              className={`px-4 py-1.5 ${view === "map" ? "bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900" : "bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-400"}`}
             >
               Map
             </button>
@@ -143,7 +143,7 @@ export function SearchResults({
           onChange={(e) => setNameFilter(e.target.value)}
           placeholder="Filter by store name or street…"
           aria-label="Filter results by store name or street"
-          className="mt-3 w-full max-w-xs rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-sm"
+          className="mt-3 w-full max-w-xs rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 px-3 py-1.5 text-sm"
         />
       )}
       {view === "list" && needle && visible.length === 0 && (
@@ -161,21 +161,21 @@ export function SearchResults({
             <li key={r.id}>
               <Link
                 href={`/stores/${r.id}?product=${productSlug}`}
-                className="block rounded-xl border border-stone-200 bg-white p-4 hover:border-teal-400 hover:shadow-sm transition"
+                className="block rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-4 hover:border-teal-400 hover:shadow-sm transition"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-medium text-stone-900 truncate">{r.name}</h3>
+                      <h3 className="font-medium text-stone-900 dark:text-stone-100 truncate">{r.name}</h3>
                       {r.isDemo && <DemoBadge />}
                       {r.deal && <DealBadge deal={r.deal} />}
                     </div>
-                    <p className="mt-0.5 text-sm text-stone-500 truncate">
+                    <p className="mt-0.5 text-sm text-stone-500 dark:text-stone-400 truncate">
                       {r.address ? `${r.address}, ` : ""}
                       {r.city ?? ""} · {r.distanceMiles} mi
                     </p>
                     {r.latest && (
-                      <div className="mt-1.5 flex items-center gap-2 text-xs text-stone-500 flex-wrap">
+                      <div className="mt-1.5 flex items-center gap-2 text-xs text-stone-500 dark:text-stone-400 flex-wrap">
                         <FreshnessBadge latest={r.latest} />
                         <ReliabilityBadge reliability={r.latest.reliability} />
                         <span>
@@ -188,15 +188,15 @@ export function SearchResults({
                                 : "staff-entered"}
                         </span>
                         {r.latest.confirmCount > 0 && (
-                          <span className="text-teal-700">
+                          <span className="text-teal-700 dark:text-teal-400">
                             ✓ {r.latest.confirmCount} confirm{r.latest.confirmCount > 1 ? "s" : ""}
                           </span>
                         )}
                         {r.latest.availability === "OUT_OF_STOCK" && (
-                          <span className="text-red-600">reported out of stock</span>
+                          <span className="text-red-600 dark:text-red-400">reported out of stock</span>
                         )}
                         {r.availabilitySignal && (
-                          <span className={r.availabilitySignal.availability === "NOT_CARRIED" ? "text-stone-500" : "text-red-600"}>
+                          <span className={r.availabilitySignal.availability === "NOT_CARRIED" ? "text-stone-500 dark:text-stone-400" : "text-red-600 dark:text-red-400"}>
                             {r.availabilitySignal.availability === "NOT_CARRIED"
                               ? "newer report: not carried"
                               : "newer report: out of stock"}
@@ -205,7 +205,7 @@ export function SearchResults({
                       </div>
                     )}
                     {!r.latest && r.availabilitySignal && (
-                      <div className="mt-1.5 text-xs text-stone-500">
+                      <div className="mt-1.5 text-xs text-stone-500 dark:text-stone-400">
                         {r.availabilitySignal.availability === "NOT_CARRIED"
                           ? "Reported as not carrying this product"
                           : "Reported out of stock"}{" "}
@@ -213,7 +213,7 @@ export function SearchResults({
                       </div>
                     )}
                     {tripValues.has(r.id) && (
-                      <div className="mt-1.5 text-xs text-teal-700">
+                      <div className="mt-1.5 text-xs text-teal-700 dark:text-teal-400">
                         Saves {formatCents(tripValues.get(r.id)!.savingsCents)} on {qty} can{qty === 1 ? "" : "s"} vs{" "}
                         {tripValues.get(r.id)!.baselineName} — {tripValues.get(r.id)!.extraMiles} mi farther
                       </div>
@@ -232,8 +232,8 @@ export function SearchResults({
                         title={savedIds.has(r.id) ? "Remove from watchlist" : "Save to watchlist (price alerts)"}
                         className={`rounded border px-1.5 py-0.5 text-[11px] ${
                           savedIds.has(r.id)
-                            ? "border-amber-400 bg-amber-50 text-amber-600"
-                            : "border-stone-200 bg-white text-stone-400 hover:border-stone-300 hover:text-stone-600"
+                            ? "border-amber-400 bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400"
+                            : "border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 text-stone-400 hover:border-stone-300 hover:text-stone-600"
                         }`}
                       >
                         {savedIds.has(r.id) ? "★ saved" : "☆ save"}
@@ -249,7 +249,7 @@ export function SearchResults({
                       className={`rounded border px-1.5 py-0.5 text-[11px] ${
                         compareIds.includes(r.id)
                           ? "border-teal-600 bg-teal-600 text-white"
-                          : "border-stone-200 bg-white text-stone-400 hover:text-stone-600 hover:border-stone-300"
+                          : "border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 text-stone-400 hover:text-stone-600 hover:border-stone-300"
                       }`}
                     >
                       {compareIds.includes(r.id) ? "✓ comparing" : "compare"}
@@ -270,10 +270,10 @@ export function SearchResults({
       )}
       {compareIds.length > 0 && (
         <div className="sticky bottom-3 z-30 mt-4 flex justify-center">
-          <div className="flex items-center gap-3 rounded-full border border-stone-300 bg-white/95 px-4 py-2 text-sm shadow-lg backdrop-blur">
+          <div className="flex items-center gap-3 rounded-full border border-stone-300 dark:border-stone-600 bg-white/95 dark:bg-stone-900/95 px-4 py-2 text-sm shadow-lg backdrop-blur">
             {compareHref ? (
               <>
-                <span className="text-stone-600">2 stores selected</span>
+                <span className="text-stone-600 dark:text-stone-400">2 stores selected</span>
                 <Link
                   href={compareHref}
                   className="rounded-full bg-teal-600 px-3 py-1 font-medium text-white hover:bg-teal-700"
@@ -282,7 +282,7 @@ export function SearchResults({
                 </Link>
               </>
             ) : (
-              <span className="text-stone-500">Pick one more store to compare</span>
+              <span className="text-stone-500 dark:text-stone-400">Pick one more store to compare</span>
             )}
             <button
               onClick={() => setCompareIds([])}

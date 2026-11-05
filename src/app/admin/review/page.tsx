@@ -91,7 +91,7 @@ export default async function ReviewPage() {
     c: (typeof pending)[number];
   }) {
     return (
-      <li className="rounded-lg border border-stone-200 bg-white p-3 text-sm">
+      <li className="rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-3 text-sm">
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div>
             <p>
@@ -101,12 +101,12 @@ export default async function ReviewPage() {
                 <strong>{formatCents(c.proposedPriceCents)}</strong>
               )}{" "}
               proposed at{" "}
-              <Link href={`/stores/${c.store.id}`} className="text-teal-700 hover:underline">
+              <Link href={`/stores/${c.store.id}`} className="text-teal-700 dark:text-teal-400 hover:underline">
                 {c.store.name}
               </Link>{" "}
-              <span className="text-stone-500">({c.store.address})</span>
+              <span className="text-stone-500 dark:text-stone-400">({c.store.address})</span>
             </p>
-            <p className="text-xs text-stone-500 mt-0.5">
+            <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
               by{" "}
               <Link href={`/users/${c.user.id}`} className="hover:underline">
                 {c.user.displayName}
@@ -124,10 +124,10 @@ export default async function ReviewPage() {
   return (
     <div className="space-y-8">
       <section>
-        <h1 className="text-lg font-semibold text-stone-900">
+        <h1 className="text-lg font-semibold text-stone-900 dark:text-stone-100">
           Needs moderator decision ({pending.length})
         </h1>
-        <p className="text-sm text-stone-500">
+        <p className="text-sm text-stone-500 dark:text-stone-400">
           Guardrail-tripping price changes and community deal reports.
         </p>
         <ul className="mt-3 space-y-2">
@@ -137,10 +137,10 @@ export default async function ReviewPage() {
       </section>
 
       <section>
-        <h2 className="text-lg font-semibold text-stone-900">
+        <h2 className="text-lg font-semibold text-stone-900 dark:text-stone-100">
           Awaiting community corroboration ({corroborating.length})
         </h2>
-        <p className="text-sm text-stone-500">
+        <p className="text-sm text-stone-500 dark:text-stone-400">
           These publish automatically once enough independent members agree — or you can decide now.
         </p>
         <ul className="mt-3 space-y-2">
@@ -150,10 +150,10 @@ export default async function ReviewPage() {
       </section>
 
       <section>
-        <h2 className="text-lg font-semibold text-stone-900">
+        <h2 className="text-lg font-semibold text-stone-900 dark:text-stone-100">
           Flagged observations ({obsFlags.length})
         </h2>
-        <p className="text-sm text-stone-500">
+        <p className="text-sm text-stone-500 dark:text-stone-400">
           Members reporting that a specific listed observation (current or
           historical) is wrong. Upholding invalidates the observation
           (append-only — the row stays, marked invalid, with the reason).
@@ -165,7 +165,7 @@ export default async function ReviewPage() {
           {obsFlags.map((f) => {
             const obs = f.targetObservationId ? obsById.get(f.targetObservationId) : undefined;
             return (
-              <li key={f.id} className="rounded-lg border border-stone-200 bg-white p-3 text-sm">
+              <li key={f.id} className="rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-3 text-sm">
                 <div className="flex items-start justify-between gap-3 flex-wrap">
                   <div>
                     <p>
@@ -184,11 +184,11 @@ export default async function ReviewPage() {
                         <em>observation missing</em>
                       )}{" "}
                       at{" "}
-                      <Link href={`/stores/${f.store.id}`} className="text-teal-700 hover:underline">
+                      <Link href={`/stores/${f.store.id}`} className="text-teal-700 dark:text-teal-400 hover:underline">
                         {f.store.name}
                       </Link>
                     </p>
-                    <p className="text-xs text-stone-500 mt-0.5">
+                    <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
                       flagged by{" "}
                       <Link href={`/users/${f.user.id}`} className="hover:underline">
                         {f.user.displayName}
@@ -206,10 +206,10 @@ export default async function ReviewPage() {
       </section>
 
       <section>
-        <h2 className="text-lg font-semibold text-stone-900">
+        <h2 className="text-lg font-semibold text-stone-900 dark:text-stone-100">
           Flagged deals ({dealFlags.length})
         </h2>
-        <p className="text-sm text-stone-500">
+        <p className="text-sm text-stone-500 dark:text-stone-400">
           Members reporting a listed deal as ended or wrong. “Ended” keeps it in
           history as EXPIRED; “Invalid” marks it bad data.
         </p>
@@ -218,7 +218,7 @@ export default async function ReviewPage() {
           {dealFlags.map((f) => {
             const deal = f.targetObservationId ? dealById.get(f.targetObservationId) : undefined;
             return (
-              <li key={f.id} className="rounded-lg border border-stone-200 bg-white p-3 text-sm">
+              <li key={f.id} className="rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-3 text-sm">
                 <div className="flex items-start justify-between gap-3 flex-wrap">
                   <div>
                     <p>
@@ -233,11 +233,11 @@ export default async function ReviewPage() {
                         <em>deal missing</em>
                       )}{" "}
                       at{" "}
-                      <Link href={`/stores/${f.store.id}`} className="text-teal-700 hover:underline">
+                      <Link href={`/stores/${f.store.id}`} className="text-teal-700 dark:text-teal-400 hover:underline">
                         {f.store.name}
                       </Link>
                     </p>
-                    <p className="text-xs text-stone-500 mt-0.5">
+                    <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
                       flagged by{" "}
                       <Link href={`/users/${f.user.id}`} className="hover:underline">
                         {f.user.displayName}
@@ -255,19 +255,19 @@ export default async function ReviewPage() {
       </section>
 
       <section>
-        <h2 className="text-lg font-semibold text-stone-900">
+        <h2 className="text-lg font-semibold text-stone-900 dark:text-stone-100">
           Flagged comments ({flaggedComments.length})
         </h2>
         <ul className="mt-3 space-y-2">
           {flaggedComments.length === 0 && <li className="text-sm text-stone-400">Nothing flagged.</li>}
           {flaggedComments.map((cm) => (
-            <li key={cm.id} className="rounded-lg border border-stone-200 bg-white p-3 text-sm">
+            <li key={cm.id} className="rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-3 text-sm">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-stone-700">“{cm.body}”</p>
-                  <p className="text-xs text-stone-500 mt-0.5">
+                  <p className="text-stone-700 dark:text-stone-300">“{cm.body}”</p>
+                  <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
                     {cm.user.displayName} on{" "}
-                    <Link href={`/stores/${cm.store.id}`} className="hover:underline text-teal-700">
+                    <Link href={`/stores/${cm.store.id}`} className="hover:underline text-teal-700 dark:text-teal-400">
                       {cm.store.name}
                     </Link>{" "}
                     · {cm.reportCount} report{cm.reportCount === 1 ? "" : "s"} · currently{" "}

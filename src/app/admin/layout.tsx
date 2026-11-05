@@ -38,13 +38,13 @@ export default async function AdminLayout({
 
   return (
     <div className="py-6">
-      <div className="flex items-center gap-1 border-b border-stone-200 pb-2 overflow-x-auto">
+      <div className="flex items-center gap-1 border-b border-stone-200 dark:border-stone-700 pb-2 overflow-x-auto">
         <span className="text-xs uppercase tracking-wide text-stone-400 mr-2">Admin</span>
         {tabs.map((t) => (
           <Link
             key={t.href}
             href={t.href}
-            className="rounded-lg px-3 py-1.5 text-sm text-stone-600 hover:bg-stone-100 whitespace-nowrap"
+            className="rounded-lg px-3 py-1.5 text-sm text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 whitespace-nowrap"
           >
             {t.label}
           </Link>

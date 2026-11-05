@@ -72,10 +72,10 @@ export default async function ZipLandingPage({
       <nav className="text-xs text-stone-400">
         <Link href="/" className="hover:text-stone-700">NicFinder</Link> / ZYN prices / {zip}
       </nav>
-      <h1 className="mt-2 text-2xl sm:text-3xl font-semibold text-stone-900">
+      <h1 className="mt-2 text-2xl sm:text-3xl font-semibold text-stone-900 dark:text-stone-100">
         ZYN prices in {info.city}, {info.state} {zip}
       </h1>
-      <p className="mt-2 text-stone-600 text-sm">
+      <p className="mt-2 text-stone-600 dark:text-stone-400 text-sm">
         Latest reported prices for a can of ZYN nicotine pouches at stores
         within 5 miles of the {zip} ZIP code area.{" "}
         {priced.length > 0
@@ -85,15 +85,15 @@ export default async function ZipLandingPage({
       </p>
 
       {priced.length > 0 && (
-        <p className="mt-3 inline-block rounded-lg bg-teal-50 border border-teal-200 px-3 py-2 text-sm text-teal-900">
+        <p className="mt-3 inline-block rounded-lg bg-teal-50 dark:bg-teal-950 border border-teal-200 dark:border-teal-800 px-3 py-2 text-sm text-teal-900 dark:text-teal-200">
           Cheapest reported: <strong>{formatCents(priced[0].latest!.priceCents)}</strong> at{" "}
           <Link href={`/stores/${priced[0].id}`} className="underline">{priced[0].name}</Link>
         </p>
       )}
 
       {results.length === 0 ? (
-        <div className="mt-8 rounded-xl border border-stone-200 bg-white p-6">
-          <p className="text-sm text-stone-600">
+        <div className="mt-8 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-6">
+          <p className="text-sm text-stone-600 dark:text-stone-400">
             We don’t track stores in this area yet — we expand to the
             most-requested areas first.
           </p>
@@ -104,7 +104,7 @@ export default async function ZipLandingPage({
       ) : (
         <table className="mt-6 w-full text-sm">
           <thead>
-            <tr className="text-left text-xs text-stone-500 border-b border-stone-200">
+            <tr className="text-left text-xs text-stone-500 dark:text-stone-400 border-b border-stone-200 dark:border-stone-700">
               <th className="py-2 pr-2">Store</th>
               <th className="py-2 pr-2">Address</th>
               <th className="py-2 pr-2">ZYN price</th>
@@ -113,28 +113,28 @@ export default async function ZipLandingPage({
           </thead>
           <tbody>
             {results.map((r) => (
-              <tr key={r.id} className="border-b border-stone-100">
+              <tr key={r.id} className="border-b border-stone-100 dark:border-stone-800">
                 <td className="py-2 pr-2">
-                  <Link href={`/stores/${r.id}`} className="text-teal-700 hover:underline font-medium">
+                  <Link href={`/stores/${r.id}`} className="text-teal-700 dark:text-teal-400 hover:underline font-medium">
                     {r.name}
                   </Link>
                   {r.isDemo && (
-                    <span className="ml-1.5 rounded bg-amber-100 text-amber-800 text-[10px] font-medium px-1 py-0.5 uppercase">demo</span>
+                    <span className="ml-1.5 rounded bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-300 text-[10px] font-medium px-1 py-0.5 uppercase">demo</span>
                   )}
                 </td>
-                <td className="py-2 pr-2 text-stone-500">{r.address}</td>
-                <td className="py-2 pr-2 font-semibold text-stone-900">
+                <td className="py-2 pr-2 text-stone-500 dark:text-stone-400">{r.address}</td>
+                <td className="py-2 pr-2 font-semibold text-stone-900 dark:text-stone-100">
                   {r.latest ? (
                     formatCents(r.latest.priceCents)
                   ) : r.availabilitySignal?.availability === "NOT_CARRIED" ? (
-                    <span className="font-normal text-stone-500">not carried</span>
+                    <span className="font-normal text-stone-500 dark:text-stone-400">not carried</span>
                   ) : r.availabilitySignal?.availability === "OUT_OF_STOCK" ? (
-                    <span className="font-normal text-red-600">out of stock</span>
+                    <span className="font-normal text-red-600 dark:text-red-400">out of stock</span>
                   ) : (
                     <span className="font-normal text-stone-400">not reported</span>
                   )}
                 </td>
-                <td className="py-2 text-stone-500">
+                <td className="py-2 text-stone-500 dark:text-stone-400">
                   {r.latest
                     ? `${r.latest.ageDays}d ago`
                     : r.availabilitySignal
@@ -164,13 +164,13 @@ export default async function ZipLandingPage({
 
       {otherZips.length > 0 && (
         <div className="mt-10">
-          <h2 className="text-sm font-medium text-stone-700">ZYN prices in nearby areas</h2>
+          <h2 className="text-sm font-medium text-stone-700 dark:text-stone-300">ZYN prices in nearby areas</h2>
           <p className="mt-2 flex flex-wrap gap-2">
             {otherZips.map((z) => (
               <Link
                 key={z}
                 href={`/zyn-prices/${z}`}
-                className="rounded-lg border border-stone-200 bg-white px-2.5 py-1 text-sm text-stone-600 hover:border-teal-300"
+                className="rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 px-2.5 py-1 text-sm text-stone-600 dark:text-stone-400 hover:border-teal-300"
               >
                 {z}
               </Link>

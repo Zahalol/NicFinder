@@ -67,10 +67,10 @@ export default async function ComparePage({
   if (!a || !b || a.status !== "ACTIVE" || b.status !== "ACTIVE") {
     return (
       <div className="py-10 max-w-2xl mx-auto text-center">
-        <h1 className="text-xl font-semibold text-stone-900">Compare stores</h1>
-        <p className="mt-2 text-sm text-stone-500">
+        <h1 className="text-xl font-semibold text-stone-900 dark:text-stone-100">Compare stores</h1>
+        <p className="mt-2 text-sm text-stone-500 dark:text-stone-400">
           Pick two stores to compare — use the “Compare” buttons on{" "}
-          <Link href="/search" className="text-teal-700 underline">search results</Link>.
+          <Link href="/search" className="text-teal-700 dark:text-teal-400 underline">search results</Link>.
         </p>
       </div>
     );
@@ -137,12 +137,12 @@ export default async function ComparePage({
       <div>
         <Link
           href={`/stores/${d.store.id}`}
-          className="font-semibold text-stone-900 hover:underline"
+          className="font-semibold text-stone-900 dark:text-stone-100 hover:underline"
         >
           {d.store.name}
         </Link>{" "}
         {d.store.isDemo && <DemoBadge />}
-        <p className="text-xs text-stone-500 mt-0.5">
+        <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
           {d.store.address}
           {d.store.city ? `, ${d.store.city}` : ""}
           {d.distance !== null && ` · ${d.distance} mi away`}
@@ -172,11 +172,11 @@ export default async function ComparePage({
     }
     return (
       <div>
-        <div className="text-xl font-semibold text-stone-900">
+        <div className="text-xl font-semibold text-stone-900 dark:text-stone-100">
           {formatCents(row.latest.observation.priceCents)}
-          <span className="text-xs font-normal text-stone-500">/can</span>
+          <span className="text-xs font-normal text-stone-500 dark:text-stone-400">/can</span>
         </div>
-        <div className="mt-0.5 flex items-center gap-1.5 flex-wrap text-xs text-stone-500">
+        <div className="mt-0.5 flex items-center gap-1.5 flex-wrap text-xs text-stone-500 dark:text-stone-400">
           <span>{row.latest.ageDays === 0 ? "today" : `${row.latest.ageDays}d ago`}</span>
           {row.reliability && <ReliabilityBadge reliability={row.reliability} />}
         </div>
@@ -189,15 +189,15 @@ export default async function ComparePage({
     if (row.total === null || row.eff.perCanCents === null)
       return <div className="text-sm text-stone-400">—</div>;
     return (
-      <div className="text-sm text-stone-800">
+      <div className="text-sm text-stone-800 dark:text-stone-200">
         <strong>{formatCents(row.total)}</strong> total{" "}
-        <span className="text-stone-500">({formatCents(row.eff.perCanCents)}/can)</span>
-        {row.eff.usedDeal && <span className="text-teal-700"> · deal applied</span>}
+        <span className="text-stone-500 dark:text-stone-400">({formatCents(row.eff.perCanCents)}/can)</span>
+        {row.eff.usedDeal && <span className="text-teal-700 dark:text-teal-400"> · deal applied</span>}
         {row.eff.uncertain && (
-          <span className="text-amber-600"> · deal terms unknown at {qty}</span>
+          <span className="text-amber-600 dark:text-amber-400"> · deal terms unknown at {qty}</span>
         )}
         {row.dealRow && !row.eff.usedDeal && qty < row.dealRow.minQty && (
-          <div className="text-xs text-stone-500">
+          <div className="text-xs text-stone-500 dark:text-stone-400">
             deal starts at {row.dealRow.minQty} cans
           </div>
         )}
@@ -217,27 +217,27 @@ export default async function ComparePage({
   return (
     <div className="py-6 max-w-3xl mx-auto">
       <BackLink fallback="/search">← Back to search</BackLink>
-      <h1 className="mt-3 text-2xl font-semibold text-stone-900">Compare stores</h1>
+      <h1 className="mt-3 text-2xl font-semibold text-stone-900 dark:text-stone-100">Compare stores</h1>
 
       <div className="mt-2 flex items-center gap-2 text-sm">
-        <span className="text-stone-500">Buying</span>
-        <span className="inline-flex rounded-lg border border-stone-300 overflow-hidden">
+        <span className="text-stone-500 dark:text-stone-400">Buying</span>
+        <span className="inline-flex rounded-lg border border-stone-300 dark:border-stone-600 overflow-hidden">
           {QTYS.map((n) => (
             <Link
               key={n}
               href={qtyHref(n)}
               aria-current={qty === n ? "true" : undefined}
-              className={`px-2.5 py-1 ${qty === n ? "bg-teal-600 text-white" : "bg-white text-stone-600"}`}
+              className={`px-2.5 py-1 ${qty === n ? "bg-teal-600 text-white" : "bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-400"}`}
             >
               {n}
             </Link>
           ))}
         </span>
-        <span className="text-stone-500">can{qty > 1 ? "s" : ""}</span>
+        <span className="text-stone-500 dark:text-stone-400">can{qty > 1 ? "s" : ""}</span>
       </div>
 
       {winner && (
-        <p className="mt-3 rounded-lg bg-teal-50 border border-teal-200 px-3 py-2 text-sm text-teal-900">
+        <p className="mt-3 rounded-lg bg-teal-50 dark:bg-teal-950 border border-teal-200 dark:border-teal-800 px-3 py-2 text-sm text-teal-900 dark:text-teal-200">
           <strong>{winner.name}</strong> is {formatCents(winner.diff)} cheaper in
           total for {qty} can{qty > 1 ? "s" : ""} of regular ZYN.
         </p>
@@ -254,8 +254,8 @@ export default async function ComparePage({
           </thead>
           <tbody>
             {productLines.map((line) => (
-              <tr key={line.id} className="border-t border-stone-200 align-top">
-                <td className="py-3 pr-2 text-xs text-stone-500">{line.name}</td>
+              <tr key={line.id} className="border-t border-stone-200 dark:border-stone-700 align-top">
+                <td className="py-3 pr-2 text-xs text-stone-500 dark:text-stone-400">{line.name}</td>
                 <td className="py-3 pr-4"><PriceCell d={A} lineId={line.id} /></td>
                 <td className="py-3"><PriceCell d={B} lineId={line.id} /></td>
               </tr>
@@ -267,8 +267,8 @@ export default async function ComparePage({
                 )
               )
               .map((line) => (
-                <tr key={`qty-${line.id}`} className="border-t border-stone-200 align-top">
-                  <td className="py-3 pr-2 text-xs text-stone-500">
+                <tr key={`qty-${line.id}`} className="border-t border-stone-200 dark:border-stone-700 align-top">
+                  <td className="py-3 pr-2 text-xs text-stone-500 dark:text-stone-400">
                     {qty} can{qty > 1 ? "s" : ""} of {line.name}
                   </td>
                   <td className="py-3 pr-4"><QtyCell d={A} lineId={line.id} /></td>

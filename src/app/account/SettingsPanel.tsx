@@ -64,25 +64,25 @@ export function SettingsPanel({
     window.location.href = "/";
   }
 
-  const input = "w-full rounded-lg border border-stone-300 px-3 py-2 text-sm";
+  const input = "w-full rounded-lg border border-stone-300 dark:border-stone-600 px-3 py-2 text-sm";
 
   return (
     <section className="mt-8">
       <button
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="font-medium text-stone-900 hover:text-teal-700"
+        className="font-medium text-stone-900 dark:text-stone-100 hover:text-teal-700"
       >
         Account settings {open ? "▾" : "▸"}
       </button>
       {open && (
-        <div className="mt-3 space-y-5 rounded-xl border border-stone-200 bg-white p-4 max-w-md">
+        <div className="mt-3 space-y-5 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-4 max-w-md">
           {(msg || err) && (
-            <p className={`text-sm ${err ? "text-red-600" : "text-teal-700"}`}>{err ?? msg}</p>
+            <p className={`text-sm ${err ? "text-red-600 dark:text-red-400" : "text-teal-700 dark:text-teal-400"}`}>{err ?? msg}</p>
           )}
 
           <form onSubmit={saveName} className="space-y-2">
-            <label className="text-sm font-medium text-stone-700" htmlFor="set-name">
+            <label className="text-sm font-medium text-stone-700 dark:text-stone-300" htmlFor="set-name">
               Display name
             </label>
             <div className="flex gap-2">
@@ -96,7 +96,7 @@ export function SettingsPanel({
               />
               <button
                 disabled={busy || name.trim().length < 2 || name === displayName}
-                className="rounded-lg bg-stone-900 px-3 py-2 text-sm text-white disabled:opacity-40"
+                className="rounded-lg bg-stone-900 dark:bg-stone-100 dark:text-stone-900 px-3 py-2 text-sm text-white disabled:opacity-40"
               >
                 Save
               </button>
@@ -104,7 +104,7 @@ export function SettingsPanel({
           </form>
 
           <form onSubmit={savePassword} className="space-y-2">
-            <p className="text-sm font-medium text-stone-700">
+            <p className="text-sm font-medium text-stone-700 dark:text-stone-300">
               {hasPassword ? "Change password" : "Set a password"}
             </p>
             {hasPassword && (
@@ -128,24 +128,24 @@ export function SettingsPanel({
             />
             <button
               disabled={busy || newPw.length < 10 || (hasPassword && !currentPw)}
-              className="rounded-lg bg-stone-900 px-3 py-2 text-sm text-white disabled:opacity-40"
+              className="rounded-lg bg-stone-900 dark:bg-stone-100 dark:text-stone-900 px-3 py-2 text-sm text-white disabled:opacity-40"
             >
               {hasPassword ? "Change password" : "Set password"}
             </button>
-            <p className="text-xs text-stone-500">
+            <p className="text-xs text-stone-500 dark:text-stone-400">
               Changing your password signs out your other devices.
             </p>
           </form>
 
-          <div className="border-t border-stone-100 pt-4">
+          <div className="border-t border-stone-100 dark:border-stone-800 pt-4">
             <button
               onClick={logoutAll}
               disabled={busy}
-              className="rounded-lg border border-red-200 px-3 py-2 text-sm text-red-700 hover:bg-red-50"
+              className="rounded-lg border border-red-200 dark:border-red-800 px-3 py-2 text-sm text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950"
             >
               Sign out everywhere
             </button>
-            <p className="mt-1 text-xs text-stone-500">
+            <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
               Ends all {sessionCount} active session{sessionCount === 1 ? "" : "s"}, including this one.
             </p>
           </div>

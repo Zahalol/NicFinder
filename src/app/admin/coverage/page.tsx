@@ -100,20 +100,20 @@ export default async function CoverageDemandPage() {
     const nPriced = pricedByZip.get(zip) ?? 0;
     if (nStores === 0) {
       return (
-        <span className="inline-block rounded-full bg-rose-50 px-2 py-0.5 text-xs text-rose-700">
+        <span className="inline-block rounded-full bg-rose-50 dark:bg-rose-950 px-2 py-0.5 text-xs text-rose-700 dark:text-rose-300">
           No stores listed
         </span>
       );
     }
     if (nPriced === 0) {
       return (
-        <span className="inline-block rounded-full bg-amber-50 px-2 py-0.5 text-xs text-amber-700">
+        <span className="inline-block rounded-full bg-amber-50 dark:bg-amber-950 px-2 py-0.5 text-xs text-amber-700 dark:text-amber-400">
           {nStores} store{nStores === 1 ? "" : "s"}, no current prices
         </span>
       );
     }
     return (
-      <span className="inline-block rounded-full bg-teal-50 px-2 py-0.5 text-xs text-teal-700">
+      <span className="inline-block rounded-full bg-teal-50 dark:bg-teal-950 px-2 py-0.5 text-xs text-teal-700 dark:text-teal-400">
         {nPriced}/{nStores} store{nStores === 1 ? "" : "s"} priced
       </span>
     );
@@ -122,8 +122,8 @@ export default async function CoverageDemandPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-lg font-semibold text-stone-900">Coverage demand</h1>
-        <p className="mt-0.5 text-sm text-stone-500">
+        <h1 className="text-lg font-semibold text-stone-900 dark:text-stone-100">Coverage demand</h1>
+        <p className="mt-0.5 text-sm text-stone-500 dark:text-stone-400">
           Visitor requests for price coverage, grouped by ZIP and joined against
           current store/price coverage. Use the gaps at the top to choose the
           next neighborhoods to collect prices in.
@@ -141,15 +141,15 @@ export default async function CoverageDemandPage() {
             value: String(unservedZips),
           },
         ].map((t) => (
-          <div key={t.label} className="rounded-xl border border-stone-200 bg-white p-4">
-            <div className="text-2xl font-semibold text-stone-900">{t.value}</div>
-            <div className="mt-0.5 text-xs text-stone-500">{t.label}</div>
+          <div key={t.label} className="rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-4">
+            <div className="text-2xl font-semibold text-stone-900 dark:text-stone-100">{t.value}</div>
+            <div className="mt-0.5 text-xs text-stone-500 dark:text-stone-400">{t.label}</div>
           </div>
         ))}
       </div>
 
       {topGap && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <div className="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950 px-4 py-3 text-sm text-amber-900 dark:text-amber-200">
           Biggest gap right now: <strong>{topGap.zip}</strong>
           {topGap.city ? ` (${topGap.city}${topGap.state ? `, ${topGap.state}` : ""})` : ""} —{" "}
           {topGap.total} request{topGap.total === 1 ? "" : "s"} and no current prices.
@@ -164,7 +164,7 @@ export default async function CoverageDemandPage() {
       ) : (
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-stone-200 text-left text-xs text-stone-500">
+            <tr className="border-b border-stone-200 dark:border-stone-700 text-left text-xs text-stone-500 dark:text-stone-400">
               <th className="py-1.5 pr-3">ZIP</th>
               <th className="py-1.5 pr-3">Area</th>
               <th className="py-1.5 pr-3">Requests</th>
@@ -177,19 +177,19 @@ export default async function CoverageDemandPage() {
           </thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.zip} className="border-b border-stone-100 hover:bg-stone-50">
-                <td className="py-2 pr-3 font-medium text-stone-900">{r.zip}</td>
-                <td className="py-2 pr-3 text-stone-600">
+              <tr key={r.zip} className="border-b border-stone-100 dark:border-stone-800 hover:bg-stone-50 dark:hover:bg-stone-800">
+                <td className="py-2 pr-3 font-medium text-stone-900 dark:text-stone-100">{r.zip}</td>
+                <td className="py-2 pr-3 text-stone-600 dark:text-stone-400">
                   {r.city ? `${r.city}${r.state ? `, ${r.state}` : ""}` : "—"}
                 </td>
-                <td className="py-2 pr-3 text-stone-900">{r.total}</td>
-                <td className="hidden py-2 pr-3 text-stone-600 sm:table-cell">{r.signedIn}</td>
-                <td className="hidden py-2 pr-3 text-stone-600 sm:table-cell">{r.recent7d}</td>
-                <td className="py-2 pr-3 text-stone-600">{timeAgo(r.lastAt)}</td>
+                <td className="py-2 pr-3 text-stone-900 dark:text-stone-100">{r.total}</td>
+                <td className="hidden py-2 pr-3 text-stone-600 dark:text-stone-400 sm:table-cell">{r.signedIn}</td>
+                <td className="hidden py-2 pr-3 text-stone-600 dark:text-stone-400 sm:table-cell">{r.recent7d}</td>
+                <td className="py-2 pr-3 text-stone-600 dark:text-stone-400">{timeAgo(r.lastAt)}</td>
                 <td className="py-2 pr-3">
                   {statusBadge(r.zip)}
                   {r.notified > 0 && (
-                    <span className="ml-1.5 text-[11px] text-teal-700" title="Requesters notified that coverage arrived">
+                    <span className="ml-1.5 text-[11px] text-teal-700 dark:text-teal-400" title="Requesters notified that coverage arrived">
                       {r.notified} notified
                     </span>
                   )}

@@ -36,7 +36,7 @@ export default async function CollectPage({
     prisma.productLine.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } }),
   ]);
   const zyn = lines.find((l) => l.slug === lineParam) ?? lines[0];
-  if (!zyn) return <p className="text-sm text-stone-500">No product lines seeded.</p>;
+  if (!zyn) return <p className="text-sm text-stone-500 dark:text-stone-400">No product lines seeded.</p>;
 
   const rows = stores.map((s) => {
     const latest = selectLatestPrice(
@@ -62,21 +62,21 @@ export default async function CollectPage({
   return (
     <div>
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <h1 className="text-lg font-semibold text-stone-900">Collect prices — {zyn.name}</h1>
-        <span className="inline-flex rounded-lg border border-stone-300 overflow-hidden text-sm">
+        <h1 className="text-lg font-semibold text-stone-900 dark:text-stone-100">Collect prices — {zyn.name}</h1>
+        <span className="inline-flex rounded-lg border border-stone-300 dark:border-stone-600 overflow-hidden text-sm">
           {lines.map((l) => (
             <a
               key={l.slug}
               href={`/admin/collect?line=${l.slug}`}
               aria-current={l.id === zyn.id ? "true" : undefined}
-              className={`px-3 py-1 ${l.id === zyn.id ? "bg-stone-900 text-white" : "bg-white text-stone-600"}`}
+              className={`px-3 py-1 ${l.id === zyn.id ? "bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900" : "bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-400"}`}
             >
               {l.name.replace(" (regular)", "")}
             </a>
           ))}
         </span>
       </div>
-      <p className="mt-0.5 text-sm text-stone-500">
+      <p className="mt-0.5 text-sm text-stone-500 dark:text-stone-400">
         {rows.length} real stores · {unpriced} without a current price. Call,
         type the shelf price, Enter. “Not carried” / “out of stock” save
         honestly with no price. Entries are staff-sourced, audited, and alert
@@ -87,7 +87,7 @@ export default async function CollectPage({
       ) : (
         <table className="mt-4 w-full text-sm">
           <thead>
-            <tr className="border-b border-stone-200 text-left text-xs text-stone-500">
+            <tr className="border-b border-stone-200 dark:border-stone-700 text-left text-xs text-stone-500 dark:text-stone-400">
               <th className="py-1.5 pr-3">Store</th>
               <th className="py-1.5 pr-3">Phone</th>
               <th className="py-1.5 pr-3">Current price</th>

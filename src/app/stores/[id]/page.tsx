@@ -168,36 +168,36 @@ export default async function StorePage({
 
       <div className="mt-3 flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-semibold text-stone-900 flex items-center gap-2">
+          <h1 className="text-2xl font-semibold text-stone-900 dark:text-stone-100 flex items-center gap-2">
             {store.name} {store.isDemo && <DemoBadge />}
             <SaveStoreButton storeId={store.id} initialSaved={saved} signedIn={Boolean(user)} />
             <ShareButton title={`ZYN prices at ${store.name}`} />
           </h1>
-          <p className="text-stone-500 mt-1">
+          <p className="text-stone-500 dark:text-stone-400 mt-1">
             {store.address}
             {store.city ? `, ${store.city}` : ""}
             {store.state ? `, ${store.state}` : ""} {store.zip ?? ""}
           </p>
           <p className="mt-0.5 flex flex-wrap gap-x-4 text-sm">
             {mapsUrl && (
-              <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="text-teal-700 underline">
+              <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="text-teal-700 dark:text-teal-400 underline">
                 Directions / map
               </a>
             )}
             {store.phone && (
-              <a href={`tel:${store.phone}`} className="text-teal-700 underline">
+              <a href={`tel:${store.phone}`} className="text-teal-700 dark:text-teal-400 underline">
                 Call to confirm: {formatPhoneDisplay(store.phone)}
               </a>
             )}
             {store.hours && (
-              <span className="text-stone-500">Hours: {store.hours}</span>
+              <span className="text-stone-500 dark:text-stone-400">Hours: {store.hours}</span>
             )}
           </p>
         </div>
       </div>
 
       {store.isDemo && (
-        <p className="mt-3 text-xs rounded-lg bg-amber-50 border border-amber-200 text-amber-800 p-3">
+        <p className="mt-3 text-xs rounded-lg bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 p-3">
           This is a fictional demonstration store. All prices here are
           synthetic sample data.
         </p>
@@ -206,14 +206,14 @@ export default async function StorePage({
       {/* Current prices per product line */}
       <div className="mt-6 grid sm:grid-cols-2 gap-4">
         {latestByLine.map(({ line, latest, avail }) => (
-          <div key={line.id} className="rounded-xl border border-stone-200 bg-white p-5">
-            <h2 className="text-sm font-medium text-stone-500">{line.name}</h2>
+          <div key={line.id} className="rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-5">
+            <h2 className="text-sm font-medium text-stone-500 dark:text-stone-400">{line.name}</h2>
             {latest ? (
               <>
-                <div className="mt-1 text-3xl font-semibold text-stone-900 flex items-baseline gap-2 flex-wrap">
+                <div className="mt-1 text-3xl font-semibold text-stone-900 dark:text-stone-100 flex items-baseline gap-2 flex-wrap">
                   <span>
                     {formatCents(latest.observation.priceCents)}
-                    <span className="text-sm font-normal text-stone-500"> /can</span>
+                    <span className="text-sm font-normal text-stone-500 dark:text-stone-400"> /can</span>
                   </span>
                   <ReliabilityBadge
                     reliability={assessReliability({
@@ -226,7 +226,7 @@ export default async function StorePage({
                     })}
                   />
                 </div>
-                <p className="mt-1 text-xs text-stone-500">
+                <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
                   Observed {latest.observation.observedAt.toLocaleDateString()} ·{" "}
                   {latest.observation.sourceType === "COMMUNITY"
                     ? "community-reported"
@@ -236,26 +236,26 @@ export default async function StorePage({
                         ? "data import"
                         : "staff-entered"}
                   {latest.freshness === "stale" && (
-                    <span className="text-amber-600"> · {latest.ageDays}d old — may be outdated</span>
+                    <span className="text-amber-600 dark:text-amber-400"> · {latest.ageDays}d old — may be outdated</span>
                   )}
                 </p>
-                <p className="text-xs text-stone-500">
+                <p className="text-xs text-stone-500 dark:text-stone-400">
                   {latest.observation.taxIncluded === false
                     ? "Before tax"
                     : latest.observation.taxIncluded === true
                       ? "Tax included"
                       : "Tax status unknown"}
                   {latest.confirmCount > 0 && (
-                    <span className="text-teal-700"> · ✓ confirmed by {latest.confirmCount}</span>
+                    <span className="text-teal-700 dark:text-teal-400"> · ✓ confirmed by {latest.confirmCount}</span>
                   )}
                   {latest.observation.availability === "OUT_OF_STOCK" && (
-                    <span className="text-red-600"> · reported out of stock</span>
+                    <span className="text-red-600 dark:text-red-400"> · reported out of stock</span>
                   )}
                 </p>
                 {avail &&
                   avail.observedAt > latest.observation.observedAt &&
                   avail.availability !== "IN_STOCK" && (
-                    <p className="mt-1 text-xs text-red-600">
+                    <p className="mt-1 text-xs text-red-600 dark:text-red-400">
                       Newer report ({avail.observedAt.toLocaleDateString()}):{" "}
                       {avail.availability === "NOT_CARRIED" ? "no longer carried" : "out of stock"}
                     </p>
@@ -263,16 +263,16 @@ export default async function StorePage({
               </>
             ) : avail && avail.availability === "NOT_CARRIED" ? (
               <div className="mt-1">
-                <div className="text-xl font-medium text-stone-500">Not carried</div>
-                <p className="text-xs text-stone-500 mt-1">
+                <div className="text-xl font-medium text-stone-500 dark:text-stone-400">Not carried</div>
+                <p className="text-xs text-stone-500 dark:text-stone-400 mt-1">
                   Reported {avail.observedAt.toLocaleDateString()} as not carrying{" "}
                   {line.name}. No price is shown because none exists.
                 </p>
               </div>
             ) : avail && avail.availability === "OUT_OF_STOCK" ? (
               <div className="mt-1">
-                <div className="text-xl font-medium text-red-600">Out of stock</div>
-                <p className="text-xs text-stone-500 mt-1">
+                <div className="text-xl font-medium text-red-600 dark:text-red-400">Out of stock</div>
+                <p className="text-xs text-stone-500 dark:text-stone-400 mt-1">
                   Reported {avail.observedAt.toLocaleDateString()} as out of stock,
                   with no price recorded.
                 </p>
@@ -280,7 +280,7 @@ export default async function StorePage({
             ) : (
               <div className="mt-1">
                 <div className="text-xl font-medium text-stone-400">No recent price</div>
-                <p className="text-xs text-stone-500 mt-1">
+                <p className="text-xs text-stone-500 dark:text-stone-400 mt-1">
                   {line.slug === "zyn-ultra"
                     ? "Ultra pricing hasn’t been reported here. Ultra is not assumed to match the regular price."
                     : "No one has reported a price for this store yet."}
@@ -292,11 +292,11 @@ export default async function StorePage({
       </div>
 
       {pendingReports > 0 && (
-        <p className="mt-3 text-xs text-stone-500">
+        <p className="mt-3 text-xs text-stone-500 dark:text-stone-400">
           {pendingReports} community report{pendingReports === 1 ? "" : "s"}{" "}
           awaiting review or corroboration — displayed prices don’t change
           until reports are verified.{" "}
-          <Link href="/how-it-works" className="text-teal-700 underline">
+          <Link href="/how-it-works" className="text-teal-700 dark:text-teal-400 underline">
             How this works
           </Link>
         </p>
@@ -304,22 +304,22 @@ export default async function StorePage({
 
       {/* Deals */}
       {store.deals.length > 0 && (
-        <div className="mt-4 rounded-xl border border-teal-200 bg-teal-50/50 p-5">
-          <h2 className="text-sm font-medium text-teal-900">Quantity deals</h2>
+        <div className="mt-4 rounded-xl border border-teal-200 dark:border-teal-800 bg-teal-50/50 dark:bg-teal-950/50 p-5">
+          <h2 className="text-sm font-medium text-teal-900 dark:text-teal-200">Quantity deals</h2>
           <ul className="mt-2 space-y-2">
             {store.deals.map((d) => (
-              <li key={d.id} className="text-sm text-stone-700">
+              <li key={d.id} className="text-sm text-stone-700 dark:text-stone-300">
                 <strong>{d.productLine.name}:</strong> buy {d.minQty}+ —{" "}
                 {d.pricePerCanCents !== null
                   ? `${formatCents(d.pricePerCanCents)} per can`
                   : `${formatCents(d.discountPerCanCents)} off per can`}
                 {d.appliesAboveMinQty === false && ` (first ${d.minQty} cans only)`}
                 {d.appliesAboveMinQty === null && (
-                  <span className="text-stone-500"> — terms above {d.minQty} cans unknown</span>
+                  <span className="text-stone-500 dark:text-stone-400"> — terms above {d.minQty} cans unknown</span>
                 )}
-                {d.conditions && <span className="text-stone-500"> · {d.conditions}</span>}
+                {d.conditions && <span className="text-stone-500 dark:text-stone-400"> · {d.conditions}</span>}
                 {d.expiresAt && (
-                  <span className="text-stone-500"> · until {d.expiresAt.toLocaleDateString()}</span>
+                  <span className="text-stone-500 dark:text-stone-400"> · until {d.expiresAt.toLocaleDateString()}</span>
                 )}
                 <span className="text-xs text-stone-400"> · reported {d.observedAt.toLocaleDateString()}</span>{" "}
                 <FlagDealButton storeId={store.id} dealId={d.id} signedIn={Boolean(user)} />
@@ -346,7 +346,7 @@ export default async function StorePage({
 
       {/* Price history */}
       <div className="mt-8">
-        <h2 className="font-medium text-stone-900">Price history</h2>
+        <h2 className="font-medium text-stone-900 dark:text-stone-100">Price history</h2>
         {productLines.map((line) => (
           <PriceHistorySparkline
             key={line.id}
@@ -368,11 +368,11 @@ export default async function StorePage({
           />
         ))}
         {store.observations.length === 0 ? (
-          <p className="mt-2 text-sm text-stone-500">No observations recorded.</p>
+          <p className="mt-2 text-sm text-stone-500 dark:text-stone-400">No observations recorded.</p>
         ) : (
           <table className="mt-2 w-full text-sm">
             <thead>
-              <tr className="text-left text-xs text-stone-500 border-b border-stone-200">
+              <tr className="text-left text-xs text-stone-500 dark:text-stone-400 border-b border-stone-200 dark:border-stone-700">
                 <th className="py-1.5 pr-2">Observed</th>
                 <th className="py-1.5 pr-2">Product</th>
                 <th className="py-1.5 pr-2">Price</th>
@@ -385,7 +385,7 @@ export default async function StorePage({
               {store.observations.map((o) => (
                 <tr
                   key={o.id}
-                  className="border-b border-stone-100 text-stone-700"
+                  className="border-b border-stone-100 dark:border-stone-800 text-stone-700 dark:text-stone-300"
                   title={o.notes ?? undefined}
                 >
                   <td className="py-1.5 pr-2">{o.observedAt.toLocaleDateString()}</td>
@@ -401,7 +401,7 @@ export default async function StorePage({
                     {o.priceCents !== null ? (
                       formatCents(o.priceCents)
                     ) : (
-                      <span className="font-normal text-stone-500">
+                      <span className="font-normal text-stone-500 dark:text-stone-400">
                         {o.availability === "NOT_CARRIED"
                           ? "not carried"
                           : o.availability === "OUT_OF_STOCK"
@@ -410,7 +410,7 @@ export default async function StorePage({
                       </span>
                     )}
                   </td>
-                  <td className="py-1.5 pr-2 text-stone-500">{o.sourceType.toLowerCase()}</td>
+                  <td className="py-1.5 pr-2 text-stone-500 dark:text-stone-400">{o.sourceType.toLowerCase()}</td>
                   <td className="py-1.5 pr-2 text-xs text-stone-400">{o.status.toLowerCase()}</td>
                   <td className="py-1.5 text-right">
                     <FlagObservationButton
@@ -429,7 +429,7 @@ export default async function StorePage({
       {/* Nearby alternatives */}
       {nearby.length > 0 && (
         <div className="mt-8">
-          <h2 className="font-medium text-stone-900">Other stores within 2 miles</h2>
+          <h2 className="font-medium text-stone-900 dark:text-stone-100">Other stores within 2 miles</h2>
           <ul className="mt-2 space-y-2">
             {nearby.map((n) => {
               const price = n.latest?.priceCents ?? null;
@@ -439,9 +439,9 @@ export default async function StorePage({
                 <li key={n.id}>
                   <Link
                     href={`/stores/${n.id}`}
-                    className="flex items-center justify-between gap-3 rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm hover:border-teal-400"
+                    className="flex items-center justify-between gap-3 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 px-3 py-2 text-sm hover:border-teal-400"
                   >
-                    <span className="min-w-0 truncate text-stone-800">
+                    <span className="min-w-0 truncate text-stone-800 dark:text-stone-200">
                       {n.name}
                       <span className="ml-1.5 text-xs text-stone-400">
                         {n.distanceMiles} mi
@@ -450,11 +450,11 @@ export default async function StorePage({
                     <span className="shrink-0">
                       {price !== null ? (
                         <>
-                          <span className="font-medium text-stone-900">
+                          <span className="font-medium text-stone-900 dark:text-stone-100">
                             {formatCents(price)}
                           </span>
                           {cheaper && (
-                            <span className="ml-1.5 text-xs text-teal-700">cheaper</span>
+                            <span className="ml-1.5 text-xs text-teal-700 dark:text-teal-400">cheaper</span>
                           )}
                         </>
                       ) : (

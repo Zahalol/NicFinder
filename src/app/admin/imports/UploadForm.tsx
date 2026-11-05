@@ -25,13 +25,13 @@ export function UploadForm() {
   }
 
   return (
-    <form onSubmit={submit} className="mt-4 flex items-center gap-3 flex-wrap rounded-xl border border-dashed border-stone-300 bg-white p-4">
+    <form onSubmit={submit} className="mt-4 flex items-center gap-3 flex-wrap rounded-xl border border-dashed border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 p-4">
       <input
         type="file"
         name="file"
         accept=".csv,.xlsx"
         required
-        className="text-sm text-stone-600 file:mr-3 file:rounded-lg file:border-0 file:bg-stone-900 file:text-white file:px-3 file:py-1.5 file:text-sm"
+        className="text-sm text-stone-600 dark:text-stone-400 file:mr-3 file:rounded-lg file:border-0 file:bg-stone-900 file:text-white file:px-3 file:py-1.5 file:text-sm"
       />
       <button
         disabled={busy}
@@ -39,7 +39,7 @@ export function UploadForm() {
       >
         {busy ? "Validating…" : "Upload & preview"}
       </button>
-      {err && <span className="text-sm text-red-600">{err}</span>}
+      {err && <span className="text-sm text-red-600 dark:text-red-400">{err}</span>}
     </form>
   );
 }

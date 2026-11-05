@@ -1,9 +1,16 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #fafaf9;
-  --fg: #1c1917;
+  --bg: #fafaf9; /* stone-50 */
+  --fg: #1c1917; /* stone-900 */
   --accent: #0d9488;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0c0a09; /* stone-950 */
+    --fg: #e7e5e4; /* stone-200 */
+  }
 }
 
 html {

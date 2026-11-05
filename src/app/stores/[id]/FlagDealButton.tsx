@@ -16,7 +16,7 @@ export function FlagDealButton({
 
   if (!signedIn) return null;
   if (state === "done")
-    return <span className="text-[11px] text-teal-700">Sent for review</span>;
+    return <span className="text-[11px] text-teal-700 dark:text-teal-400">Sent for review</span>;
 
   async function flag() {
     const reason = window.prompt(

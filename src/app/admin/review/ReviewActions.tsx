@@ -46,20 +46,20 @@ export function ReviewActions({
 
   return (
     <div className="flex items-center gap-1.5 shrink-0">
-      {err && <span className="text-xs text-red-600">{err}</span>}
+      {err && <span className="text-xs text-red-600 dark:text-red-400">{err}</span>}
       {contributionId && (
         <>
           <button
             disabled={busy}
             onClick={() => act("APPROVE_CONTRIBUTION", contributionId)}
-            className="rounded border border-teal-300 text-teal-700 px-2 py-1 text-xs hover:bg-teal-50"
+            className="rounded border border-teal-300 dark:border-teal-700 text-teal-700 dark:text-teal-400 px-2 py-1 text-xs hover:bg-teal-50 dark:hover:bg-teal-950"
           >
             Approve & publish
           </button>
           <button
             disabled={busy}
             onClick={() => act("REJECT_CONTRIBUTION", contributionId, true)}
-            className="rounded border border-red-300 text-red-700 px-2 py-1 text-xs hover:bg-red-50"
+            className="rounded border border-red-300 dark:border-red-800 text-red-700 dark:text-red-400 px-2 py-1 text-xs hover:bg-red-50 dark:hover:bg-red-950"
           >
             Reject
           </button>
@@ -70,14 +70,14 @@ export function ReviewActions({
           <button
             disabled={busy}
             onClick={() => act("UPHOLD_FLAG", flagId)}
-            className="rounded border border-teal-300 text-teal-700 px-2 py-1 text-xs hover:bg-teal-50"
+            className="rounded border border-teal-300 dark:border-teal-700 text-teal-700 dark:text-teal-400 px-2 py-1 text-xs hover:bg-teal-50 dark:hover:bg-teal-950"
           >
             Uphold — invalidate observation
           </button>
           <button
             disabled={busy}
             onClick={() => act("DISMISS_FLAG", flagId, true)}
-            className="rounded border border-red-300 text-red-700 px-2 py-1 text-xs hover:bg-red-50"
+            className="rounded border border-red-300 dark:border-red-800 text-red-700 dark:text-red-400 px-2 py-1 text-xs hover:bg-red-50 dark:hover:bg-red-950"
           >
             Dismiss
           </button>
@@ -88,21 +88,21 @@ export function ReviewActions({
           <button
             disabled={busy}
             onClick={() => act("UPHOLD_DEAL_FLAG", dealFlagId, false, { how: "ended" })}
-            className="rounded border border-teal-300 text-teal-700 px-2 py-1 text-xs hover:bg-teal-50"
+            className="rounded border border-teal-300 dark:border-teal-700 text-teal-700 dark:text-teal-400 px-2 py-1 text-xs hover:bg-teal-50 dark:hover:bg-teal-950"
           >
             Deal ended
           </button>
           <button
             disabled={busy}
             onClick={() => act("UPHOLD_DEAL_FLAG", dealFlagId, false, { how: "invalid" })}
-            className="rounded border border-amber-300 text-amber-700 px-2 py-1 text-xs hover:bg-amber-50"
+            className="rounded border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 px-2 py-1 text-xs hover:bg-amber-50 dark:hover:bg-amber-950"
           >
             Invalid data
           </button>
           <button
             disabled={busy}
             onClick={() => act("DISMISS_DEAL_FLAG", dealFlagId, true)}
-            className="rounded border border-red-300 text-red-700 px-2 py-1 text-xs hover:bg-red-50"
+            className="rounded border border-red-300 dark:border-red-800 text-red-700 dark:text-red-400 px-2 py-1 text-xs hover:bg-red-50 dark:hover:bg-red-950"
           >
             Dismiss
           </button>
@@ -114,7 +114,7 @@ export function ReviewActions({
             <button
               disabled={busy}
               onClick={() => act("HIDE_COMMENT", commentId)}
-              className="rounded border border-red-300 text-red-700 px-2 py-1 text-xs hover:bg-red-50"
+              className="rounded border border-red-300 dark:border-red-800 text-red-700 dark:text-red-400 px-2 py-1 text-xs hover:bg-red-50 dark:hover:bg-red-950"
             >
               Hide
             </button>
@@ -122,7 +122,7 @@ export function ReviewActions({
             <button
               disabled={busy}
               onClick={() => act("RESTORE_COMMENT", commentId)}
-              className="rounded border border-teal-300 text-teal-700 px-2 py-1 text-xs hover:bg-teal-50"
+              className="rounded border border-teal-300 dark:border-teal-700 text-teal-700 dark:text-teal-400 px-2 py-1 text-xs hover:bg-teal-50 dark:hover:bg-teal-950"
             >
               Restore
             </button>

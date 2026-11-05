@@ -65,8 +65,8 @@ export default async function EconomicsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-lg font-semibold text-stone-900">Pilot economics</h1>
-        <p className="mt-0.5 text-sm text-stone-500">
+        <h1 className="text-lg font-semibold text-stone-900 dark:text-stone-100">Pilot economics</h1>
+        <p className="mt-0.5 text-sm text-stone-500 dark:text-stone-400">
           Real-store coverage today, and what keeping it fresh would cost under
           assumptions you control. This page never initiates calls.
         </p>
@@ -79,14 +79,14 @@ export default async function EconomicsPage() {
           { label: "Stale but current", value: String(stale) },
           { label: "No current price", value: String(unpriced) },
         ].map((t) => (
-          <div key={t.label} className="rounded-xl border border-stone-200 bg-white p-4">
-            <div className="text-2xl font-semibold text-stone-900">{t.value}</div>
-            <div className="mt-0.5 text-xs text-stone-500">{t.label}</div>
+          <div key={t.label} className="rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-4">
+            <div className="text-2xl font-semibold text-stone-900 dark:text-stone-100">{t.value}</div>
+            <div className="mt-0.5 text-xs text-stone-500 dark:text-stone-400">{t.label}</div>
           </div>
         ))}
       </div>
 
-      <p className="text-xs text-stone-500">
+      <p className="text-xs text-stone-500 dark:text-stone-400">
         {demoStores > 0 &&
           `${demoStores} fictional demo stores are excluded from everything on this page. `}
         {medianAgeDays !== null
