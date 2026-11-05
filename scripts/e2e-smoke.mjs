@@ -244,6 +244,27 @@ try {
   const robots = await page.evaluate(async () => (await fetch("/robots.txt")).text());
   check("robots.txt disallows /admin", robots.includes("/admin"));
 
+  // 5b. New-member signup → immediately useful (one-tap confirm offered)
+  console.log("Signup…");
+  const signupRes = await page.evaluate(async () => {
+    const r = await fetch("/api/auth/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: `e2e-signup-${Date.now()}@example.com`,
+        password: "a-long-demo-password-123",
+        displayName: "SmokeTester",
+      }),
+    });
+    return r.status;
+  });
+  check("signup succeeds", signupRes === 200, `(got ${signupRes})`);
+  await page.goto(`${BASE}/search?q=60614&radius=5`);
+  check(
+    "new member gets one-tap confirm chips",
+    (await page.locator("button", { hasText: "Still this price?" }).count()) > 0
+  );
+
   // 6. Admin login + import + watchlist
   console.log("Admin flows…");
   const login = await page.evaluate(async () => {

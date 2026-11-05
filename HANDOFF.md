@@ -7,7 +7,7 @@ _Date: 2026-11-05 — Session 2 (autonomous UX/product session, branch `claude/b
   **complete, verified MVP on PostgreSQL** with a substantially upgraded
   customer experience from 27 autonomous UX/product cycles (all documented
   with rationale, testing, and keep/discard calls in `UX_EXPERIMENTS_LOG.md`).
-- All gates green at the branch tip: **72 vitest tests, 46-check Playwright
+- All gates green at the branch tip: **72 vitest tests, 48-check Playwright
   e2e, lint, typecheck, prod build.**
 - Session-2 UX additions (all additive; prior features intact): desktop
   list+sticky-map split view with map→list sync; redesigned mobile filter
@@ -51,7 +51,7 @@ npm run db:seed             # demo users + Chicago directory + demo prices/histo
 npm run dev                 # http://localhost:3000
 
 npm test                    # 72 tests (needs nicfinder_test DB)
-npm run build && npm run e2e  # 46-check browser smoke on port 3100
+npm run build && npm run e2e  # 48-check browser smoke on port 3100
 ```
 Demo logins: docs/DEMO_GUIDE.md (admin@example.com / admin-demo-password).
 
