@@ -4,15 +4,16 @@
 _Date: 2026-11-05 — Session 2 (autonomous overnight marathon)_
 
 - NicFinder remains a **complete, verified Postgres MVP, ready to deploy on
-  Replit** — now substantially deeper after ~43 verified improvement cycles
+  Replit** — now substantially deeper after 71 verified improvement cycles
   on branch `claude/keen-planck-rmqrm9` (pushed; contains the full history
   from `claude/hopeful-feynman-mchyuv`, which is now stale).
 - **Review the session via `AUTONOMOUS_WORKLOG.md`** (one row per cycle:
   what/why/files/evidence/limitations/Keep-Consider recommendation) and
   `AUTONOMOUS_BACKLOG.md` (remaining ranked ideas). Every cycle is its own
   commit with a descriptive message.
-- Quality gates, all green at HEAD: **128 vitest tests** (Postgres test
-  schema), **~48-check Playwright e2e** (including a two-user trust-loop),
+- Quality gates, all green at HEAD: **132 vitest tests** (Postgres test
+  schema), **51-check Playwright e2e** (including a two-user trust-loop and
+  a dark-mode regression guard),
   lint, typecheck, prod build. The whole migration chain was verified to
   `migrate deploy` + seed cleanly onto a virgin database.
 - Headline additions since Session 1:
@@ -26,14 +27,18 @@ _Date: 2026-11-05 — Session 2 (autonomous overnight marathon)_
     profiles, comment editing, account self-management (password change,
     sign-out-everywhere).
   - **Product depth**: value-of-trip math, two-store compare (+watchlist
-    quick-compare), nearby alternatives, priced-only filter, data-driven
-    product toggle (multi-brand ready), per-store SEO + JSON-LD + share.
+    quick-compare), nearby alternatives, priced-only + name filters,
+    save-from-search, data-driven product toggle (multi-brand verified by a
+    dry run), per-store SEO + JSON-LD + share, **dark mode** (system
+    preference, incl. the map), store hours end to end.
   - **Ops/hardening**: security pass (OAuth linking, report dedupe, error
     hygiene), corroboration network-independence (salted ipHash), pluggable
     rate-limit storage (`RATE_LIMIT_BACKEND=db` for Autoscale), import fuzz
     hardening, nearest-500 search fix (found by the new 10k benchmark),
     duplicate-store scan, CSV price export, pilot-economics dashboard,
-    audit-log viewer, security headers, PWA manifest.
+    audit-log viewer, security headers + nonce CSP, PWA manifest,
+    **automated import API + signed webhooks** (disabled by default),
+    coverage-arrived notifications, the /admin/collect G1 worksheet.
 
 ## Open items
 - [ ] Deploy to Replit per docs/REPLIT.md (unchanged plan; set
@@ -92,6 +97,6 @@ Demo logins & new-feature demo flows: docs/DEMO_GUIDE.md (updated).
 ```
 Project: /home/user/NicFinder (github.com/Zahalol/NicFinder, branch claude/keen-planck-rmqrm9)
 Read first: HANDOFF.md, AUTONOMOUS_WORKLOG.md, README.md, docs/REPLIT.md
-State: verified Postgres MVP + 43 autonomous improvement cycles, all gates green, not yet deployed.
+State: verified Postgres MVP + 71 autonomous improvement cycles, all gates green, not yet deployed.
 Next: owner reviews AUTONOMOUS_WORKLOG.md, then Replit deployment per docs/REPLIT.md.
 ```

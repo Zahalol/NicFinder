@@ -5,12 +5,13 @@ cycle. Recommendation is mine, not a decision on the owner's behalf.
 
 ## Owner summary (read this first)
 
-- **What happened**: ~47 verified improvement cycles on branch
+- **What happened**: 71 verified improvement cycles on branch
   `claude/keen-planck-rmqrm9`, each its own commit, each gated on lint +
   typecheck + vitest + prod build + Playwright e2e before pushing.
-- **Totals at the end**: 128 vitest tests (was 53), ~48 e2e browser checks
-  (was ~33), 7 new DB migrations (verified to deploy cleanly onto a virgin
-  database), 0 known red gates.
+- **Totals at the end**: 132 vitest tests (was 53), 51 e2e browser checks
+  (was ~33), 9 new DB migrations (verified twice to deploy cleanly onto a
+  virgin database), 0 known red gates. Three adversarial self-review passes
+  fixed 15 of their own findings.
 - **Biggest wins to look at first**:
   1. *Data honesty*: "not carried / out of stock" now representable with no
      invented price, end to end (row 2); search no longer silently drops the
@@ -23,8 +24,13 @@ cycle. Recommendation is mine, not a decision on the owner's behalf.
      closed, CSP + security headers, account self-management
      (rows 3, 22, 25, 41, 45).
   4. *Admin*: coverage demand (a page that was literally lost to a gitignore
-     bug), economics what-if, duplicate scan, CSV export, audit log,
-     retire/restore (rows 1, 14, 16, 19, 29, 43).
+     bug), the price-collection worksheet for gate G1, economics what-if,
+     duplicate scan, CSV export, audit log, retire/restore, staff hours
+     (rows 1, 14, 16, 19, 29, 43, 49, 51).
+  5. *Growth/infra*: coverage-arrived notifications closing the demand loop,
+     the automated import API + signed webhooks (roadmap #11, disabled by
+     default), dark mode incl. the map, save-from-search
+     (rows 54, 63-64, 68-70, 56).
 - **Experimental / review-worthy** (marked Consider or with real tradeoffs):
   the economics dashboard's assumptions (row 16), the reliability-tier
   weights (row 10), the accuracy metric on public profiles (row 20), and

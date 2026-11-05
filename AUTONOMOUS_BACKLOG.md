@@ -41,3 +41,18 @@ Status: `todo` | `in-progress` | `done` | `blocked` | `rejected`.
 | 29 | Maintenance job: hook duplicate scan + notification pruning | Low-Med | S | Med | tsx dependency in cron | done (notification pruning; dup scan stays admin-button) |
 | 30 | DEVLOG/HANDOFF refresh + owner summary (end-of-session) | High (handoff) | S | High | — | todo |
 | 31 | OSM Overpass hours/brand auto-enrichment (admin-confirmed suggestions) — blocked here: Overpass unreachable through the container proxy; manual hours field shipped instead | Med | M | Med | wrong-match risk needs admin confirm step | blocked |
+
+## Remaining ideas for future sessions (groomed 2026-11-05 ~01:20 UTC)
+
+| Idea | Why not done this session |
+|------|---------------------------|
+| Email verification + password reset + email price alerts | Needs a transactional email provider (external service, owner setup) |
+| Receipt photo evidence tier | Needs object storage (Replit FS is ephemeral) + EXIF/moderation design |
+| OSM Overpass hours/brand enrichment (admin-confirmed) | Overpass unreachable through this container's proxy; manual hours shipped |
+| Real dark tile provider (e.g. Carto dark) instead of CSS-filtered OSM | Third-party tile policy/attribution decision for the owner |
+| Geo-plausibility on confirmations ("confirmed near the store") | Needs a location-permission UX decision |
+| Gmail-style email alias normalization at signup (anti-sockpuppet) | Rejects legitimate aliases — owner judgment call |
+| npm audit majors: Next 16, Prisma 7, exceljs | Breaking upgrades; not appropriate unattended |
+| Multi-brand seed (On!/VELO/Rogue) | One seed edit away (verified with a dry run); product decision |
+| Store-page layout rework at 4+ product lines | Only matters after multi-brand |
+| Import rowHash excludes `hours` — identical rows with only new hours dedupe | Edge case; hours changes usually ride along with new observations |

@@ -7,7 +7,7 @@ finished work, decisions, and lessons. Current state and open items live in HAND
 
 ## 2026-11-04/05 — Session 2 (autonomous overnight marathon)
 
-**Done** (43 improvement cycles, each its own commit; full evidence table in
+**Done** (71 improvement cycles, each its own commit; full evidence table in
 AUTONOMOUS_WORKLOG.md)
 - **Found & fixed a lost page**: /admin/coverage existed in nav+e2e but the
   unanchored `coverage/` gitignore had silently kept it out of every commit.
@@ -39,8 +39,14 @@ AUTONOMOUS_WORKLOG.md)
   guarded); pilot-economics dashboard; audit-log viewer; security headers;
   unused zod dependency removed; PWA manifest; demo seed exercises the new
   features; docs refreshed (roadmap/progress/reputation/architecture/demo).
-- Two adversarial self-review passes over the session diff fixed 9 of their
-  own findings (worklog rows 22 and 38).
+- Three adversarial self-review passes over the session diff fixed 15 of
+  their own findings (worklog rows 22, 38 and 67).
+- Second half (rows 43-71): store retire/restore, the /admin/collect G1
+  price-collection worksheet, staff/import-carried store hours, coverage-
+  arrived notifications, the automated import API + HMAC-signed webhooks
+  (roadmap #11, disabled by default), variant detail on community reports,
+  save-from-search, searchStores test suite, and media-based dark mode
+  (all routes verified, CSS-filtered dark map tiles).
 
 **Decisions**
 - Flags/deal reports never auto-publish — moderator-only (deal math and
