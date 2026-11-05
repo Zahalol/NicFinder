@@ -256,6 +256,18 @@ try {
   const seoBody = await page.textContent("body");
   check("ZIP landing page renders with heading", /ZYN prices in Chicago, IL 60614/.test(seoBody));
   check("ZIP landing page lists stores", (await page.locator("table tr").count()) > 1);
+  check(
+    "ZIP page shows price summary tiles",
+    (await page.locator("text=Median").count()) > 0
+  );
+  check(
+    "ZIP page shows an Ultra column (never inherited from regular)",
+    (await page.locator("th", { hasText: "Ultra" }).count()) > 0
+  );
+  check(
+    "ZIP page links to the covered-areas index",
+    (await page.locator('nav a[href="/zyn-prices"]').count()) > 0
+  );
   const sitemap = await page.evaluate(async () => (await fetch("/sitemap.xml")).text());
   check("sitemap includes ZIP landing pages", sitemap.includes("/zyn-prices/60614"));
   const robots = await page.evaluate(async () => (await fetch("/robots.txt")).text());

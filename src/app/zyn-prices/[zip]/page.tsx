@@ -9,6 +9,7 @@ import { geocodeZip, zipInfo } from "@/lib/geocode";
 import { searchStores } from "@/lib/search";
 import { formatCents } from "@/lib/money";
 import { CoverageRequestButton } from "@/components/CoverageRequestButton";
+import { jsonLdString } from "@/lib/json-ld";
 
 // Server-rendered per request (the root layout reads the age cookie, which
 // opts the tree into dynamic rendering). Crawlers receive the full HTML —
@@ -28,6 +29,7 @@ export async function generateMetadata({
     (await prisma.store.count({ where: { status: "ACTIVE", zip } })) > 0;
   return {
     title: `ZYN prices in ${info.city}, ${info.state} ${zip} — NicFinder`,
+    alternates: { canonical: `/zyn-prices/${zip}` },
     description: `Compare reported ZYN nicotine pouch prices at gas stations and convenience stores near ${info.city}, ${info.state} ${zip}. Community-verified, updated continuously. Adults 21+.`,
     robots: hasStores ? undefined : { index: false, follow: true },
   };
@@ -44,15 +46,56 @@ export default async function ZipLandingPage({
   const info = zipInfo(zip);
   if (!centroid || !info) notFound();
 
-  const { results } = await searchStores({
-    lat: centroid.latitude,
-    lng: centroid.longitude,
-    radiusMiles: 5,
-    productSlug: "zyn",
-    qty: 1,
-    sort: "price",
-  });
+  const search = (productSlug: string) =>
+    searchStores({
+      lat: centroid.latitude,
+      lng: centroid.longitude,
+      radiusMiles: 5,
+      productSlug,
+      qty: 1,
+      sort: "price",
+    });
+  const [{ results }, ultraSearch] = await Promise.all([search("zyn"), search("zyn-ultra")]);
   const priced = results.filter((r) => r.latest);
+  // Ultra prices by store id (never inherited from regular ZYN).
+  const ultraByStore = new Map(
+    ultraSearch.results.filter((r) => r.latest).map((r) => [r.id, r.latest!])
+  );
+  const anyUltra = ultraByStore.size > 0;
+
+  // Summary stats over reported prices.
+  const prices = priced.map((r) => r.latest!.priceCents).sort((a, b) => a - b);
+  const stats =
+    prices.length > 0
+      ? {
+          low: prices[0],
+          high: prices[prices.length - 1],
+          median: prices[Math.floor((prices.length - 1) / 2)],
+          freshestDays: Math.min(...priced.map((r) => r.latest!.ageDays)),
+        }
+      : null;
+  const bestDeal = priced
+    .filter((r) => r.deal)
+    .sort((a, b) => a.latest!.priceCents - b.latest!.priceCents)[0];
+
+  // Structured data: honest, computed from the same numbers the page shows.
+  const jsonLd =
+    stats !== null
+      ? {
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          mainEntity: [
+            {
+              "@type": "Question",
+              name: `How much does a can of ZYN cost in ${info.city}, ${info.state} ${zip}?`,
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: `Reported prices at ${priced.length} store${priced.length === 1 ? "" : "s"} near ${zip} currently range from ${formatCents(stats.low)} to ${formatCents(stats.high)} per can (median ${formatCents(stats.median)}). Prices are community- and staff-reported, usually exclude tax, and change often — check the live listing for freshness.`,
+              },
+            },
+          ],
+        }
+      : null;
   const requestCount = await prisma.coverageRequest.count({ where: { zip } });
 
   // Other covered ZIPs for internal linking.
@@ -65,12 +108,14 @@ export default async function ZipLandingPage({
     })
   )
     .map((s) => s.zip!)
-    .sort();
+    .sort()
+    .map((z) => ({ zip: z, city: zipInfo(z)?.city ?? null }));
 
   return (
     <div className="py-8 max-w-3xl mx-auto">
       <nav className="text-xs text-stone-400">
-        <Link href="/" className="hover:text-stone-700">NicFinder</Link> / ZYN prices / {zip}
+        <Link href="/" className="hover:text-stone-700 dark:hover:text-stone-300">NicFinder</Link> /{" "}
+        <Link href="/zyn-prices" className="hover:text-stone-700 dark:hover:text-stone-300">ZYN prices</Link> / {zip}
       </nav>
       <h1 className="mt-2 text-2xl sm:text-3xl font-semibold text-stone-900 dark:text-stone-100">
         ZYN prices in {info.city}, {info.state} {zip}
@@ -84,10 +129,47 @@ export default async function ZipLandingPage({
         Prices are community- and import-verified and may exclude tax.
       </p>
 
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: jsonLdString(jsonLd) }}
+        />
+      )}
+
+      {stats && (
+        <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {[
+            ["Cheapest", formatCents(stats.low)],
+            ["Median", formatCents(stats.median)],
+            ["Highest", formatCents(stats.high)],
+            ["Last update", stats.freshestDays === 0 ? "today" : `${stats.freshestDays}d ago`],
+          ].map(([label, value]) => (
+            <div key={label} className="rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 px-3 py-2.5">
+              <div className="text-[10px] font-medium uppercase tracking-wider text-stone-400 dark:text-stone-500">
+                {label}
+              </div>
+              <div className="text-lg font-semibold text-stone-900 dark:text-stone-100">{value}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {priced.length > 0 && (
         <p className="mt-3 inline-block rounded-lg bg-teal-50 dark:bg-teal-950 border border-teal-200 dark:border-teal-800 px-3 py-2 text-sm text-teal-900 dark:text-teal-200">
           Cheapest reported: <strong>{formatCents(priced[0].latest!.priceCents)}</strong> at{" "}
           <Link href={`/stores/${priced[0].id}`} className="underline">{priced[0].name}</Link>
+          {bestDeal?.deal && (
+            <>
+              {" · "}best multi-can deal:{" "}
+              <Link href={`/stores/${bestDeal.id}`} className="underline">
+                {bestDeal.deal.minQty}+ cans{" "}
+                {bestDeal.deal.pricePerCanCents !== null
+                  ? `at ${formatCents(bestDeal.deal.pricePerCanCents)} each`
+                  : `save ${formatCents(bestDeal.deal.discountPerCanCents)} per can`}{" "}
+                at {bestDeal.name}
+              </Link>
+            </>
+          )}
         </p>
       )}
 
@@ -108,6 +190,7 @@ export default async function ZipLandingPage({
               <th className="py-2 pr-2">Store</th>
               <th className="py-2 pr-2">Address</th>
               <th className="py-2 pr-2">ZYN price</th>
+              {anyUltra && <th className="py-2 pr-2">Ultra</th>}
               <th className="py-2">Reported</th>
             </tr>
           </thead>
@@ -134,6 +217,15 @@ export default async function ZipLandingPage({
                     <span className="font-normal text-stone-400">not reported</span>
                   )}
                 </td>
+                {anyUltra && (
+                  <td className="py-2 pr-2 text-stone-700 dark:text-stone-300">
+                    {ultraByStore.has(r.id) ? (
+                      formatCents(ultraByStore.get(r.id)!.priceCents)
+                    ) : (
+                      <span className="text-stone-400">—</span>
+                    )}
+                  </td>
+                )}
                 <td className="py-2 text-stone-500 dark:text-stone-400">
                   {r.latest
                     ? `${r.latest.ageDays}d ago`
@@ -168,11 +260,11 @@ export default async function ZipLandingPage({
           <p className="mt-2 flex flex-wrap gap-2">
             {otherZips.map((z) => (
               <Link
-                key={z}
-                href={`/zyn-prices/${z}`}
+                key={z.zip}
+                href={`/zyn-prices/${z.zip}`}
                 className="rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 px-2.5 py-1 text-sm text-stone-600 dark:text-stone-400 hover:border-teal-300"
               >
-                {z}
+                {z.city ? `${z.city} ${z.zip}` : z.zip}
               </Link>
             ))}
           </p>
