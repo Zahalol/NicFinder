@@ -24,10 +24,41 @@ export function ReliabilityBadge({ reliability }: { reliability: Reliability }) 
     </span>
   );
 }
+import { computeConfidence, type ConfidenceInput } from "@/lib/confidence";
+
+const TIER_STYLES = {
+  high: { dot: "bg-emerald-500", text: "text-emerald-800 dark:text-emerald-300", bg: "bg-emerald-50 dark:bg-emerald-950", label: "High confidence" },
+  medium: { dot: "bg-stone-400", text: "text-stone-600 dark:text-stone-400", bg: "bg-stone-100 dark:bg-stone-800", label: "Medium confidence" },
+  low: { dot: "bg-amber-500", text: "text-amber-800 dark:text-amber-300", bg: "bg-amber-50 dark:bg-amber-950/50", label: "Low confidence" },
+} as const;
+
+/** Glanceable price-confidence pill; the reasons are in the tooltip. */
+export function ConfidenceBadge({
+  input,
+  showAge = false,
+}: {
+  input: ConfidenceInput;
+  showAge?: boolean;
+}) {
+  const c = computeConfidence(input);
+  const s = TIER_STYLES[c.tier];
+  const age =
+    input.ageDays === 0 ? "today" : `${input.ageDays}d ago`;
+  return (
+    <span
+      title={`Why: ${c.reasons.join(" · ")}`}
+      className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 whitespace-nowrap ${s.bg} ${s.text}`}
+    >
+      <span className={`h-1.5 w-1.5 rounded-full ${s.dot}`} aria-hidden />
+      {s.label}
+      {showAge && <span className="opacity-70">· {age}</span>}
+    </span>
+  );
+}
 
 export function DemoBadge() {
   return (
-    <span className="rounded bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-300 text-[10px] font-medium px-1.5 py-0.5 uppercase tracking-wide">
+    <span className="rounded bg-amber-100 text-amber-800 text-[10px] font-medium px-1.5 py-0.5 uppercase tracking-wide dark:bg-amber-900 dark:text-amber-300">
       demo data
     </span>
   );
@@ -63,7 +94,7 @@ export function FreshnessBadge({
     );
   }
   return (
-    <span className="rounded bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5">
+    <span className="rounded bg-emerald-50 text-emerald-700 px-1.5 py-0.5 dark:bg-emerald-950 dark:text-emerald-400">
       updated {latest.ageDays === 0 ? "today" : `${latest.ageDays}d ago`}
     </span>
   );

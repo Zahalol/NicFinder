@@ -92,12 +92,30 @@ try {
     (await page.locator("body > div[inert]").count()) === 1
   );
   await page.getByRole("button", { name: /21 or older/i }).click();
-  await page.waitForTimeout(1200);
+  // The overlay hides as soon as the cookie POST succeeds; wait for it
+  // rather than sleeping a fixed interval (cold servers can be slow).
+  await page
+    .waitForFunction(() => document.querySelectorAll('[role="dialog"]').length === 0, {
+      timeout: 10_000,
+    })
+    .catch(() => {});
   check("overlay dismissed after confirming", (await page.getByRole("dialog").count()) === 0);
+  // The overlay hides immediately; `inert` is removed when router.refresh()
+  // re-renders the server tree, which can take a moment on a cold server.
+  await page
+    .waitForFunction(() => document.querySelectorAll("body > div[inert]").length === 0, {
+      timeout: 15_000,
+    })
+    .catch(() => {});
   check(
     "page interactive after confirming (inert removed)",
     (await page.locator("body > div[inert]").count()) === 0
   );
+  // The refresh can briefly swap in the route's loading skeleton — wait
+  // for content to settle before counting.
+  await page
+    .waitForSelector('a[href^="/stores/"]', { timeout: 15_000 })
+    .catch(() => {});
 
   // 2. Search results
   console.log("Search 60614…");
@@ -123,6 +141,28 @@ try {
     "Ultra view loads with its own (sparser) prices",
     bodyText.includes("No price yet") && bodyText.includes("$7.49")
   );
+
+  // Pages added by the beautiful-keller session.
+  await page.goto(`${BASE}/price-drops`);
+  const dropsBody = await page.textContent("body");
+  check(
+    "price-drops page lists a seeded drop",
+    /Recent price drops/.test(dropsBody) && /cheaper/.test(dropsBody)
+  );
+
+  // /about permanently redirects to the canonical /how-it-works explainer.
+  await page.goto(`${BASE}/about`);
+  check(
+    "about redirects to the explainer (honesty system)",
+    (await page.locator("text=How NicFinder works").count()) > 0
+  );
+
+  const manifest = await page.evaluate(async () =>
+    (await fetch("/manifest.webmanifest")).json()
+  );
+  check("web manifest served", manifest?.short_name === "NicFinder");
+  const offlineStatus = await page.evaluate(async () => (await fetch("/offline")).status);
+  check("offline fallback page served", offlineStatus === 200);
 
   // 3. Store detail + watchlist authz
   console.log("Store detail…");
@@ -180,6 +220,22 @@ try {
   const robots = await page.evaluate(async () => (await fetch("/robots.txt")).text());
   check("robots.txt disallows /admin", robots.includes("/admin"));
 
+  // 5b. New-member signup
+  console.log("Signup…");
+  const newSignupStatus = await page.evaluate(async () => {
+    const r = await fetch("/api/auth/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: `e2e-signup-${Date.now()}@example.com`,
+        password: "a-long-demo-password-123",
+        displayName: "SmokeTester",
+      }),
+    });
+    return r.status;
+  });
+  check("signup succeeds", newSignupStatus === 200, `(got ${newSignupStatus})`);
+
   // 6. Admin login + import + watchlist
   console.log("Admin flows…");
   const login = await page.evaluate(async () => {
@@ -191,6 +247,27 @@ try {
     return r.status;
   });
   check("admin login succeeds", login === 200, `(got ${login})`);
+
+
+  // Store notes: signed-in members can post one.
+  const firstStore = await page
+    .locator('a[href^="/stores/"]')
+    .nth(1)
+    .getAttribute("href");
+  await page.goto(`${BASE}${firstStore}`);
+  const noteInput = page.locator('input[placeholder*="note about this store"]');
+  check("store-note input offered when signed in", (await noteInput.count()) > 0);
+  await noteInput.fill("Smoke-test note: register price matched. (automated)");
+  await page.locator("button", { hasText: "Post" }).click();
+  // The list updates via router.refresh(); on a cold server the first RSC
+  // round-trip can be slow, so wait for the note rather than a fixed sleep.
+  await page
+    .waitForSelector("text=Smoke-test note", { timeout: 10_000 })
+    .catch(() => {});
+  check(
+    "posted store note appears",
+    (await page.locator("text=Smoke-test note").count()) > 0
+  );
 
   const saveRes = await page.evaluate(async (sid) => {
     const r = await fetch(`/api/stores/${sid}/save`, { method: "POST" });
@@ -366,15 +443,21 @@ try {
   const storeMeta = await member.evaluate(async () => {
     const r = await fetch("/search?q=60614&radius=5");
     const html = await r.text();
-    const m = html.match(/\/stores\/([a-z0-9]+)/);
+    // href-anchored: bare "/stores/" also matches hashed JS chunk paths
+    // (app/stores/[id]/page-<hash>.js), which made this pick flaky.
+    const m = html.match(/href="\/stores\/([a-z0-9]{20,})/);
     return m ? m[1] : null;
   });
   check("member can resolve a store id", Boolean(storeMeta));
   const watchRes = await member.evaluate(async (sid) => {
     const r = await fetch(`/api/stores/${sid}/save`, { method: "POST" });
-    return r.ok;
+    return { ok: r.ok, status: r.status, body: (await r.text()).slice(0, 120) };
   }, storeMeta);
-  check("member can save a store to the watchlist", watchRes === true);
+  check(
+    "member can save a store to the watchlist",
+    watchRes.ok,
+    `(store ${storeMeta}: ${watchRes.status} ${watchRes.body})`
+  );
 
   // Admin enters a new price at the watched store → member gets an alert.
   // Product line id comes from the ContributePanel's <select> on the store page.

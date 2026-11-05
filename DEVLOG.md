@@ -66,6 +66,57 @@ AUTONOMOUS_WORKLOG.md)
 
 ---
 
+## 2026-11-04/05 — Session 2 (autonomous UX & product)
+
+**Done**
+- 40 evaluate→build→test→critique cycles on the customer experience, each
+  committed separately with before/after Playwright screenshots and logged in
+  `UX_EXPERIMENTS_LOG.md` (what, why, testing, keep/discard). Highlights:
+  mobile filter-bar redesign + priced-first results; desktop list+sticky-map
+  split with map→list sync; transparent price-confidence pills
+  (lib/confidence.ts) with reasons; history sparklines + trend;
+  "worth the trip?" math (lib/trip.ts, IRS 70¢/mi); 3-store compare with
+  persistent selection; one-tap confirm from result cards; deal-aware
+  "what you'd pay" strip; cheaper-nearby + stale-price nudge on store pages;
+  watchlist dashboard on the site-wide price policy; quick-search chips,
+  filter memory, ZIP-typo recovery, nearest-covered-area suggestion;
+  /price-drops, /about; ZIP-page stats + FAQ JSON-LD, store metadata +
+  LocalBusiness/breadcrumb JSON-LD; PWA (icons, manifest, honest
+  network-first SW + /offline); OS dark mode (admin pinned light);
+  accessibility pass (skip link, focus-visible, aria); 20-image screenshot
+  tour regenerated from a production build.
+- Tests grew 53 → 73 (confidence, trip math incl. exact totals, sparkline
+  trend, zip-suggest); e2e suite extended from 35 to 50 checks covering the
+  new features (compare, confirm, signup, notes, PWA, suggestions), all green.
+- Later cycles: covered-areas index, Ultra column on ZIP pages, per-store and
+  per-ZIP dynamic OG images (bundled OFL fonts), store-name search matches,
+  price-drops page, accessibility round 2 (live regions, reduced motion,
+  dialog focus trap), footer nav, and a closing adversarial code review
+  (10 findings fixed — incl. REVERSED-observation baselines in the
+  price-change feeds and an unstyled offline fallback).
+- Fixed inherited bugs: `/admin/coverage` page silently dropped by a bare
+  `coverage/` gitignore (anchored + restored); age-gate dismissal raced a
+  slow server refresh (now hides on cookie POST success); map popups lost
+  product context; ZIP search filter row overflowing small screens.
+
+**Decided**
+- No price data in structured markup (varies/excludes tax; nicotine ads
+  policy caution) — directory facts only.
+- Service worker is navigations-network-first forever: cached prices must
+  never render as live. Offline = explicit /offline page.
+- Confidence scoring is evidence-only (source base, age decay, confirms,
+  disputes) and always shows its reasons; thresholds in lib/confidence.ts.
+- Dark mode follows the OS with no toggle; /admin stays light.
+
+**Learned**
+- A bare directory name in .gitignore matches at any depth — it ate a page.
+- SSR renders the mobile layout; hydration swaps in the desktop split, so
+  tests must wait before clicking layout-dependent controls.
+- Postgres + Prisma agent guard: reset dev DB via psql DROP/CREATE, then
+  migrate+seed.
+
+---
+
 ## 2026-11-04 — Session 1
 
 **Done**

@@ -6,6 +6,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { unreadCount } from "@/lib/notifications";
 import { LogoutButton } from "@/components/LogoutButton";
 import { AgeGateOverlay } from "@/components/AgeGateOverlay";
+import { ServiceWorkerRegistrar } from "@/components/ServiceWorkerRegistrar";
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.APP_URL ?? "http://localhost:3000"),
@@ -18,8 +19,21 @@ export const metadata: Metadata = {
   openGraph: {
     siteName: "NicFinder",
     type: "website",
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: "NicFinder — nicotine pouch price comparison" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/og.png"],
   },
   robots: { index: true, follow: true },
+  appleWebApp: {
+    capable: true,
+    title: "NicFinder",
+    statusBarStyle: "default",
+  },
+  icons: {
+    apple: "/icons/apple-touch-icon.png",
+  },
 };
 
 export const viewport: Viewport = {
@@ -51,6 +65,7 @@ export default async function RootLayout({
         >
           Skip to content
         </a>
+        <ServiceWorkerRegistrar />
         {!ageConfirmed && <AgeGateOverlay />}
         {/* While the age gate shows, the page behind it is `inert`: keyboard
             focus and clicks cannot reach it (previously Tab bypassed the
@@ -59,11 +74,16 @@ export default async function RootLayout({
         <div inert={!ageConfirmed || undefined}>
         {demoMode && (
           <div className="bg-amber-100 dark:bg-amber-900 text-amber-900 dark:text-amber-200 text-center text-xs px-3 py-1.5 border-b border-amber-200 dark:border-amber-800">
-            Demonstration data — prices shown on fictional “Demo” stores are
-            synthetic. Real stores listed have no verified current prices yet.
+            <span className="sm:hidden">
+              Demo data — prices on fictional “Demo” stores are synthetic.
+            </span>
+            <span className="hidden sm:inline">
+              Demonstration data — prices shown on fictional “Demo” stores are
+              synthetic. Real stores listed have no verified current prices yet.
+            </span>
           </div>
         )}
-        <header className="border-b border-stone-200 dark:border-stone-700 bg-white/90 dark:bg-stone-900/90 backdrop-blur sticky top-0 z-40">
+        <header className="border-b border-stone-200 bg-white/90 backdrop-blur sticky top-0 z-40 dark:border-stone-700 dark:bg-stone-900/90">
           <div className="mx-auto max-w-5xl px-4 h-14 flex items-center justify-between gap-3">
             <Link href="/" className="font-semibold tracking-tight text-lg text-stone-900 dark:text-stone-100">
               Nic<span className="text-teal-600">Finder</span>
@@ -72,7 +92,7 @@ export default async function RootLayout({
               {user ? (
                 <>
                   {(user.role === "ADMIN" || user.role === "MODERATOR") && (
-                    <Link href="/admin" className="text-stone-500 dark:text-stone-400 hover:text-stone-900">
+                    <Link href="/admin" className="text-stone-500 hover:text-stone-900 dark:text-stone-400">
                       Admin
                     </Link>
                   )}
@@ -96,12 +116,12 @@ export default async function RootLayout({
                 </>
               ) : (
                 <>
-                  <Link href="/login" className="text-stone-600 dark:text-stone-400 hover:text-stone-900">
+                  <Link href="/login" className="text-stone-600 hover:text-stone-900 dark:text-stone-400">
                     Sign in
                   </Link>
                   <Link
                     href="/signup"
-                    className="rounded-lg bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 px-3 py-1.5 hover:bg-stone-700 dark:hover:bg-stone-300"
+                    className="rounded-lg bg-stone-900 text-white px-3 py-1.5 hover:bg-stone-700 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-300"
                   >
                     Sign up
                   </Link>
@@ -120,6 +140,14 @@ export default async function RootLayout({
               — where prices come from, freshness and confidence labels, and
               how community verification keeps listings honest.
             </p>
+            <nav className="flex flex-wrap gap-x-4 gap-y-1" aria-label="Site">
+              <Link href="/zyn-prices" className="underline hover:text-stone-700 dark:hover:text-stone-300">
+                Prices by area
+              </Link>
+              <Link href="/price-drops" className="underline hover:text-stone-700 dark:hover:text-stone-300">
+                Recent price drops
+              </Link>
+            </nav>
             <p>
               NicFinder is an informational price-comparison service for adults
               21+. We do not sell, deliver, or promote nicotine products.

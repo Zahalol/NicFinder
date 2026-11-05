@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { formatCents } from "@/lib/money";
+import { selectLatestPrice } from "@/lib/prices";
 import { getSettings } from "@/lib/settings";
 import { NotificationsPanel } from "./NotificationsPanel";
 import { SettingsPanel } from "./SettingsPanel";
@@ -39,8 +40,8 @@ export default async function AccountPage() {
               // priced only — a 'not carried' row must not stand in for a price
               where: { status: "ACTIVE", priceCents: { not: null } },
               orderBy: { observedAt: "desc" },
-              take: 1,
-              include: { productLine: true },
+              take: 10,
+              include: { productLine: true, verifications: true },
             },
           },
         },
@@ -58,6 +59,14 @@ export default async function AccountPage() {
     where: { userId: user.id, expiresAt: { gte: new Date() } },
   });
 
+  // Watchlist prices follow the same display policy as the rest of the site
+  // (selectLatestPrice), computed on the ZYN-regular line for comparability.
+  const watchRows = savedStores.map((s) => {
+    const zynObs = s.store.observations.filter((o) => o.productLine.slug === "zyn");
+    const latest = selectLatestPrice(zynObs, settings);
+    return { store: s.store, latest };
+  });
+
   const trusted = user.reputation >= settings.trustedReputation;
 
   return (
@@ -66,11 +75,11 @@ export default async function AccountPage() {
       <p className="text-sm text-stone-500 dark:text-stone-400">{user.email} · member since {user.createdAt.toLocaleDateString()}</p>
 
       <div className="mt-5 grid grid-cols-2 sm:grid-cols-3 gap-3">
-        <div className="rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-4">
+        <div className="rounded-xl border border-stone-200 bg-white p-4 dark:border-stone-700 dark:bg-stone-900">
           <div className="text-2xl font-semibold text-stone-900 dark:text-stone-100">{user.reputation}</div>
           <div className="text-xs text-stone-500 dark:text-stone-400">reputation</div>
         </div>
-        <div className="rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-4">
+        <div className="rounded-xl border border-stone-200 bg-white p-4 dark:border-stone-700 dark:bg-stone-900">
           <div className="text-2xl font-semibold text-stone-900 dark:text-stone-100">{contributions.length}</div>
           <div className="text-xs text-stone-500 dark:text-stone-400">recent contributions</div>
         </div>
@@ -113,18 +122,17 @@ export default async function AccountPage() {
         </p>
       ) : (
         <WatchlistCompare
-          items={savedStores.map((s) => {
-            const latest = s.store.observations[0];
-            return {
-              storeId: s.store.id,
-              name: s.store.name,
-              address: s.store.address,
-              priceLabel: latest ? formatCents(latest.priceCents) : null,
-              priceMeta: latest
-                ? `${latest.productLine.name} · ${latest.observedAt.toLocaleDateString()}`
-                : null,
-            };
-          })}
+          items={watchRows.map(({ store, latest }) => ({
+            storeId: store.id,
+            name: store.name,
+            address: store.address,
+            priceLabel: latest ? formatCents(latest.observation.priceCents) : null,
+            priceMeta: latest
+              ? `ZYN · ${latest.ageDays === 0 ? "updated today" : `${latest.ageDays}d ago`}${
+                  latest.freshness === "stale" ? " · may be outdated" : ""
+                }`
+              : null,
+          }))}
         />
       )}
 
@@ -134,7 +142,7 @@ export default async function AccountPage() {
           None yet — find a <Link href="/search?q=60614" className="underline text-teal-700 dark:text-teal-400">store near you</Link> and confirm a price.
         </p>
       ) : (
-        <ul className="mt-2 divide-y divide-stone-100 dark:divide-stone-800 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900">
+        <ul className="mt-2 divide-y divide-stone-100 rounded-xl border border-stone-200 bg-white dark:divide-stone-800 dark:border-stone-700 dark:bg-stone-900">
           {contributions.map((c) => (
             <li key={c.id} className="p-3 text-sm flex items-center justify-between gap-2">
               <span>

@@ -23,7 +23,8 @@ prisma/*.db-journal
 # geocode cache
 .cache/
 
-# testing
+# testing (anchored to root — `coverage/` bare would also ignore
+# src/app/admin/coverage/, which silently dropped that page once)
 /coverage/
 test-results/
 

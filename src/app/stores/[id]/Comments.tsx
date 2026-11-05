@@ -99,14 +99,14 @@ export function Comments({
           />
           <button
             disabled={busy || !body.trim()}
-            className="rounded-lg bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 px-4 py-2 text-sm disabled:opacity-40"
+            className="rounded-lg bg-stone-900 text-white px-4 py-2 text-sm disabled:opacity-40 dark:bg-stone-100 dark:text-stone-900"
           >
             Post
           </button>
         </form>
       ) : (
         <p className="mt-3 text-sm text-stone-500 dark:text-stone-400">
-          <Link href="/login" className="text-teal-700 dark:text-teal-400 underline">Sign in</Link> to add a note.
+          <Link href="/login" className="text-teal-700 underline dark:text-teal-400">Sign in</Link> to add a note.
         </p>
       )}
       {err && <p className="mt-2 text-sm text-red-600 dark:text-red-400">{err}</p>}
@@ -114,7 +114,7 @@ export function Comments({
 
       <ul className="mt-4 space-y-3">
         {comments.map((c) => (
-          <li key={c.id} className="rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-3">
+          <li key={c.id} className="rounded-lg border border-stone-200 bg-white p-3 dark:border-stone-700 dark:bg-stone-900">
             <div className="flex items-center justify-between text-xs text-stone-500 dark:text-stone-400">
               <span>
                 <Link href={`/users/${c.user.id}`} className="font-medium text-stone-700 dark:text-stone-300 hover:underline">

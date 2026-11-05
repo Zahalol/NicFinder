@@ -21,7 +21,11 @@ export function ContributePanel({
   signedIn: boolean;
 }) {
   const router = useRouter();
-  const [mode, setMode] = useState<"idle" | "dispute" | "deal">("idle");
+  // When the store has no reported price at all, open the report form right
+  // away — there is nothing to "confirm" yet.
+  const [mode, setMode] = useState<"idle" | "dispute" | "deal">(() =>
+    Object.values(latest).every((l) => l === null) ? "dispute" : "idle"
+  );
   const [dealQty, setDealQty] = useState("5");
   const [dealPrice, setDealPrice] = useState("");
   const [dealDiscount, setDealDiscount] = useState("");
@@ -38,8 +42,8 @@ export function ContributePanel({
 
   if (!signedIn) {
     return (
-      <div className="mt-6 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-5 text-sm text-stone-600 dark:text-stone-400">
-        <Link href="/login" className="text-teal-700 dark:text-teal-400 underline">Sign in</Link> to
+      <div className="mt-6 rounded-xl border border-stone-200 bg-white p-5 text-sm text-stone-600 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-400">
+        <Link href="/login" className="text-teal-700 underline dark:text-teal-400">Sign in</Link> to
         confirm this price or report a different one. Browsing never requires
         an account.
       </div>
@@ -78,18 +82,27 @@ export function ContributePanel({
   }
 
   const currentLatest = latest[lineId] ?? null;
+  const nothingReported = Object.values(latest).every((l) => l === null);
 
   return (
     <div className="mt-6 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-5">
-      <h2 className="font-medium text-stone-900 dark:text-stone-100 text-sm">Was this price right?</h2>
-      {msg && <p className="mt-2 text-sm text-teal-700 dark:text-teal-400">{msg}</p>}
-      {err && <p className="mt-2 text-sm text-red-600 dark:text-red-400">{err}</p>}
+      <h2 className="font-medium text-stone-900 dark:text-stone-100 text-sm">
+        {nothingReported ? "Know the price here?" : "Was this price right?"}
+      </h2>
+      {nothingReported && (
+        <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
+          No one has reported a price for this store yet — yours would be the
+          first, and it helps everyone nearby.
+        </p>
+      )}
+      {msg && <p role="status" className="mt-2 text-sm text-teal-700 dark:text-teal-400">{msg}</p>}
+      {err && <p role="alert" className="mt-2 text-sm text-red-600 dark:text-red-400">{err}</p>}
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <select
           value={lineId}
           onChange={(e) => setLineId(e.target.value)}
-          className="rounded-lg border border-stone-300 dark:border-stone-600 px-2 py-1.5 text-sm bg-white dark:bg-stone-900"
+          className="rounded-lg border border-stone-300 px-2 py-1.5 text-sm bg-white dark:border-stone-600 dark:bg-stone-900"
           aria-label="Product line"
         >
           {productLines.map((l) => (
@@ -110,9 +123,9 @@ export function ContributePanel({
         <button
           disabled={busy}
           onClick={() => setMode(mode === "dispute" ? "idle" : "dispute")}
-          className="rounded-lg border border-stone-300 dark:border-stone-600 px-3 py-1.5 text-sm text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-800"
+          className="rounded-lg border border-stone-300 px-3 py-1.5 text-sm text-stone-700 hover:bg-stone-50 dark:border-stone-600 dark:text-stone-300 dark:hover:bg-stone-800"
         >
-          Report a different price
+          {currentLatest ? "Report a different price" : "Report a price"}
         </button>
         <button
           disabled={busy}
@@ -224,7 +237,7 @@ export function ContributePanel({
                 onChange={(e) => setPrice(e.target.value)}
                 placeholder="6.49"
                 inputMode="decimal"
-                className="w-24 rounded-lg border border-stone-300 dark:border-stone-600 px-2 py-1.5"
+                className="w-24 rounded-lg border border-stone-300 px-2 py-1.5 dark:border-stone-600"
               />
             </label>
             <label className="text-sm text-stone-600 dark:text-stone-400 flex items-center gap-2">
@@ -234,7 +247,7 @@ export function ContributePanel({
                 onChange={(e) => setQty(e.target.value)}
                 placeholder="1"
                 inputMode="numeric"
-                className="w-16 rounded-lg border border-stone-300 dark:border-stone-600 px-2 py-1.5"
+                className="w-16 rounded-lg border border-stone-300 px-2 py-1.5 dark:border-stone-600"
               />
             </label>
           </div>
@@ -258,13 +271,13 @@ export function ContributePanel({
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             placeholder="Optional note (deal details, receipt info…)"
-            className="w-full rounded-lg border border-stone-300 dark:border-stone-600 px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm dark:border-stone-600"
             rows={2}
             maxLength={500}
           />
           <button
             disabled={busy}
-            className="rounded-lg bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 px-4 py-2 text-sm font-medium hover:bg-stone-700 dark:hover:bg-stone-300 disabled:opacity-50"
+            className="rounded-lg bg-stone-900 text-white px-4 py-2 text-sm font-medium hover:bg-stone-700 disabled:opacity-50 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-300"
           >
             Submit price report
           </button>

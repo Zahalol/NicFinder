@@ -37,7 +37,10 @@ export default async function AdminLayout({
   ];
 
   return (
-    <div className="py-6">
+    <div
+      className="my-6 rounded-2xl bg-stone-50 text-stone-900 p-4 sm:p-6 ring-1 ring-stone-200"
+      style={{ colorScheme: "light" }}
+    >
       <div className="flex items-center gap-1 border-b border-stone-200 dark:border-stone-700 pb-2 overflow-x-auto">
         <span className="text-xs uppercase tracking-wide text-stone-400 mr-2">Admin</span>
         {tabs.map((t) => (

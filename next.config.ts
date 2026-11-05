@@ -13,6 +13,11 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   // Keep server-only packages out of the client bundle.
   serverExternalPackages: ["exceljs", "@prisma/client"],
+  // /about was a second "How NicFinder works" page built in parallel with
+  // /how-it-works; keep one canonical explainer and redirect the other.
+  async redirects() {
+    return [{ source: "/about", destination: "/how-it-works", permanent: true }];
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

@@ -8,7 +8,7 @@ export function LogoutButton() {
   const [busy, setBusy] = useState(false);
   return (
     <button
-      className="text-stone-500 dark:text-stone-400 hover:text-stone-900 disabled:opacity-50"
+      className="text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 disabled:opacity-50"
       disabled={busy}
       onClick={async () => {
         setBusy(true);

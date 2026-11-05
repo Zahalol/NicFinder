@@ -16,6 +16,7 @@
 //                                   inline style attributes; no <style>
 //                                   injection of user content exists.
 //      img-src tile.openstreetmap.org — the map tiles. data:/blob: for Leaflet.
+//      worker-src 'self'          — the network-first offline service worker.
 //      everything else locked to 'self' / 'none'.
 import { NextResponse, type NextRequest } from "next/server";
 
@@ -44,6 +45,9 @@ function pageCsp(request: NextRequest): NextResponse {
     `img-src 'self' data: blob: https://tile.openstreetmap.org`,
     `font-src 'self'`,
     `connect-src 'self'`,
+    // The offline-fallback service worker (/sw.js). strict-dynamic makes
+    // script-src ignore 'self', so workers need their own allowance.
+    `worker-src 'self'`,
     `object-src 'none'`,
     `base-uri 'self'`,
     `form-action 'self'`,
@@ -72,7 +76,7 @@ export const config = {
     // All pages; skip static assets and metadata files (no scripts there).
     {
       source:
-        "/((?!api/|_next/static|_next/image|favicon.ico|icon.png|icon-192.png|icon-512.png|manifest.webmanifest|robots.txt|sitemap.xml).*)",
+        "/((?!api/|_next/static|_next/image|favicon.ico|sw.js|icons/|og.png|icon.png|icon-192.png|icon-512.png|manifest.webmanifest|robots.txt|sitemap.xml).*)",
       missing: [
         { type: "header", key: "next-router-prefetch" },
         { type: "header", key: "purpose", value: "prefetch" },

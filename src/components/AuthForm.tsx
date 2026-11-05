@@ -70,7 +70,7 @@ export function AuthForm({
             required
             minLength={2}
             maxLength={40}
-            className="w-full rounded-lg border border-stone-300 dark:border-stone-600 px-3 py-2.5"
+            className="w-full rounded-lg border border-stone-300 px-3 py-2.5 dark:border-stone-600"
           />
         )}
         <input
@@ -81,7 +81,7 @@ export function AuthForm({
           aria-label="Email"
           autoComplete="email"
           required
-          className="w-full rounded-lg border border-stone-300 dark:border-stone-600 px-3 py-2.5"
+          className="w-full rounded-lg border border-stone-300 px-3 py-2.5 dark:border-stone-600"
         />
         <input
           type="password"
@@ -92,12 +92,12 @@ export function AuthForm({
           autoComplete={mode === "signup" ? "new-password" : "current-password"}
           required
           minLength={mode === "signup" ? 10 : 1}
-          className="w-full rounded-lg border border-stone-300 dark:border-stone-600 px-3 py-2.5"
+          className="w-full rounded-lg border border-stone-300 px-3 py-2.5 dark:border-stone-600"
         />
         {err && <p className="text-sm text-red-600 dark:text-red-400">{err}</p>}
         <button
           disabled={busy}
-          className="w-full rounded-lg bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 py-2.5 font-medium hover:bg-stone-700 dark:hover:bg-stone-300 disabled:opacity-50"
+          className="w-full rounded-lg bg-stone-900 text-white py-2.5 font-medium hover:bg-stone-700 disabled:opacity-50 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-300"
         >
           {mode === "login" ? "Sign in" : "Sign up"}
         </button>
@@ -106,7 +106,7 @@ export function AuthForm({
       {googleEnabled ? (
         <a
           href="/api/auth/google"
-          className="mt-3 block w-full rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 py-2.5 text-center font-medium text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-800"
+          className="mt-3 block w-full rounded-lg border border-stone-300 bg-white py-2.5 text-center font-medium text-stone-700 hover:bg-stone-50 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-300 dark:hover:bg-stone-800"
         >
           Continue with Google
         </a>
@@ -118,7 +118,7 @@ export function AuthForm({
       {replitEnabled && (
         <a
           href="/api/auth/replit"
-          className="mt-3 block w-full rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 py-2.5 text-center font-medium text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-800"
+          className="mt-3 block w-full rounded-lg border border-stone-300 bg-white py-2.5 text-center font-medium text-stone-700 hover:bg-stone-50 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-300 dark:hover:bg-stone-800"
         >
           Continue with Replit (Google / GitHub / Apple / email)
         </a>

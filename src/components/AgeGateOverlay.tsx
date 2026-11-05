@@ -14,6 +14,12 @@ export function AgeGateOverlay() {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [hidden, setHidden] = useState(false);
+
+  // Once the cookie is set, hide immediately — router.refresh() then updates
+  // the server-rendered tree in the background (it can take a second on a
+  // cold server, and the visitor has already confirmed).
+  if (hidden) return null;
 
   return (
     <div
@@ -50,6 +56,10 @@ export function AgeGateOverlay() {
             try {
               const res = await fetch("/api/age", { method: "POST" });
               if (!res.ok) throw new Error(String(res.status));
+              // Hide immediately — router.refresh() then updates the
+              // server-rendered tree in the background (it can take a
+              // second on a cold server, and the visitor has confirmed).
+              setHidden(true);
               router.refresh();
             } catch {
               setFailed(true);
@@ -57,7 +67,7 @@ export function AgeGateOverlay() {
               setBusy(false);
             }
           }}
-          className="mt-6 w-full rounded-xl bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 py-3 font-medium hover:bg-stone-700 dark:hover:bg-stone-300 disabled:opacity-50"
+          className="mt-6 w-full rounded-xl bg-stone-900 text-white py-3 font-medium hover:bg-stone-700 disabled:opacity-50 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-300"
         >
           I am 21 or older — enter
         </button>
