@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import Link from "next/link";
 import { DuplicateList } from "./DuplicateList";
 import { DuplicateScanButton } from "./DuplicateScanButton";
+import { StoreStatusButton } from "./StoreStatusButton";
 import { ManualEntry } from "./ManualEntry";
 
 export const dynamic = "force-dynamic";
@@ -13,7 +14,7 @@ export default async function AdminStores({
   searchParams: Promise<{ q?: string }>;
 }) {
   const { q } = await searchParams;
-  const [stores, duplicates, productLines] = await Promise.all([
+  const [stores, duplicates, productLines, retired] = await Promise.all([
     prisma.store.findMany({
       where: {
         status: "ACTIVE",
@@ -39,6 +40,12 @@ export default async function AdminStores({
       take: 20,
     }),
     prisma.productLine.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } }),
+    prisma.store.findMany({
+      where: { status: "RETIRED" },
+      select: { id: true, name: true, address: true },
+      orderBy: { updatedAt: "desc" },
+      take: 50,
+    }),
   ]);
 
   return (
@@ -90,6 +97,7 @@ export default async function AdminStores({
             <th className="py-2 pr-2">Phone</th>
             <th className="py-2 pr-2">Latest price</th>
             <th className="py-2">Obs / comments</th>
+            <th className="py-2"></th>
           </tr>
         </thead>
         <tbody>
@@ -119,10 +127,34 @@ export default async function AdminStores({
               <td className="py-2 text-stone-500">
                 {s._count.observations} / {s._count.comments}
               </td>
+              <td className="py-2 pl-2 text-right">
+                <StoreStatusButton storeId={s.id} mode="retire" />
+              </td>
             </tr>
           ))}
         </tbody>
       </table>
+
+      {retired.length > 0 && (
+        <details className="mt-8">
+          <summary className="cursor-pointer text-sm font-medium text-stone-700">
+            Retired stores ({retired.length})
+          </summary>
+          <ul className="mt-2 space-y-1.5">
+            {retired.map((r) => (
+              <li key={r.id} className="flex items-center justify-between gap-3 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-500">
+                <span>
+                  {r.name} <span className="text-xs">{r.address}</span>
+                </span>
+                <StoreStatusButton storeId={r.id} mode="restore" />
+              </li>
+            ))}
+          </ul>
+          <p className="mt-1.5 text-xs text-stone-400">
+            Retired stores keep their full history and can be restored any time.
+          </p>
+        </details>
+      )}
     </div>
   );
 }
