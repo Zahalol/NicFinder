@@ -1,94 +1,84 @@
 # HANDOFF
 
 ## Current state
-_Date: 2026-11-04 — Session 1_
+_Date: 2026-11-05 — Session 2 (autonomous UX/product session, branch `claude/beautiful-keller-yyipbw`)_
 
 - NicFinder (ZYN price-comparison site, Chicago pilot, 21+ informational) is a
-  **complete, verified MVP on PostgreSQL, ready to deploy on Replit**.
-- All gates green at commit `76c9401` on branch `claude/hopeful-feynman-mchyuv`
-  (pushed): 53 vitest tests, 35-check Playwright e2e, lint, typecheck, prod build.
-- Features live: search/list/map with best-price card and deal math, store pages,
-  community confirm/dispute with reputation, watchlist, coverage requests,
-  SEO ZIP pages + sitemap, CSV/XLSX import pipeline (preview/commit/reverse),
-  full admin suite (imports, stores/duplicates, review, coverage demand,
-  analytics, settings), Replit Auth provider, health endpoint, maintenance job.
-- Outbound calling is deliberately **not built** — research only
-  (docs/ELEVENLABS_CALLING_RESEARCH.md); gated on TCPA legal review.
-- Docs reorganized under docs/ (index: docs/README.md); 17-screenshot tour in
-  docs/screenshots/; git history is the full session narrative.
+  **complete, verified MVP on PostgreSQL** with a substantially upgraded
+  customer experience from 27 autonomous UX/product cycles (all documented
+  with rationale, testing, and keep/discard calls in `UX_EXPERIMENTS_LOG.md`).
+- All gates green at the branch tip: **72 vitest tests, 37-check Playwright
+  e2e, lint, typecheck, prod build.**
+- Session-2 UX additions (all additive; prior features intact): desktop
+  list+sticky-map split view with map→list sync; redesigned mobile filter
+  bar; priced-first results with collapsible no-price directory; transparent
+  price-confidence pills (`src/lib/confidence.ts`); price-history sparklines
+  + trend; "worth the trip?" savings-vs-driving math (`src/lib/trip.ts`);
+  side-by-side compare (≤3 stores, selection persists); one-tap price
+  confirm from result cards; "what you'd pay" deal-aware qty strip;
+  cheaper-nearby links and stale-price nudges on store pages; watchlist
+  dashboard upgrade; quick-search chips (near me / recents / neighborhoods);
+  filter memory; ZIP-typo "did you mean"; nearest-covered-area suggestion;
+  `/price-drops`; `/about`; enriched ZIP SEO pages (stats + FAQ JSON-LD);
+  store-page metadata/JSON-LD/breadcrumbs; PWA (manifest, icons, honest
+  network-first service worker + `/offline`); dark mode; accessibility pass;
+  regenerated 20-image screenshot tour.
+- Fixed from session 1: `/admin/coverage` page had been silently gitignored
+  by a bare `coverage/` pattern (now anchored to `/coverage/`, page restored);
+  age gate now dismisses instantly on cookie set (was a >1s flake).
+- Outbound calling remains **not built** (research only; TCPA-gated).
 
 ## Open items
 - [ ] Deploy to Replit per docs/REPLIT.md (owner's stated plan; not started)
-- [ ] Owner's Windows clone still targets the old SQLite setup — after `git pull`
-      it needs a Postgres `DATABASE_URL` in `.env` (simplest: the Replit DB string)
 - [ ] Change/replace seeded demo credentials before any shared deployment
-      (admin@example.com / admin-demo-password is documented publicly)
 - [ ] After Replit deploy: promote owner's Replit-auth account to ADMIN in DB
-- [ ] Owner advised to rotate ElevenLabs/Twilio credentials exposed in old
-      workbook copies — unknown whether done
-- [ ] Real Chicago price collection for the 27 directory stores (business gate G1)
-      not started; demo data still populates the site (DEMO_MODE=true)
+- [ ] Real Chicago price collection for the 27 directory stores (gate G1);
+      demo data still populates the site (DEMO_MODE=true)
 - [ ] Email verification / password reset not implemented (documented limitation)
-
-## Next steps
-1. Create the Replit app + PostgreSQL database; copy its DATABASE_URL into the
-   owner's local .env so laptop and Replit share one DB (docs/REPLIT.md §1–2).
-2. Set Replit secrets (SESSION_SECRET, APP_URL, REPLIT_AUTH_ENABLED=true) and
-   enable Replit Auth; deploy Autoscale (build/run preconfigured in .replit).
-3. Run `npx prisma migrate deploy` + `npm run db:seed` in the Replit shell;
-   promote the owner's account to ADMIN; verify /api/health.
-4. Add a Scheduled Deployment: `node scripts/maintenance.mjs` (hourly or daily).
-5. Collect real prices for the 27 real Chicago stores (manual/community/admin
-   entry), then set DEMO_MODE=false and retire demo stores.
-6. Watch /admin/coverage demand to choose expansion ZIPs.
+- [ ] Owner to review `UX_EXPERIMENTS_LOG.md` recommendations (everything is
+      marked Keep; compare tray + filter memory flagged "watch usage")
+- [ ] Round-4 backlog leftovers: watchlist "worth the trip vs cheapest
+      saved", View Transitions polish
 
 ## How to run things
 ```
-# from the repo root (branch claude/hopeful-feynman-mchyuv)
+# from the repo root (branch claude/beautiful-keller-yyipbw)
 npm install
 cp .env.example .env        # set SESSION_SECRET and Postgres DATABASE_URL
 npx prisma generate
 npx prisma migrate deploy
-npm run db:seed             # demo users + Chicago directory + demo prices
+npm run db:seed             # demo users + Chicago directory + demo prices/history
 npm run dev                 # http://localhost:3000
 
-npm test                    # 53 tests (needs nicfinder_test DB; see below)
-npm run build && npm run e2e  # 35-check browser smoke on port 3100
+npm test                    # 72 tests (needs nicfinder_test DB)
+npm run build && npm run e2e  # 37-check browser smoke on port 3100
 ```
-Postgres options (Docker one-liner / shared Replit DB / native) are in
-README.md "Database setup". Tests expect
-`postgresql://nicfinder:nicfinder_dev@localhost:5432/nicfinder_test`
-(override with TEST_DATABASE_URL; the DB name must contain "test").
-Demo logins: docs/DEMO_GUIDE.md.
+Demo logins: docs/DEMO_GUIDE.md (admin@example.com / admin-demo-password).
 
-## Gotchas
-- **Postgres aborts the whole transaction on any failed statement** — for
-  expected unique collisions use `createMany({ skipDuplicates: true })`,
-  never `create().catch()` inside a transaction (bit us in the import engine).
-- **Age gate must stay an overlay, not a redirect** — a redirect blocks
-  crawlers from /zyn-prices/* pages, the only viable acquisition channel
-  (nicotine ads are banned on Google/Meta).
-- **Data honesty invariants**: observations are append-only (status changes,
-  never deletes); displayed prices are computed in src/lib/prices.ts; ZYN
-  Ultra never inherits regular prices; demo data stays labeled (Store.isDemo).
-- **Imports must stay idempotent** (file + row content hashes) — tests cover it.
-- **REPLIT_AUTH_ENABLED only on Replit deployments**: it trusts proxy-injected
-  X-Replit-User-* headers, forgeable anywhere else.
-- `src/data/zip-centroids.csv` must keep LF endings (.gitattributes enforces;
-  Windows CRLF once silently broke all ZIP search).
-- A crashed e2e run can orphan `next-server` processes holding the port —
-  `pkill -f next-server`.
-- Prisma blocks destructive resets for AI agents; the test harness resets only
-  the test schema via SQL (tests/global-setup.ts) — keep it that way.
-- Every /api/admin/* route re-checks the role server-side (withStaff/withAdmin);
-  the admin layout redirect is not the security boundary.
-- Never commit .env, real *.xlsx workbooks (gitignored — the original held
-  credentials), or model identifiers in repo artifacts.
+## Gotchas (session-1 list still applies, plus)
+- **`.gitignore` traps**: a bare directory name ignores it at any depth —
+  `coverage/` once silently dropped `src/app/admin/coverage/` from commits.
+- **Desktop vs mobile search layout**: ≥1024px renders the split view with
+  NO List/Map toggle; the SSR HTML contains the mobile toggle and hydration
+  removes it. e2e must wait for hydration before interacting (see the map
+  check in scripts/e2e-smoke.mjs).
+- **Service worker** (public/sw.js) registers on production builds only.
+  It is deliberately network-first for all navigations — never make it cache
+  pages or API data (stale prices shown as live would break the product's
+  core honesty promise). Bump its VERSION when changing precached files.
+- **Dark mode** is pure `prefers-color-scheme` (no toggle). `/admin` is
+  pinned to a light panel via a `colorScheme: "light"` island.
+- Prisma blocks destructive resets for agents; to reset the dev DB:
+  `sudo -u postgres psql -c "DROP DATABASE nicfinder;" -c "CREATE DATABASE nicfinder OWNER nicfinder;"`
+  then migrate + seed.
+- Postgres transaction-abort, age-gate-as-overlay, append-only observations,
+  import idempotency, CRLF, and admin-authz notes from session 1 all remain
+  true (see git history of this file).
 
 ## Resume prompt
 ```
-Project: /home/user/NicFinder (github.com/Zahalol/NicFinder, branch claude/hopeful-feynman-mchyuv)
-Read first: HANDOFF.md, README.md, docs/REPLIT.md
-State: verified Postgres MVP at 76c9401, all tests green, not yet deployed.
-Next: walk the owner through the Replit deployment in docs/REPLIT.md (DB, secrets, Replit Auth, Autoscale).
+Project: /home/user/NicFinder (github.com/Zahalol/NicFinder, branch claude/beautiful-keller-yyipbw)
+Read first: HANDOFF.md, UX_EXPERIMENTS_LOG.md, README.md
+State: verified MVP + 27 UX/product cycles, all gates green, not yet deployed.
+Next: owner review of experiments; Replit deployment per docs/REPLIT.md.
 ```
