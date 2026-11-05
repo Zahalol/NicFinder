@@ -49,8 +49,8 @@
 10. **Multi-brand**: seed On!/VELO/Rogue product lines; product switcher
     becomes a menu; importer already generic. Per-pouch price
     normalization for the 15→20-pouch can transition (research flag).
-11. **Automated import handoff**: watched bucket / `POST /api/imports`
-    with API key + batch status webhook (contract unchanged).
+11. ~~Automated import handoff~~ ✅ done (POST /api/imports + status GET,
+    IMPORT_API_KEY bearer auth, disabled by default; webhook push still open).
 
 ## Later / gated
 12. **Outbound calling integration** — *separately authorized*; blocked on
