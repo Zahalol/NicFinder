@@ -25,6 +25,9 @@ model Store {
   latitude      Float?
   longitude     Float?
   phone         String? // E.164 normalized
+  // Free-text opening hours, staff-maintained (e.g. "Mon-Sat 6am-11pm").
+  // Display-only — never used to compute "open now".
+  hours         String?
   // Lifecycle: ACTIVE | MERGED (into mergedIntoId) | RETIRED
   status        String   @default("ACTIVE")
   mergedIntoId  String?

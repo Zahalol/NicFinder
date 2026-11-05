@@ -194,6 +194,9 @@ export default async function StorePage({
                 Call to confirm: {formatPhone(store.phone)}
               </a>
             )}
+            {store.hours && (
+              <span className="text-stone-500">Hours: {store.hours}</span>
+            )}
           </p>
         </div>
       </div>

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { DuplicateList } from "./DuplicateList";
 import { DuplicateScanButton } from "./DuplicateScanButton";
 import { StoreStatusButton } from "./StoreStatusButton";
+import { EditHoursButton } from "./EditHoursButton";
 import { ManualEntry } from "./ManualEntry";
 
 export const dynamic = "force-dynamic";
@@ -127,7 +128,8 @@ export default async function AdminStores({
               <td className="py-2 text-stone-500">
                 {s._count.observations} / {s._count.comments}
               </td>
-              <td className="py-2 pl-2 text-right">
+              <td className="py-2 pl-2 text-right whitespace-nowrap">
+                <EditHoursButton storeId={s.id} hours={s.hours} />{" "}
                 <StoreStatusButton storeId={s.id} mode="retire" />
               </td>
             </tr>

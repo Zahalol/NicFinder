@@ -40,3 +40,4 @@ Status: `todo` | `in-progress` | `done` | `blocked` | `rejected`.
 | 28 | Store-page share/copy-link affordance with OG metadata check | Low | S | Med | — | done |
 | 29 | Maintenance job: hook duplicate scan + notification pruning | Low-Med | S | Med | tsx dependency in cron | done (notification pruning; dup scan stays admin-button) |
 | 30 | DEVLOG/HANDOFF refresh + owner summary (end-of-session) | High (handoff) | S | High | — | todo |
+| 31 | OSM Overpass hours/brand auto-enrichment (admin-confirmed suggestions) — blocked here: Overpass unreachable through the container proxy; manual hours field shipped instead | Med | M | Med | wrong-match risk needs admin confirm step | blocked |
