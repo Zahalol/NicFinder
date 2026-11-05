@@ -6,6 +6,10 @@ export const metadata = {
     "Where NicFinder's reported ZYN prices come from, what the confidence and freshness labels mean, and what we will never do with the data.",
 };
 
+function slugify(t: string) {
+  return t.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+}
+
 const SECTIONS: Array<{ title: string; body: React.ReactNode }> = [
   {
     title: "Where prices come from",
@@ -99,7 +103,8 @@ export default function AboutPage() {
         {SECTIONS.map((s) => (
           <section
             key={s.title}
-            className="rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-5"
+            id={slugify(s.title)}
+            className="rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-5 scroll-mt-20"
           >
             <h2 className="font-medium text-stone-900 dark:text-stone-100">{s.title}</h2>
             <p className="mt-2 text-sm text-stone-600 dark:text-stone-400 leading-relaxed">

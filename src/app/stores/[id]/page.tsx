@@ -386,7 +386,13 @@ export default async function StorePage({
                     ageDays: latest.ageDays,
                     confirmCount: latest.confirmCount,
                     disputeCount: latest.disputeCount,
-                  }).reasons.join(" · ")}
+                  }).reasons.join(" · ")}{" "}
+                  <Link
+                    href="/about#what-the-confidence-label-means"
+                    className="underline hover:text-stone-500"
+                  >
+                    how this works
+                  </Link>
                 </p>
                 <QtyCostTable regularCents={latest.observation.priceCents} deal={deal} />
                 {history.length >= 2 && (

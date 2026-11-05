@@ -96,6 +96,11 @@ try {
     })
     .catch(() => {});
   check("overlay dismissed after confirming", (await page.getByRole("dialog").count()) === 0);
+  // Dismissal triggers router.refresh(), which can briefly swap in the
+  // route's loading skeleton — wait for content to settle before counting.
+  await page
+    .waitForSelector('a[href^="/stores/"]', { timeout: 15_000 })
+    .catch(() => {});
 
   // 2. Search results
   console.log("Search 60614…");
@@ -282,6 +287,22 @@ try {
   check(
     "one-tap confirm offered when signed in",
     (await page.locator("button", { hasText: "Still this price?" }).count()) > 0
+  );
+
+  // Store notes: signed-in members can post one.
+  const firstStore = await page
+    .locator('a[href^="/stores/"]')
+    .nth(1)
+    .getAttribute("href");
+  await page.goto(`${BASE}${firstStore}`);
+  const noteInput = page.locator('input[placeholder*="note about this store"]');
+  check("store-note input offered when signed in", (await noteInput.count()) > 0);
+  await noteInput.fill("Smoke-test note: register price matched. (automated)");
+  await page.locator("button", { hasText: "Post" }).click();
+  await page.waitForTimeout(1500);
+  check(
+    "posted store note appears",
+    (await page.locator("text=Smoke-test note").count()) > 0
   );
 
   const saveRes = await page.evaluate(async (sid) => {
