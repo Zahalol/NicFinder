@@ -740,3 +740,22 @@ a genuine "where do you have data?" answer for users.
 **Recommendation: Keep all.** Also verified mobile pages load in <200 ms
 with tiny payloads (native timing; Lighthouse CLI unavailable in this
 sandbox).
+
+---
+
+## Cycle 35 — Footer site nav + per-store dynamic share images
+
+**What changed.**
+- Footer gained a small nav (Prices by area · Recent price drops · How
+  NicFinder works) — the new pages were only reachable via inline links.
+- `src/app/stores/[id]/opengraph-image.tsx`: dynamic OG card per store
+  (brand, store name, city/ZIP) rendered with `next/og` and repo-bundled
+  Liberation Sans (OFL; license note in `src/assets/fonts/README.md`).
+  Deliberately **no price values** in the image — scrapers cache previews,
+  and a stale price shown as current would violate the honesty rules.
+- Screenshot tour re-captured on a pristine reseed (footer/banner deltas).
+
+**Testing.** OG route returns image/png with correct store name; full gate
+green (72 tests, 50 e2e checks).
+
+**Recommendation: Keep.**
