@@ -8,6 +8,7 @@ import { parsePriceToCents } from "../money";
 import { normalizePhone, normalizeAddress, nameSimilarity, splitUsAddress } from "../normalize";
 import { metersBetween } from "../geo";
 import { audit } from "../audit";
+import { sendImportWebhook } from "../import-webhook";
 import {
   notifyPriceChange,
   maybeNotifyCoverageArrived,
@@ -853,6 +854,13 @@ export async function commitBatch(
     targetId: batchId,
     detail: countOutcomes(validated) as unknown as Record<string, unknown>,
   });
+  await sendImportWebhook({
+    event: "import.committed",
+    batchId,
+    filename: batch.filename,
+    counts: countOutcomes(validated) as unknown as Record<string, number>,
+    at: new Date().toISOString(),
+  });
   return countOutcomes(validated);
 }
 
@@ -915,5 +923,11 @@ export async function reverseBatch(
     targetType: "importBatch",
     targetId: batchId,
     detail: { reason },
+  });
+  await sendImportWebhook({
+    event: "import.reversed",
+    batchId,
+    reason,
+    at: new Date().toISOString(),
   });
 }

@@ -82,6 +82,7 @@ SSO, Autoscale deployment, scheduled maintenance).
 | `AUTONOMOUS_WORKLOG.md` | 2026-11-04/05 autonomous session — per-cycle evidence & recommendations |
 | `AUTONOMOUS_BACKLOG.md` | Remaining ranked improvement ideas from that session |
 | `docs/REPLIT.md` | Replit deployment guide (DB, SSO, Autoscale, cron) |
+| `docs/API.md` | Automated import API (bearer key, webhooks — disabled by default) |
 | `docs/PRODUCT_REQUIREMENTS.md` | Scope, user flows, edge cases |
 | `docs/ARCHITECTURE.md` | Data model, latest-price policy, security, Postgres path |
 | `docs/IMPORT_CONTRACT.md` | CSV/XLSX schema, aliases, validation, idempotency |
