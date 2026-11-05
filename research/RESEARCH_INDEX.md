@@ -11,7 +11,7 @@ Research-only due diligence. No application code, configuration, or existing doc
 | 4 | [04 ElevenLabs/Twilio accuracy & unit economics](04_ELEVENLABS_TWILIO_ACCURACY_AND_UNIT_ECONOMICS.md) + [model CSV](04_calling_unit_economics_model.csv) | ✅ Done | ≈$0.45 per *accurate* price in the base case (range $0.24–1.20); $0.90 vs $0.20 reconciled; a 2009 study found phone-collected cigarette prices invalid, so audit accuracy is the key unknown | Medium-Low (funnel rates assumed) |
 | 5 | [05 Call scaling & Chicago launch plan](05_CALL_SCALING_AND_CHICAGO_LAUNCH_PLAN.md) | ✅ Done | Chicago has 1,904 active tobacco licenses at 1,791 addresses (City data); throughput isn't the constraint (cadence, phone numbers, and law are); all-Chicago launch ≈$1.2k + ≈$200/mo | Medium |
 | 6 | [06 City expansion ranking](06_CITY_EXPANSION_RANKING.md) | ✅ Done | Next: Chicago suburbs + NW Indiana (IL 45% vs IN ~$0.13/can), then Minneapolis (95%) and NYC (new 75% tax, Sept 2026); college towns rank poorly | Medium-Low (demand proxies coarse) |
-| 7 | 07+ Additional research | Pending | | |
+| 7 | [07 Backlog](07_RESEARCH_BACKLOG_AND_PHASE7_INDEX.md) · [08 Demand & competitors](08_DEMAND_COMPETITORS_AND_ACQUISITION.md) · [09 Dispersion & data sources](09_DISPERSION_FRESHNESS_AND_DATA_SOURCES.md) · [10 Financials & kill criteria](10_FINANCIAL_SCENARIOS_AND_KILL_CRITERIA.md) | ✅ Done | Chicago consumer ceiling ≈1–4k monthly users (≈160k metro pouch users); new competitor PouchBuddy; manual collection beats calling financially; B2B carries every positive scenario | Medium-Low |
 | — | 99 Founder decision brief | Pending | | |
 
 ## Open decisions for the founder

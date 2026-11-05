@@ -16,6 +16,8 @@ All access dates are 2026-11-04 unless stated.
 | D2 | "Google Ads … prohibit nicotine" used to imply the site can't run Google display ads | BUSINESS_RESEARCH §6.1, §7 | **RECONCILED in Phase 3** (`03_MONETIZATION_AND_EXIT_OPTIONS.md` §2) | Google Ads is the advertiser side: it decides whether *NicFinder may buy ads*. Google Publisher Policies/AdSense is the publisher side: it decides whether *NicFinder pages may show ads*. These are separate rule sets. Phase 3 verifies each one separately. |
 | D3 | product_line `zyn_ultra` (calling doc §5.4) vs. `zyn-ultra` slug (IMPORT_CONTRACT) | docs | **CONTRADICTION (minor)** | The contract wins. Any future producer should emit `zyn-ultra` and `can_size`. |
 | D4 | Phase 3 data upkeep $1.00/store-month vs. Phase 5 calls-based refresh ≈$0.20–0.40 | research | **RECONCILED** | All-in figure including audits ≈$0.40–0.80. Phase 3's conclusion is unchanged. |
+| D5 | Business-doc gates (G3 ≥500 MAU; kill if MAU <2,000 after full-city coverage) vs. demand ceiling (~1,150 MAU city at 2.5% penetration) | research | **CONTRADICTION** | Recalibrate to penetration of estimated users + B2B revenue (Memo 10 §4). |
+| D6 | Chicago 2026 flavored-pouch ban (claimed by a low-quality site) | web | **UNVERIFIED / likely false** | Only the 2020 flavored-*vape* ban was found; active "flavored tobacco" retail licenses exist in City data. Confirm with counsel (school-proximity flavor rules may also apply). |
 
 ## B. Legal / regulatory claims (Phase 1 audit)
 
@@ -41,16 +43,17 @@ All access dates are 2026-11-04 unless stated.
 
 | ID | Claim | Status |
 |---|---|---|
-| M1 | Nicotinly is the only direct competitor | Re-checked in Phase 7 (`07_…`) |
+| M1 | Nicotinly is the only direct competitor | **CONTRADICTED (mildly).** PouchBuddy (a quit app) also publishes a receipt-based pouch price map, with 56 US ZYN receipts in 12 months. Content sites publish modeled tables. No dense competitor. (Memo 08) |
 | M2 | PMI Q3 2026 ZYN 3.2B pouches (+4.2%); 15→20-pouch transition | Cited to SEC 8-K; spot-check in Phase 7 |
 | M3 | US pouch retail ≈ $6.6B TTM, +20% | Secondary (Bloomberg via 2Firsts). Treat as context only. |
 | M4 | Chicago ZYN ≈ $8–10/can; IL $9.92 "observed" | Takeroon table is mostly modeled ("not receipts"). Not a shelf audit. **UNVERIFIED as a Chicago distribution.** |
-| M5 | Intra-city dispersion $1.50–3.00+/can | **ASSUMPTION.** The business doc itself says so. Decides go/no-go (gate G1). |
+| M5 | Intra-city dispersion $1.50–3.00+/can | **ASSUMPTION, still unmeasured.** Indirect support: CA receipts $6.50–9.75; uneven IL pass-through. No within-city study exists. (Memo 09) |
 | M6 | ~1,200 c-stores in Chicago; 1,500–3,000 licensed tobacco retailers | **VERIFIED: 1,904 active Tobacco licenses / 1,791 distinct addresses** (Chicago Data Portal uupf-x98q, queried 2026-11-04). The "~1,200 c-stores" figure undercounts the relevant universe. |
 | M7 | ElevenLabs Agents $0.08/min; plan concurrency 4–40; burst $0.16/min | **VERIFIED** ($0.08 and $0.16 burst, from multiple 2026 sources). Billing granularity is **OPEN**. |
 | M8 | Twilio $0.014/min outbound, $1.15/number, AMD $0.0075/answered call; billed per started minute | **VERIFIED** for $0.014 and AMD. Whole-minute rounding comes from a third-party test only. Lookup line type costs $0.008. |
 | M9 | Answer rate 65%, price-given 60% (business doc) vs success 50–70% (calling doc) | **Both are unsupported assumptions.** The only anchors found: 411 Locals (≈38% of small-business calls answered by a person) and **PHR 2009 (telephone cigarette prices not valid vs. in-store)**. |
 | M10 | Nicokick/Northerner/Prilla affiliate programs "exist" | **PARTLY VERIFIED.** Nicokick (5%, 1-day cookie, CJ) and Northerner (5–10%) appear only on aggregators. **Both are owned by Haypp Group.** No Prilla affiliate program was found. |
+
 
 
 ## D. Open questions log (carry forward)
@@ -68,3 +71,4 @@ All access dates are 2026-11-04 unless stated.
 - 2026-11-04: Phase 4. D1 reconciled ($0.90 overstated per-dial cost ~8×; both figures omitted accuracy, QA, and fixed floors). M7–M9 updated.
 - 2026-11-04: Phase 5. M6 verified from City open data; D3 and D4 added.
 - 2026-11-04: Phase 6. NY 75% pouch tax verified (Notice N-26-2). Tax Foundation narrative/table conflict on NY recorded.
+- 2026-11-05: Phase 7. M1, M5 updated; D5, D6 added.

@@ -16,3 +16,6 @@
 - Next: Phase 6 city expansion ranking.
 - Phase 6 complete: Tax Foundation Sept 2026 pouch-tax table; NY 75% (eff. Sept 1, 2026) verified; 20-market weighted model with 5 sensitivity weightings.
 - Next: Phase 7 backlog and memos, then the founder brief, then stop (per founder instruction).
+## 2026-11-05 (UTC)
+- Phase 7 complete: backlog (07) plus memos 08–10. New: top-down demand ceiling from PMI volumes; PouchBuddy competitor; Apple 1.4.3 constraint; 36-month path comparison.
+- Next: founder decision brief (99), then stop per founder instruction.
