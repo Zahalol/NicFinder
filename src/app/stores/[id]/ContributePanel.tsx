@@ -85,8 +85,8 @@ export function ContributePanel({
           first, and it helps everyone nearby.
         </p>
       )}
-      {msg && <p className="mt-2 text-sm text-teal-700 dark:text-teal-400">{msg}</p>}
-      {err && <p className="mt-2 text-sm text-red-600 dark:text-red-400">{err}</p>}
+      {msg && <p role="status" className="mt-2 text-sm text-teal-700 dark:text-teal-400">{msg}</p>}
+      {err && <p role="alert" className="mt-2 text-sm text-red-600 dark:text-red-400">{err}</p>}
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <select

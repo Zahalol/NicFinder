@@ -10,6 +10,14 @@ import { CompareDialog } from "./CompareDialog";
 
 const MAX_COMPARE = 3;
 
+/** Respect prefers-reduced-motion for programmatic scrolling. */
+function scrollBehavior(): ScrollBehavior {
+  return typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ? "auto"
+    : "smooth";
+}
+
 const StoreMap = dynamic(() => import("./StoreMap"), {
   ssr: false,
   loading: () => (
@@ -62,11 +70,16 @@ function QuickConfirm({
   }
 
   if (state === "error")
-    return <span className="text-[11px] text-stone-400" title={msg ?? undefined}>{msg}</span>;
+    return (
+      <span role="alert" className="text-[11px] text-stone-400" title={msg ?? undefined}>
+        {msg}
+      </span>
+    );
   return (
     <button
       onClick={confirm}
       disabled={state !== "idle"}
+      aria-live="polite"
       className={`rounded-md border px-2 py-0.5 text-[11px] font-medium transition ${
         state === "done"
           ? "border-emerald-300 bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
@@ -223,7 +236,7 @@ export function SearchResults({
   const mapWrapRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (view === "map") {
-      mapWrapRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      mapWrapRef.current?.scrollIntoView({ behavior: scrollBehavior(), block: "start" });
     }
   }, [view]);
 
@@ -238,7 +251,7 @@ export function SearchResults({
   useEffect(() => {
     if (!activeId) return;
     const el = cardRefs.current.get(activeId);
-    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    el?.scrollIntoView({ behavior: scrollBehavior(), block: "center" });
     const t = setTimeout(() => setActiveId(null), 2500);
     return () => clearTimeout(t);
   }, [activeId]);

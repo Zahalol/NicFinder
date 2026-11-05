@@ -26,6 +26,17 @@ html {
   border-radius: 4px;
 }
 
+/* Respect reduced-motion: neutralize decorative animation/transitions. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 /* Skip link: visually hidden until focused. */
 .skip-link {
   position: absolute;
