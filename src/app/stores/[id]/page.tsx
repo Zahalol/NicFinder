@@ -305,7 +305,18 @@ export default async function StorePage({
           <p className="text-stone-500 mt-1">
             {store.address}
             {store.city ? `, ${store.city}` : ""}
-            {store.state ? `, ${store.state}` : ""} {store.zip ?? ""}
+            {store.state ? `, ${store.state}` : ""}{" "}
+            {store.zip ? (
+              <Link
+                href={`/zyn-prices/${store.zip}`}
+                className="underline decoration-stone-300 hover:text-teal-700 dark:hover:text-teal-400"
+                title={`All ZYN prices in ${store.zip}`}
+              >
+                {store.zip}
+              </Link>
+            ) : (
+              ""
+            )}
           </p>
           {mapsUrl && (
             <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-teal-700 dark:text-teal-400 underline">
