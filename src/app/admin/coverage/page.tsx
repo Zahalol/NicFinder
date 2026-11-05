@@ -23,7 +23,7 @@ export default async function CoverageDemandPage() {
 
   const [requests, stores, pricedStoreRows] = await Promise.all([
     prisma.coverageRequest.findMany({
-      select: { zip: true, city: true, state: true, userId: true, ipHash: true, createdAt: true },
+      select: { zip: true, city: true, state: true, userId: true, ipHash: true, createdAt: true, notifiedAt: true },
       orderBy: { createdAt: "desc" },
     }),
     prisma.store.findMany({
@@ -61,6 +61,7 @@ export default async function CoverageDemandPage() {
     total: number;
     signedIn: number;
     recent7d: number;
+    notified: number;
     lastAt: Date;
   };
   const byZip = new Map<string, ZipDemand>();
@@ -72,10 +73,12 @@ export default async function CoverageDemandPage() {
       total: 0,
       signedIn: 0,
       recent7d: 0,
+      notified: 0,
       lastAt: r.createdAt,
     };
     row.total += 1;
     if (r.userId) row.signedIn += 1;
+    if (r.notifiedAt) row.notified += 1;
     if (r.createdAt >= since7d) row.recent7d += 1;
     if (r.createdAt > row.lastAt) row.lastAt = r.createdAt;
     if (!row.city && r.city) row.city = r.city;
@@ -183,7 +186,14 @@ export default async function CoverageDemandPage() {
                 <td className="hidden py-2 pr-3 text-stone-600 sm:table-cell">{r.signedIn}</td>
                 <td className="hidden py-2 pr-3 text-stone-600 sm:table-cell">{r.recent7d}</td>
                 <td className="py-2 pr-3 text-stone-600">{timeAgo(r.lastAt)}</td>
-                <td className="py-2 pr-3">{statusBadge(r.zip)}</td>
+                <td className="py-2 pr-3">
+                  {statusBadge(r.zip)}
+                  {r.notified > 0 && (
+                    <span className="ml-1.5 text-[11px] text-teal-700" title="Requesters notified that coverage arrived">
+                      {r.notified} notified
+                    </span>
+                  )}
+                </td>
                 <td className="hidden py-2 md:table-cell">
                   <div
                     className="h-2.5 min-w-[2px] rounded bg-teal-600"
