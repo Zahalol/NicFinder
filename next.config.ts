@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
-// Conservative security headers (no CSP yet — Next inline runtime scripts and
-// Leaflet inline styles would need nonces/hashes; tracked for later).
+// Static security headers. The Content-Security-Policy is NOT set here: it
+// needs a per-request nonce, so src/middleware.ts sets it (production only).
 const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "DENY" },

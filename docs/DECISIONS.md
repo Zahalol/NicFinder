@@ -3,6 +3,11 @@
 Running log of choices made autonomously, with reasoning. Reversible unless
 noted.
 
+**Numbering note:** IDs are kept as originally written because other docs
+cite them, so 20–25 occur twice (Enhancement pass and Session 2) and 17–18
+sit under Research. Cite an entry with its section, e.g. "Session 2 #23".
+Superseded entries are marked in place, not removed.
+
 ## Product
 
 1. **Working brand = "NicFinder"** — matches the repo name and the
@@ -30,8 +35,9 @@ noted.
 ## Technical
 
 6. **Next.js 15 + Prisma + SQLite** per the brief's stated preference;
-   prices as integer cents; Postgres path documented in ARCHITECTURE.md.
-   (Next 15 chosen over 16 for ecosystem maturity with react-leaflet 5.)
+   prices as integer cents. (Next 15 chosen over 16 for ecosystem maturity
+   with react-leaflet 5.) *SQLite superseded by Enhancement pass #19
+   (PostgreSQL); Next 15 + Prisma + integer cents stand.*
 7. **Custom session auth instead of NextAuth/Auth.js**: scrypt + hashed
    DB tokens is small, fully testable, has no beta-version churn, and the
    Google OAuth flow is ~80 lines implemented directly against Google's
@@ -56,13 +62,19 @@ noted.
     admin-configurable, deltas are constants in code (changing them
     retroactively would corrupt the audit trail).
 13. **In-memory IP rate limiting for auth** is accepted for a
-    single-process MVP; documented as a scale-out item.
+    single-process MVP; documented as a scale-out item. *Superseded:
+    `RATE_LIMIT_BACKEND=db` moves the IP limits to a Postgres sliding
+    window shared across instances (memory stays the default). The
+    per-email failed-login limit remains in-memory per instance.*
 14. **E2E uses the environment's preinstalled Playwright** via
     `createRequire` rather than pinning a browser download in deps; the
     script degrades with a clear message if Playwright is absent.
 15. **Prisma's AI guard on `db push --force-reset`** respected: the test
-    harness deletes its own throwaway `prisma/test.db` file and runs a
-    plain non-destructive `db push` instead.
+    harness resets its own throwaway database and runs a plain
+    non-destructive `db push` instead. *Updated for Postgres:* the database
+    is `nicfinder_test` (`TEST_DATABASE_URL`; the name must contain "test"),
+    and `tests/global-setup.ts` drops/recreates its `public` schema via
+    `psql` before the push.
 16. **No zod on the small route surface** — hand validation kept the
     dependency count down; revisit if the API grows.
 
@@ -117,6 +129,11 @@ noted.
     no proxy exists.
 23. **No service worker with the PWA manifest.** Cached stale prices would
     violate the freshness promise; the app is useless offline anyway.
+    *Superseded at the merge (Merge #33):* a network-first worker that
+    precaches only `/offline`, icons and the manifest was kept. It never
+    serves pages or prices from cache, so the freshness concern doesn't
+    apply; offline users get an honest "you're offline" page instead of a
+    browser error.
 24. **In-app notifications only.** No email/external sending until a
     provider is configured and authorized; alerts collapse per store
     (newest wins) while resolution notices stay per-event.
@@ -130,4 +147,45 @@ noted.
     exceljs): breaking upgrades don't belong in an unattended session.
 28. **OSM Overpass hours enrichment blocked** (API unreachable through this
     environment's proxy) — manual staff-maintained hours shipped instead,
-    display-only, never used to compute "open now".
+    display-only, never used to compute "open now". Imports can also set
+    hours (`hours` column) on new and matched stores.
+
+## Merge of parallel sessions (2026-11-05)
+
+Five parallel session branches were merged into `main`. Where features
+overlapped, one version was kept:
+
+29. **keen-planck screens as the base, keller features ported onto them.**
+    Both branches had redesigned the search results, search page, store page
+    and ZIP pages. keen-planck's versions were already wired to backend
+    features that had been merged (availability-only rows, flags, store
+    hours, saves, alerts), while keller's were mostly front-end, so porting
+    keller's unique features onto keen-planck's screens was lower risk than
+    the reverse. The owner chose this option; the alternative was two
+    half-merged designs.
+30. **Reliability tiers (`src/lib/reliability.ts`) over the confidence
+    pill** (`src/lib/confidence.ts`, removed). Same goal; the tiers already
+    explain every factor and follow Session 2 #21 (no percentages).
+31. **The `/compare` page over `CompareDialog`.** A page is linkable and
+    works without client state; the dialog was removed.
+32. **`/how-it-works` is the canonical explainer; `/about` 301-redirects to
+    it** (`next.config.ts`). Two pages saying the same thing would drift;
+    the redirect keeps old links working.
+33. **Kept the offline service worker, with `worker-src 'self'` in the
+    CSP.** Network-first and never caches prices (see Session 2 #23); the
+    nonce CSP's `strict-dynamic` would otherwise block worker registration.
+34. **Overlapping security fixes were combined, not picked.** Each branch
+    closed different holes: atomic claim + `ipHash` independence for
+    corroboration; bulk import commit + import-time notifications; nonce
+    CSP + API body-size guard. Choosing one side would have reopened the
+    other's.
+35. **Google OAuth never auto-links into a password account**, and links
+    only verified Google emails. Local emails are unverified, so a
+    pre-registered victim address could otherwise be taken over.
+36. **Moderators cannot approve their own contributions.** Review exists so
+    one person can't unilaterally publish a flagged change.
+37. **`main` is protected: PRs only, the `verify` CI check required, no
+    required approvals, up-to-date branches not required.** The owner is
+    solo, so approvals would block every merge; parallel sessions would
+    otherwise force each other to update and re-run CI after every merge. CI (lint, typecheck, vitest, build on
+    `postgres:16`) is the gate; e2e is run manually.

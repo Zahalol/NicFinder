@@ -1,67 +1,72 @@
-# Roadmap (post-MVP, prioritized)
+# Roadmap
 
-## Done since v1
-- ~~Postgres migration~~ ✅ (Replit-ready; see REPLIT.md)
-- ~~Deploy prep~~ ✅ (.replit, health check, Replit Auth, maintenance job)
-- ~~Coverage-demand capture~~ ✅ · ~~watchlist~~ ✅ · ~~SEO ZIP pages +
-  sitemap~~ ✅ · ~~best-price card~~ ✅ · ~~admin analytics~~ ✅
+Prioritized post-MVP work. The business direction follows
+[`research/99_FOUNDER_DECISION_BRIEF.md`](../research/99_FOUNDER_DECISION_BRIEF.md):
+validate the price spread and B2B demand with **manual** collection before
+spending on automation. Engineering open items are also listed in
+[`HANDOFF.md`](../HANDOFF.md).
 
-### Done in the 2026-11-04/05 autonomous session (see AUTONOMOUS_WORKLOG.md)
-- ~~/admin/coverage page~~ ✅ (was lost to a .gitignore bug, now fixed too)
-- ~~Availability-only observations~~ ✅ ("not carried"/"out of stock" without
-  invented prices, end to end: import → search → store page → ZIP pages)
-- ~~Observation-level dispute UI~~ ✅ (flags on any history row, moderated)
-- ~~Deal flags~~ ✅ (ended vs invalid) · ~~community deal reports~~ ✅
-- ~~In-app price alerts~~ ✅ (watchlist notifications; no email — in-app only)
-  + contributor resolution notices
-- ~~Reliability tiers~~ ✅ · ~~price-history sparkline~~ ✅ ·
-  ~~value-of-trip~~ ✅ · ~~two-store compare~~ ✅ · ~~nearby alternatives~~ ✅
-- ~~Security pass~~ ✅ (report dedupe, OAuth linking, error hygiene, rate-limit
-  cap) · ~~pluggable rate-limit storage~~ ✅ (RATE_LIMIT_BACKEND=db)
-- ~~Import fuzz hardening~~ ✅ · ~~10k-store search benchmark + nearest-500
-  correctness fix~~ ✅ · ~~duplicate-store scan~~ ✅ · ~~CSV price export~~ ✅
-- ~~/how-it-works~~ ✅ · ~~profile credibility~~ ✅ · ~~account settings
-  (password/display name/sign-out-everywhere)~~ ✅ · ~~comment editing~~ ✅
-- ~~store-page SEO + JSON-LD + share~~ ✅ · ~~PWA manifest~~ ✅ ·
-  ~~pilot-economics dashboard~~ ✅ · ~~audit-log viewer~~ ✅
+## Now: pilot
 
-## Now → pilot hardening
-1. **Deploy on Replit** following REPLIT.md; set DEMO_MODE=false once real
-   data lands; attach custom domain.
-2. **Real Chicago data pass**: manual/community price collection for the 27
-   directory stores to measure actual dispersion (business gate G1) before
-   any calling spend. Use /admin/coverage demand to pick the next ZIPs.
-3. **Email**: verification + password reset via a transactional provider;
-   deliverability work (SPF/DKIM/DMARC — the notes' spam concern).
-4. **Store hours/brand metadata** enrichment (OSM Overpass is free).
-5. ~~Observation-level dispute UI~~ ✅ done (flags on price-history rows).
+1. **Deploy on Replit** per [`REPLIT.md`](REPLIT.md), with
+   `RATE_LIMIT_BACKEND=db` and the maintenance job scheduled. Replace demo
+   credentials; attach a custom domain.
+2. **Manual price-collection pilot** in Lake View + Lincoln Park (about 122
+   stores, about $600–800; `research/05`, `research/99`), using
+   `/admin/collect`. Measure the p90–p10 price spread (go threshold ≥$1.50
+   per can). Turn `DEMO_MODE` off once real prices exist.
+3. **Test B2B demand**: offer verified shelf-price data (≥$500/month is the
+   research go threshold); `/admin/stores` already exports prices as CSV.
+4. **Kill and go criteria**: use `research/10`'s penetration and B2B revenue
+   gates (they replace the MAU gates in `BUSINESS_RESEARCH.md`).
 
 ## Next
-6. **Price alerts** — in-app alerts ✅ done; email delivery still open
-   (needs the email provider from item 3).
-7. ~~Flavor/strength on community reports~~ ✅ done (optional fields on the
-   report form, carried to published observations; corroboration stays
-   price-keyed). Standalone availability-by-flavor reporting still open.
-8. **Receipt photo evidence** (size/type-limited upload, EXIF stripping,
-   moderation queue) feeding a higher-confidence verification tier.
-9. **Anti-abuse v2**: IP/device clustering on corroborations, geo
-   plausibility checks (confirming a Chicago store from another state),
-   anomaly dashboards.
-10. **Multi-brand**: seed On!/VELO/Rogue product lines; product switcher
-    becomes a menu; importer already generic. Per-pouch price
-    normalization for the 15→20-pouch can transition (research flag).
-11. ~~Automated import handoff~~ ✅ done (POST /api/imports + status GET,
-    IMPORT_API_KEY bearer auth + HMAC-signed status webhooks, all disabled by default; docs/API.md).
 
-## Later / gated
-12. **Outbound calling integration** — *separately authorized*; blocked on
-    the legal gate (TCPA wireless consent, Illinois all-party consent) and
-    business gates in BUSINESS_RESEARCH.md. Build order and costs in
-    ELEVENLABS_CALLING_RESEARCH.md §roadmap: Trust Hub/STIR-SHAKEN setup,
-    line-type scrubbing, consenting-number pilot, webhook receiver
-    producing IMPORT_CONTRACT-shaped files.
-13. **B2B price-intelligence exports** (the most plausible revenue line).
-14. **Expansion**: Chicago suburbs → second metro, driven by the coverage
-    and engagement KPIs in BUSINESS_RESEARCH.md; kill criteria respected.
-15. SEO landing pages per neighborhood/ZIP (organic is the only viable
-    acquisition channel given nicotine ad bans).
+5. **Email**: verification and password reset via a transactional provider
+   (SPF/DKIM/DMARC); then email delivery for the in-app price alerts.
+6. **Stronger anti-abuse**: email or phone verification or a minimum account
+   age for corroborators; geo-plausibility checks; anomaly dashboards.
+   (Distinct-network corroboration via salted IP hashes is already live.)
+7. **Store enrichment** from OSM Overpass (brand metadata, hours where
+   missing). Staff- and import-maintained hours already work.
+8. **Multi-brand**: seed On!/VELO/Rogue product lines (the product toggle is
+   already data-driven) and normalize per-pouch prices for the
+   15 → 20-pouch can change.
+9. **Receipt photo evidence** (size/type-limited upload, EXIF stripping,
+   moderation) feeding a higher-confidence verification tier.
+10. **Smaller product ideas** from the sessions: suggest a missing store,
+    watchlist deal badges, view transitions, neighbourhood landing pages.
+11. **Engineering**: run the e2e smoke test in CI; streaming XLSX parsing;
+    the dependency majors behind current `npm audit` advisories.
+
+## Later, gated
+
+12. **Automated calling** (ElevenLabs + Twilio): NO-GO for now per
+    `research/99`. Revisit only if the pilot shows a large spread and paid
+    demand, and after the legal gate (TCPA, Illinois all-party consent;
+    `research/01`). Design notes: `ELEVENLABS_CALLING_RESEARCH.md` and
+    `research/04`–`05`.
+13. **B2B price-intelligence product**, if item 3 finds paying customers.
+14. **Expansion**: Chicago suburbs, then a second metro, ranked in
+    `research/06`.
+
+## Done
+
+- **MVP**: search, store pages, community confirm/dispute with
+  corroboration and reputation, imports, admin suite (see `PROGRESS.md`).
+- **Platform**: PostgreSQL, Replit prep (`.replit`, health check, Replit
+  Auth, maintenance job), CI on every PR, protected `main`, nonce CSP, API
+  body-size guard, pluggable rate limiting, import API with signed webhooks.
+- **Trust and honesty**: availability-only observations, observation and
+  deal flags, community deal reports, reliability tiers, network-distinct
+  corroboration, concurrency-safe publishing, state-gated moderation, in-app
+  price alerts and resolution notices, `/how-it-works`.
+- **Search and pages**: best-price card, value-of-trip math, two-store
+  compare, nearby alternatives, "Priced only" and name filters, did-you-mean
+  ZIPs, nearest covered area, quick chips, store-name matches, one-tap
+  confirm, desktop list + map split view, remembered filters, "What you'd
+  pay" strip, mini-map, ZIP landing pages (summaries, Ultra column, FAQ
+  data, share images), covered-areas index, price drops, dark mode, PWA
+  with offline page.
+- **Admin**: coverage demand, analytics, pilot economics, collection
+  worksheet, duplicate scan, CSV export, audit-log viewer, store hours.

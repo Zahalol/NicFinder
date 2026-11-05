@@ -1,95 +1,93 @@
 # Progress
 
-_Last updated: 2026-11-05 (autonomous overnight session)._
+Milestone ledger, newest first. For the current state and open items read
+[`HANDOFF.md`](../HANDOFF.md); for dated detail read [`DEVLOG.md`](../DEVLOG.md).
+Test counts in older milestones are as of that milestone.
 
-## Autonomous overnight session ✅ (third block, 2026-11-04 → 05)
+## Current status (2026-11-05)
 
-32 verified improvement cycles on branch `claude/keen-planck-rmqrm9` — full
-table with evidence, limitations and keep/consider recommendations in
-**AUTONOMOUS_WORKLOG.md** (repo root). Highlights: availability-only
-observations ("not carried" without invented prices), observation + deal
-flagging, community deal reports, in-app price alerts + resolution notices,
-reliability tiers, price-history sparklines, value-of-trip math, two-store
-compare, nearest-500 search correctness fix (found by a 10k-store benchmark),
-a security pass, import fuzz hardening, account self-management, and admin
-tooling (coverage demand, economics, duplicate scan, CSV export, audit log).
-Quality gates at the end of the session: 121 vitest tests, ~36-check e2e
-smoke, lint, typecheck, prod build — all green.
-
-## Enhancement pass ✅ (second block)
-
-- [x] **PostgreSQL migration** (Replit-ready): fresh init migration, test
-      harness on a dedicated `nicfinder_test` DB, PG transaction-abort fix
-      (`createMany skipDuplicates`), docs updated
-- [x] **Replit prep**: `.replit` (Autoscale build/run), `/api/health`,
-      Replit Auth provider (`REPLIT_AUTH_ENABLED` header-trust model),
-      `scripts/maintenance.mjs` for Scheduled Deployments, `REPLIT.md`
-- [x] **Coverage requests**: guest+member demand capture on no-coverage
-      states, hashed-IP dedupe, /admin/coverage demand ranking
-- [x] **Best-price-nearby hero card** on search results
-- [x] **Watchlist**: save/unsave stores, account watchlist with latest prices
-- [x] **SEO**: /zyn-prices/[zip] landing pages, sitemap.xml, robots.txt,
-      and age gate converted from redirect to overlay so pages stay
-      crawlable
-- [x] **Admin analytics**: per-ZIP price dispersion ranges, freshness
-      buckets, weekly contribution bars
-- [x] **UX polish**: loading skeletons, error + 404 pages, metadata/OG
-      template, mobile search-bar overflow fix, back-link fix
-- [x] **Verification**: 53 vitest + 35-check e2e smoke + lint + typecheck +
-      prod build all green; e2e now kills its process group and fails fast
-      on stale ports
-
-## Status: MVP complete and verified ✅
-
-All milestone work finished in this session; all gates green at the
-latest commit on `claude/hopeful-feynman-mchyuv`.
-
-### Done
-- [x] Repo scaffold: Next 15 / TS strict / Tailwind 4 / Prisma 6 (SQLite)
-- [x] Schema + migration (`prisma/migrations/*_init`) + idempotent seed
-      (27 sanitized real Chicago stores, no prices; 8 fictional demo
-      stores with synthetic prices/deals; 3 demo users)
-- [x] Core libs: money(cents), deal math, latest-price policy, haversine +
-      bbox, offline ZIP geocoder (41k ZIPs) + cached Nominatim, normalize/
-      match helpers, settings, audit, rate limits
-- [x] Import pipeline: CSV/XLSX parse, header aliases + manual remap,
-      validation with issue codes, cautious store matching, in-file &
-      cross-import dedupe, preview→commit→reverse, error-report CSV
-- [x] Auth: scrypt + hashed session tokens; Google OAuth (env-gated);
-      age gate middleware
-- [x] Public UX: home, search (list/map, radius/sort/qty/product), store
-      detail (history, deals, comments), account, public profiles
-- [x] Community: confirm/dispute, corroboration independence, trusted
-      auto-publish within guardrails, reputation events incl. stale-confirm
-      penalty, comment reporting/auto-hide
-- [x] Admin: overview metrics + audit log, imports UI, stores + duplicate
-      merge + manual entry, review queue, settings editor
-- [x] Tests: **51 vitest** (all passing) + **20-check Playwright smoke**
-      (all passing) + lint + typecheck + prod build clean
-- [x] Docs: README, PRODUCT_REQUIREMENTS, ARCHITECTURE, IMPORT_CONTRACT,
-      COMMUNITY_REPUTATION, DECISIONS, DEMO_GUIDE, ROADMAP
-- [x] Research (web-verified, dated citations): ELEVENLABS_CALLING_RESEARCH,
-      BUSINESS_RESEARCH
+MVP complete, verified, not yet deployed. `main` is the only branch and is
+protected (PRs + the `verify` CI check). Gates green on `main`: 171 vitest
+tests, the 85-check e2e smoke test, lint, typecheck, production build, and
+migrations applied to an empty database with no schema drift.
 
 ### How to verify
+
 ```bash
-npm install && npx prisma migrate deploy && npm run db:seed
-npm test          # 51 tests, isolated prisma/test.db
-npm run build
-npm run e2e       # needs the build + seeded dev.db; 20 checks
+npm install && npx prisma generate
+npx prisma migrate deploy && npm run db:seed   # migrated + seeded DATABASE_URL
+npm run lint && npm run typecheck
+npm test                                       # nicfinder_test DB, wiped each run
+npm run build && npm run e2e                   # needs Playwright; port 3100
 ```
 
-### Known limitations (honest list)
-- Google OAuth & email delivery need real credentials (documented in
-  .env.example); login page states when unconfigured.
-- In-memory IP rate limiting is single-process (ARCHITECTURE.md).
-- Availability-only import rows (price-less "not carried") create the
-  store but no observation record (noted in engine; candidate for an
-  AvailabilityObservation table).
-- Map tiles require network (OSM); everything else runs offline.
-- No deployment configuration (out of scope by instruction).
+## Milestone 5: parallel sessions merged (2026-11-05)
 
-### Next session should start with
-1. Read DECISIONS.md + this file.
-2. Pick from ROADMAP.md "Now" items (deploy prep or real-data pass).
-3. Keep the e2e suite green (`npm run e2e`) after any route changes.
+Five sessions that ran in parallel were merged into `main` (PR #1), then the
+docs were reconciled. The details are in `HANDOFF.md` ("How the code got
+here") and `docs/DECISIONS.md` ("Merge of parallel sessions").
+
+- [x] Research due diligence added in `research/` (legal, economics, launch
+      plan, city ranking, financial scenarios, decision brief).
+- [x] Security hardening combined with the base branch: atomic publish
+      claims, bulk import pipeline, API body-size guard alongside the nonce
+      CSP, OAuth linking rules, state-gated moderation, CI workflow.
+- [x] UX features ported onto the kept screens: did-you-mean ZIPs, nearest
+      covered area, quick chips, store-name matches, one-tap confirm,
+      desktop list + map split view, remembered filters, "What you'd pay"
+      strip, mini-map, breadcrumbs, ZIP-page summaries and Ultra column,
+      price drops, covered-areas index, share images, offline page.
+- [x] Duplicate implementations removed; `/about` redirects to `/how-it-works`.
+- [x] Screenshot tour retaken from `main` with a reusable capture script.
+
+## Milestone 4: autonomous improvement sessions (2026-11-04 → 05)
+
+Each session's own log is in [`history/`](history/).
+
+- [x] **Product depth and trust** (keen-planck, 73 cycles): availability-only
+      observations, observation and deal flagging, community deal reports,
+      in-app price alerts and resolution notices, reliability tiers,
+      price-history sparklines, value-of-trip math, two-store compare,
+      nearest-500 search fix found by a 10k-store benchmark, dark mode,
+      store hours, the `/admin/collect` worksheet, pilot economics, CSV
+      export, audit-log viewer, import API with signed webhooks, pluggable
+      rate limiting.
+- [x] **Security and reliability** (focused-darwin, about 35 findings in 12
+      waves): OAuth takeover paths closed, concurrency-safe publishing,
+      import hardening and fuzzing, request-size guard, CI.
+- [x] **UX experiments** (beautiful-keller, 43 cycles), ported as listed
+      above.
+
+## Milestone 3: enhancement pass
+
+- [x] PostgreSQL (Replit-ready), with a dedicated `nicfinder_test` database
+      for tests.
+- [x] Replit prep: `.replit`, `/api/health`, Replit Auth provider,
+      `scripts/maintenance.mjs`, `docs/REPLIT.md`.
+- [x] Coverage requests, best-price card, watchlist, ZIP SEO pages, sitemap,
+      robots, age gate as an overlay (keeps pages crawlable), admin
+      analytics, loading/error/404 pages.
+- [x] At the time: 53 vitest tests, 35-check e2e.
+
+## Milestone 2: MVP
+
+- [x] Next.js 15, TypeScript strict, Tailwind 4, Prisma 6 (SQLite at the
+      time; now PostgreSQL).
+- [x] Schema, migrations and an idempotent seed: 27 sanitized real Chicago
+      stores without prices, fictional demo stores with synthetic prices,
+      demo users.
+- [x] Core libraries: money in cents, deal math, latest-price policy,
+      geo search, offline ZIP geocoder (41k ZIPs) plus cached Nominatim,
+      matching helpers, settings, audit, rate limits.
+- [x] Import pipeline: CSV/XLSX, header aliases and remapping, validation
+      with issue codes, cautious store matching, dedupe, preview → commit →
+      reverse, error-report CSV.
+- [x] Auth (scrypt, hashed session tokens, env-gated Google OAuth), public
+      UX, community confirm/dispute with corroboration and reputation,
+      admin suite.
+- [x] At the time: 51 vitest tests, 20-check e2e.
+
+## Milestone 1: research
+
+- [x] `docs/BUSINESS_RESEARCH.md` and `docs/ELEVENLABS_CALLING_RESEARCH.md`
+      (first pass, partly superseded by `research/`).

@@ -1,5 +1,13 @@
 # Security & Reliability Log
 
+> **Historical record — not current instructions.** This log was written on
+> the session branch `claude/focused-darwin-yetm48` before the five parallel sessions were
+> merged into `main` on 2026-11-05. Branch names, test counts and "next
+> steps" here are as of that branch. For the current state read
+> [`HANDOFF.md`](../../HANDOFF.md); for what the merge kept, changed or
+> removed see [`DECISIONS.md`](../DECISIONS.md) ("Merge of parallel
+> sessions"). After the merge: out-of-process rate limiting is done (keen-planck's `RATE_LIMIT_BACKEND=db`), so M-3 is superseded; corroboration now also requires distinct IP-hash networks (Sybil resistance partly addressed; email/phone verification still open); M-5's headers now sit alongside the nonce CSP in `src/middleware.ts`. Waves are listed newest first except Wave 2, which sits at the top.
+
 Maintained by the dedicated security/reliability session. Each entry records a
 finding, its severity, the change made, tests, and the commit. Newest first.
 

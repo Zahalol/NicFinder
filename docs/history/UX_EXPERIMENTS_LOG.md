@@ -1,5 +1,13 @@
 # UX Experiments Log
 
+> **Historical record — not current instructions.** This log was written on
+> the session branch `claude/beautiful-keller-yyipbw` before the five parallel sessions were
+> merged into `main` on 2026-11-05. Branch names, test counts and "next
+> steps" here are as of that branch. For the current state read
+> [`HANDOFF.md`](../../HANDOFF.md); for what the merge kept, changed or
+> removed see [`DECISIONS.md`](../DECISIONS.md) ("Merge of parallel
+> sessions"). Removed in the merge as duplicates of keen-planck's versions: the confidence pill (cycles 6, 34; replaced by reliability tiers), the 3-store compare dialog/tray (cycles 4, 27; replaced by the `/compare` page), the price sparkline (cycle 2; `PriceHistorySparkline` is used), "Worth the trip?" / `lib/trip.ts` (cycles 3, 38; `lib/trip-value.ts` is used), the `/about` page (cycles 17, 33; now redirects to `/how-it-works`), and the cycle-1 filter bar / priced-first directory (keen-planck's "Priced only" filter is used). Most other cycles were kept or ported.
+
 Running log of autonomous UX/product experiments on branch
 `claude/beautiful-keller-yyipbw`. Each entry: what was built, why, how it was
 tested, and a Keep / Consider / Discard recommendation. Experiments are kept

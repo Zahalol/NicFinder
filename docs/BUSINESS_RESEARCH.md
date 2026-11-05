@@ -1,5 +1,19 @@
 # NicFinder — Business Research: ZYN Price Comparison, Chicago Pilot
 
+> **Superseded in part — read [`research/99_FOUNDER_DECISION_BRIEF.md`](../research/99_FOUNDER_DECISION_BRIEF.md) first.**
+> This was the first-pass business doc (2026-11-04). The deeper due diligence
+> in [`research/`](../research/RESEARCH_INDEX.md) (2026-11-05) re-checked its
+> claims; [`research/00_SOURCE_AND_CONTRADICTION_REGISTER.md`](../research/00_SOURCE_AND_CONTRADICTION_REGISTER.md)
+> records each one. Where they disagree, **`research/` wins**. The main changes:
+> - **Cost per price:** ~$0.90/price here overstated per-dial cost; research/04 estimates ≈$0.21 per *generated* price and ≈$0.45 per *accurate* one (range $0.24–1.20).
+> - **Store universe:** ~1,904 Chicago tobacco licences at ~1,791 addresses (research/05), not ~1,200.
+> - **Calling:** research/99 is **NO-GO on automated calling for now**; manual collection dominates in every modeled case (research/10). The "three gates pass → fund calling" rule in §8 is replaced by research/10's criteria.
+> - **Kill gates:** the MAU thresholds here sit near the realistic ceiling (~1,150 MAU); research/10 replaces them with penetration + B2B revenue gates.
+> - **Pilot:** a manual Lake View + Lincoln Park pilot (~122 stores, ~$600–800; research/05, 99), under ~$2k total over 90 days.
+> - **Competitors:** not "exactly one" — research/08 adds PouchBuddy alongside Nicotinly.
+> - **Ads/affiliates:** AdSense restricts rather than prohibits nicotine content; no Prilla affiliate program was found, and Nicokick and Northerner are the same group (research/03).
+> - **Tax history:** pouches were previously outside the Illinois tobacco tax base; 15% was the vape rate (research/00 L11).
+
 **Prepared:** 2026-11-04 (all web sources accessed this date unless noted)
 **Scope:** Adult (21+) location-based price-comparison website for ZYN nicotine pouches. Information only — no sales, no checkout, no inventory. Pilot: Chicago (existing footprint: ~30 stores in Lincoln Park / Lakeview).
 **Companion doc:** Detailed outbound-calling research (vendors, scripts, compliance, per-call costs) lives in `ELEVENLABS_CALLING_RESEARCH.md`. Section 4 here keeps only the summary economics.

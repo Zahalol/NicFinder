@@ -39,14 +39,19 @@ expects.
 
 | Secret | Value |
 | --- | --- |
-| `SESSION_SECRET` | output of `openssl rand -hex 32` (any long random string) |
+| `SESSION_SECRET` | output of `openssl rand -hex 32`. Despite the name it only salts hashed IPs (sessions are random DB tokens). Set once: **rotating it changes every IP hash**, which weakens corroboration independence and coverage-request dedupe until new hashes accumulate. |
 | `APP_URL` | your deployment URL, e.g. `https://nicfinder.yourname.repl.co` or custom domain |
 | `REPLIT_AUTH_ENABLED` | `true` — **only** here, never in local `.env` (see Auth below) |
 | `DEMO_MODE` | `false` once real price data is loaded |
 | `NOMINATIM_USER_AGENT` | a short app identifier, e.g. `nicfinder-prod` |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | optional — only if you also want direct Google OAuth alongside Replit Auth |
+| `RATE_LIMIT_BACKEND` | `db` on Autoscale (see Deploy below); default `memory` |
+| `IMPORT_API_KEY` | optional — enables the import API (16+ chars, `openssl rand -hex 24`); unset → 404. See API.md |
+| `IMPORT_WEBHOOK_URL` | optional — `https://` receiver for signed import-status pushes |
 
 `DATABASE_URL` is managed by the Replit database integration.
+`NOMINATIM_ENABLED="true"` is already set (non-secret) in `.replit`
+`[env]`; set it to `false` there for a fully offline geocoder.
 
 ## 4. Sign-in with SSO (Replit Auth)
 
@@ -73,19 +78,20 @@ The app has a built-in **Replit Auth** provider (`/api/auth/replit`):
 ## 5. Deploy
 
 1. **Deploy** → **Autoscale** (the `.replit` file already sets build & run:
-   `npm ci && prisma generate && prisma migrate deploy && npm run build`,
+   `npm ci && npx prisma generate && npx prisma migrate deploy && npm run build`,
    then `npm start`). Migrations run on every deploy — safe and idempotent.
 2. Health check path: `/api/health` (returns 503 if the DB is unreachable).
 3. Attach a custom domain in deployment settings when ready.
 
 Autoscale runs **multiple instances**, so set the secret
-`RATE_LIMIT_BACKEND=db` there: login/signup throttling then uses a shared
-Postgres sliding window (`RateLimitEvent`, pruned by the maintenance job)
-instead of per-process memory. Locally the default (`memory`) is fine.
+`RATE_LIMIT_BACKEND=db` there: the IP limits on login/signup then use a
+shared Postgres sliding window (`RateLimitEvent`, pruned by the maintenance
+job) instead of per-process memory. Locally the default (`memory`) is fine.
 
 Autoscale notes: the filesystem is ephemeral (fine — all state is in
-Postgres) and the in-memory login rate limiter is per-instance (documented
-in ARCHITECTURE.md; acceptable at this scale).
+Postgres). The per-email failed-login limit always stays in memory, so it
+is per instance even with `RATE_LIMIT_BACKEND=db` (documented in
+ARCHITECTURE.md; acceptable at this scale).
 
 ## 6. Scheduled Deployments (maintenance job)
 
@@ -93,12 +99,16 @@ Create a **Scheduled Deployment** to run periodic maintenance:
 
 - Command: `node scripts/maintenance.mjs`
 - Schedule: hourly or daily.
-- It expires past-due quantity deals and logs freshness/queue/coverage
-  counts (JSON) for monitoring. It never deletes data.
+- It expires past-due quantity deals; resolves community proposals left
+  uncorroborated for 21 days as rejected ("Expired"); reconciles cached
+  user reputation against the reputation ledger; deletes operational
+  ephemera — expired sessions, rate-limit events older than a day, READ
+  notifications older than 90 days; and logs freshness/queue/coverage
+  counts (JSON) for monitoring. It never deletes price evidence.
 
-This is also the natural home for a future import-ingestion job (pull CSV
-files from Object Storage and POST them to the importer — see
-IMPORT_CONTRACT.md "Future automated handoff").
+This is also the natural home for an import-ingestion job (pull CSV files
+from Object Storage and POST them to `/api/imports` — see API.md and
+IMPORT_CONTRACT.md "Automated handoff").
 
 ## 7. Other Replit features worth using
 
@@ -109,6 +119,11 @@ IMPORT_CONTRACT.md "Future automated handoff").
   workspace; the repo's docs (ARCHITECTURE.md, IMPORT_CONTRACT.md,
   COMMUNITY_REPUTATION.md) give it the context it needs. Keep changes on
   branches and keep `npm test` green.
+- **CI and protected `main`**: GitHub's `main` branch is protected —
+  changes land only through pull requests with the `verify` check (lint,
+  typecheck, vitest, build against Postgres 16) passing. Don't push
+  directly to `main` from the Replit workspace; push a branch and open a
+  PR. CI does not run the e2e smoke test.
 - **Replit Database pane / Prisma Studio** (`npx prisma studio`) for quick
   data inspection and the one-time admin-role promotion.
 - **Always-on vs Autoscale**: Autoscale is right for this app; if you later

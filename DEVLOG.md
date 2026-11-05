@@ -5,10 +5,48 @@ finished work, decisions, and lessons. Current state and open items live in HAND
 
 ---
 
+## 2026-11-05 — Merge of five parallel sessions, docs reconciled
+
+**Done**
+- Merged the five session branches into one (`main`, PR #1): research
+  (`research/`), keen-planck (base), focused-darwin (security + CI) and
+  beautiful-keller (UX); adoring-hypatia skipped (contained in
+  beautiful-keller). Gates green after every step.
+- Overlapping fixes were combined, not picked: atomic publish claims with
+  network-distinct corroboration, focused-darwin's bulk import pipeline with
+  keen-planck's alerts/hours/availability rows ported in, nonce CSP plus API
+  body-size guard in one middleware.
+- For the four screens both UX sessions redesigned, keen-planck's versions
+  were kept and beautiful-keller's unique features ported in separate,
+  tested commits. Duplicates removed: confidence pill, compare dialog,
+  second sparkline, `lib/trip.ts`, `/about` (now a 301 to `/how-it-works`).
+- Fixed what git could not see: two migrations creating `CommentReport`;
+  keller pages reading the now-nullable `priceCents`; CSP blocking the
+  service worker; two flaky e2e checks; and the size guard rejecting
+  `POST /api/imports` uploads over 64 KB.
+- `main` protected (PRs + `verify` check). Docs audited against the code and
+  rewritten: new `HANDOFF.md`, `CLAUDE.md`, `docs/PARALLEL_SESSIONS.md`;
+  session logs moved to `docs/history/`; superseded research flagged;
+  screenshot tour retaken with `scripts/capture-screenshots.mjs`.
+
+**Decisions** — recorded in `docs/DECISIONS.md` ("Merge of parallel
+sessions", #29–#37).
+
+**Lessons**
+- Parallel sessions given overlapping briefs ("improve UX", "harden
+  security") build the same features twice. Assign areas by files.
+- Text conflicts are the easy part. The costly bugs were semantic: a
+  nullable column, a duplicated migration, a security policy blocking
+  another session's feature. Run the full gates after every merge step.
+- Shared docs (HANDOFF, DEVLOG, README, screenshots) conflicted on every
+  merge; one session should own them.
+
+---
+
 ## 2026-11-04/05 — Session 2 (autonomous overnight marathon)
 
 **Done** (74 improvement cycles, each its own commit; full evidence table in
-AUTONOMOUS_WORKLOG.md)
+docs/history/AUTONOMOUS_WORKLOG.md)
 - **Found & fixed a lost page**: /admin/coverage existed in nav+e2e but the
   unanchored `coverage/` gitignore had silently kept it out of every commit.
 - **Data honesty core**: nullable `priceCents` — availability-only
@@ -71,7 +109,7 @@ AUTONOMOUS_WORKLOG.md)
 **Done**
 - 40 evaluate→build→test→critique cycles on the customer experience, each
   committed separately with before/after Playwright screenshots and logged in
-  `UX_EXPERIMENTS_LOG.md` (what, why, testing, keep/discard). Highlights:
+  `docs/history/UX_EXPERIMENTS_LOG.md` (what, why, testing, keep/discard). Highlights:
   mobile filter-bar redesign + priced-first results; desktop list+sticky-map
   split with map→list sync; transparent price-confidence pills
   (lib/confidence.ts) with reasons; history sparklines + trend;

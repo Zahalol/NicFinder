@@ -1,6 +1,6 @@
 # NicFinder Research Index
 
-Research-only due diligence. No application code, configuration, or existing docs were changed. Branch: `claude/exciting-franklin-xuwhwh`.
+Research-only due diligence (2026-11-04/05), produced on a separate session branch and merged into `main` on 2026-11-05. No application code was changed. Where these documents disagree with the older [`docs/BUSINESS_RESEARCH.md`](../docs/BUSINESS_RESEARCH.md) or [`docs/ELEVENLABS_CALLING_RESEARCH.md`](../docs/ELEVENLABS_CALLING_RESEARCH.md), **these win**; both older docs now carry a banner listing the differences. Start with [`99_FOUNDER_DECISION_BRIEF.md`](99_FOUNDER_DECISION_BRIEF.md).
 
 | Phase | Document | Status | Key finding (one line) | Confidence |
 |---|---|---|---|---|

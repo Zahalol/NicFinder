@@ -677,6 +677,18 @@ try {
   });
   check("import API rejects missing/invalid keys", apiChecks.noKey === 401 && apiChecks.badKey === 401);
   check("import API preview + status round-trip", apiChecks.preview === true && apiChecks.statusGet === true);
+  // The API's own cap is 5 MB; the middleware size guard must not cut
+  // uploads off at the 64 KB JSON limit first (no key → 401, not 413).
+  const bigUploadStatus = await page.evaluate(async () => {
+    const fd = new FormData();
+    fd.append("file", new Blob(["x".repeat(100 * 1024)], { type: "text/csv" }), "big.csv");
+    return (await fetch("/api/imports", { method: "POST", body: fd })).status;
+  });
+  check(
+    "import API accepts uploads over 64 KB past the size guard",
+    bigUploadStatus === 401,
+    `(got ${bigUploadStatus})`
+  );
 
   // Dark mode regression guard: a dark-preferring browser gets a dark body.
   const darkCtx = await browser.newContext({ colorScheme: "dark" });
