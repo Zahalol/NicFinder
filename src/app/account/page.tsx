@@ -54,12 +54,14 @@ export default async function AccountPage() {
     return { saved: s, store: s.store, latest };
   });
   const pricedRows = watchRows.filter((r) => r.latest);
-  const cheapestId =
+  const cheapestRow =
     pricedRows.length >= 2
       ? pricedRows.reduce((a, b) =>
           a.latest!.observation.priceCents <= b.latest!.observation.priceCents ? a : b
-        ).store.id
+        )
       : null;
+  const cheapestId = cheapestRow?.store.id ?? null;
+  const cheapestCents = cheapestRow?.latest!.observation.priceCents ?? null;
 
   const trusted = user.reputation >= settings.trustedReputation;
 
@@ -153,6 +155,14 @@ export default async function AccountPage() {
                               <span className="text-amber-600 dark:text-amber-400"> · may be outdated</span>
                             )}
                           </div>
+                          {!cheapest &&
+                            cheapestCents !== null &&
+                            latest.observation.priceCents > cheapestCents && (
+                              <div className="text-[11px] text-stone-400">
+                                +{formatCents(latest.observation.priceCents - cheapestCents)}/can
+                                vs your cheapest
+                              </div>
+                            )}
                         </>
                       ) : (
                         <span className="text-sm text-stone-400">no recent ZYN price</span>
