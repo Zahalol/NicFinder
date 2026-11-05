@@ -89,16 +89,26 @@ export default async function StorePage({
       })) !== null
     : false;
 
-  const latestByLine = productLines.map((line) => {
-    const lineObs = store.observations.filter(
-      (o) => o.productLineId === line.id && o.status === "ACTIVE"
-    );
-    return {
-      line,
-      latest: selectLatestPrice(lineObs, settings),
-      avail: selectLatestAvailability(lineObs, settings),
-    };
-  });
+  // Latest price per product line comes from a dedicated per-line query —
+  // deriving it from the shared 50-row history window dropped the current
+  // price of a rarely-updated line once a frequently-imported line pushed
+  // more than 50 newer rows (search still showed it; this page said
+  // "no recent price" and blocked confirmations).
+  const activeByLine = await Promise.all(
+    productLines.map((line) =>
+      prisma.priceObservation.findMany({
+        where: { storeId: store.id, productLineId: line.id, status: "ACTIVE" },
+        include: { verifications: true },
+        orderBy: { observedAt: "desc" },
+        take: 10,
+      })
+    )
+  );
+  const latestByLine = productLines.map((line, i) => ({
+    line,
+    latest: selectLatestPrice(activeByLine[i], settings),
+    avail: selectLatestAvailability(activeByLine[i], settings),
+  }));
 
   // Up to 3 nearby alternatives within 2 miles, reusing the exact search
   // policy (latest-price selection, deal handling) — cheapest first, this

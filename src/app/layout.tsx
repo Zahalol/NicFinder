@@ -52,6 +52,11 @@ export default async function RootLayout({
           Skip to content
         </a>
         {!ageConfirmed && <AgeGateOverlay />}
+        {/* While the age gate shows, the page behind it is `inert`: keyboard
+            focus and clicks cannot reach it (previously Tab bypassed the
+            overlay) and it leaves the accessibility tree, while the HTML
+            stays server-rendered and indexable. */}
+        <div inert={!ageConfirmed || undefined}>
         {demoMode && (
           <div className="bg-amber-100 dark:bg-amber-900 text-amber-900 dark:text-amber-200 text-center text-xs px-3 py-1.5 border-b border-amber-200 dark:border-amber-800">
             Demonstration data — prices shown on fictional “Demo” stores are
@@ -129,6 +134,7 @@ export default async function RootLayout({
             </p>
           </div>
         </footer>
+        </div>
       </body>
     </html>
   );

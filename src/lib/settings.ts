@@ -46,14 +46,34 @@ export const DEFAULT_SETTINGS: AppSettings = {
 
 const KEY = "app";
 
+// Settings are read on almost every request (search, contributions, SEO
+// pages), so cache them briefly per process. Writes refresh the cache
+// immediately in the writing process; other instances converge within the
+// TTL. Disabled under tests, which reset the DB between cases.
+const CACHE_TTL_MS = 10_000;
+let cached: { value: AppSettings; at: number } | null = null;
+
+function cacheEnabled(): boolean {
+  return process.env.NODE_ENV !== "test";
+}
+
 export async function getSettings(): Promise<AppSettings> {
-  const row = await prisma.setting.findUnique({ where: { key: KEY } });
-  if (!row) return { ...DEFAULT_SETTINGS };
-  try {
-    return { ...DEFAULT_SETTINGS, ...JSON.parse(row.valueJson) };
-  } catch {
-    return { ...DEFAULT_SETTINGS };
+  if (cacheEnabled() && cached && Date.now() - cached.at < CACHE_TTL_MS) {
+    return cached.value;
   }
+  const row = await prisma.setting.findUnique({ where: { key: KEY } });
+  let value: AppSettings;
+  if (!row) {
+    value = { ...DEFAULT_SETTINGS };
+  } else {
+    try {
+      value = { ...DEFAULT_SETTINGS, ...JSON.parse(row.valueJson) };
+    } catch {
+      value = { ...DEFAULT_SETTINGS };
+    }
+  }
+  cached = { value, at: Date.now() };
+  return value;
 }
 
 export async function updateSettings(
@@ -66,5 +86,6 @@ export async function updateSettings(
     create: { key: KEY, valueJson: JSON.stringify(next) },
     update: { valueJson: JSON.stringify(next) },
   });
+  cached = { value: next, at: Date.now() };
   return next;
 }

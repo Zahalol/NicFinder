@@ -116,7 +116,7 @@ describe("corroboration & publication flows (acceptance 10, 11)", () => {
         status: "PUBLISHED",
       },
     });
-    expect(await maybePublishCorroborated(proposal.id, S)).toBe(false);
+    expect(await maybePublishCorroborated(proposal.id, S)).toBe("pending");
 
     // One independent corroborator (threshold is 2): still unpublished.
     await prisma.contribution.create({
@@ -129,7 +129,7 @@ describe("corroboration & publication flows (acceptance 10, 11)", () => {
         status: "PUBLISHED",
       },
     });
-    expect(await maybePublishCorroborated(proposal.id, S)).toBe(false);
+    expect(await maybePublishCorroborated(proposal.id, S)).toBe("pending");
 
     // Duplicate submission by the SAME corroborator must not help (acceptance 11).
     await prisma.contribution.create({
@@ -142,7 +142,7 @@ describe("corroboration & publication flows (acceptance 10, 11)", () => {
         status: "PUBLISHED",
       },
     });
-    expect(await maybePublishCorroborated(proposal.id, S)).toBe(false);
+    expect(await maybePublishCorroborated(proposal.id, S)).toBe("pending");
 
     // Second independent corroborator → publish.
     const c2 = await makeUser({ email: "c2@x.com" });
@@ -156,7 +156,7 @@ describe("corroboration & publication flows (acceptance 10, 11)", () => {
         status: "PUBLISHED",
       },
     });
-    expect(await maybePublishCorroborated(proposal.id, S)).toBe(true);
+    expect(await maybePublishCorroborated(proposal.id, S)).toBe("published");
 
     // Old observation superseded; new COMMUNITY observation active; rep awarded.
     const oldObs = await prisma.priceObservation.findUnique({ where: { id: obs.id } });
@@ -277,16 +277,16 @@ describe("corroboration network independence (anti-sockpuppet)", () => {
     // Two different accounts from the SAME network: count once (threshold 2).
     await corroborate(a.id, HASH_SHARED);
     await corroborate(b.id, HASH_SHARED);
-    expect(await maybePublishCorroborated(proposal.id, S)).toBe(false);
+    expect(await maybePublishCorroborated(proposal.id, S)).toBe("pending");
 
     // An account on the PROPOSER'S network doesn't count either.
     await corroborate(c.id, HASH_PROPOSER);
-    expect(await maybePublishCorroborated(proposal.id, S)).toBe(false);
+    expect(await maybePublishCorroborated(proposal.id, S)).toBe("pending");
 
     // A genuinely distinct network completes the threshold.
     const d = await makeUser({ email: "d@x.com" });
     await corroborate(d.id, "hash-other-network");
-    expect(await maybePublishCorroborated(proposal.id, S)).toBe(true);
+    expect(await maybePublishCorroborated(proposal.id, S)).toBe("published");
   });
 });
 

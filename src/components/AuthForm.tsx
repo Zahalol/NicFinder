@@ -26,13 +26,20 @@ export function AuthForm({
     e.preventDefault();
     setBusy(true);
     setErr(null);
-    const res = await fetch(`/api/auth/${mode === "login" ? "login" : "signup"}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(
-        mode === "login" ? { email, password } : { email, password, displayName }
-      ),
-    });
+    let res: Response;
+    try {
+      res = await fetch(`/api/auth/${mode === "login" ? "login" : "signup"}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(
+          mode === "login" ? { email, password } : { email, password, displayName }
+        ),
+      });
+    } catch {
+      setBusy(false);
+      setErr("Network error — check your connection and try again.");
+      return;
+    }
     const data = await res.json().catch(() => ({}));
     setBusy(false);
     if (!res.ok) {
@@ -58,6 +65,8 @@ export function AuthForm({
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
             placeholder="Display name"
+            aria-label="Display name"
+            autoComplete="nickname"
             required
             minLength={2}
             maxLength={40}
@@ -69,6 +78,8 @@ export function AuthForm({
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="Email"
+          aria-label="Email"
+          autoComplete="email"
           required
           className="w-full rounded-lg border border-stone-300 dark:border-stone-600 px-3 py-2.5"
         />
@@ -77,6 +88,8 @@ export function AuthForm({
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder={mode === "signup" ? "Password (10+ characters)" : "Password"}
+          aria-label="Password"
+          autoComplete={mode === "signup" ? "new-password" : "current-password"}
           required
           minLength={mode === "signup" ? 10 : 1}
           className="w-full rounded-lg border border-stone-300 dark:border-stone-600 px-3 py-2.5"

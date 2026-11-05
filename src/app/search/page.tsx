@@ -37,8 +37,16 @@ export default async function SearchPage({
     ? (params.sort as SortKey)
     : "distance";
 
+  // URL-supplied coordinates must be real Earth coordinates; anything else
+  // (NaN, Infinity, out-of-range junk) is treated as "no location given".
+  const inRange = (v: number | null, limit: number) =>
+    v !== null && Number.isFinite(v) && Math.abs(v) <= limit;
   let lat = params.lat ? Number(params.lat) : null;
   let lng = params.lng ? Number(params.lng) : null;
+  if (!inRange(lat, 90) || !inRange(lng, 180)) {
+    lat = null;
+    lng = null;
+  }
   let locationLabel: string | null = lat !== null ? "your location" : null;
   let approximate = false;
   let geocodeFailed = false;

@@ -110,12 +110,31 @@ function evictIfNeeded() {
   }
 }
 
+// The map is keyed by attacker-controlled values (IPs, emails), so it must
+// not grow without bound: sweep out buckets whose entries have all aged past
+// the largest window we use. Sweeping lazily on write keeps this dependency-
+// free and O(1) amortized.
+const SWEEP_EVERY_MS = 60_000;
+const MAX_WINDOW_MS = 3_600_000; // largest window used by any caller
+let lastSweepAt = 0;
+
+function sweep(now: number): void {
+  if (now - lastSweepAt < SWEEP_EVERY_MS) return;
+  lastSweepAt = now;
+  for (const [key, arr] of buckets) {
+    if (!arr.length || now - arr[arr.length - 1] >= MAX_WINDOW_MS) {
+      buckets.delete(key);
+    }
+  }
+}
+
 export function memoryRateLimit(
   key: string,
   max: number,
   windowMs: number
 ): boolean {
   const now = Date.now();
+  sweep(now);
   const arr = (buckets.get(key) ?? []).filter((t) => now - t < windowMs);
   if (arr.length >= max) {
     buckets.set(key, arr);
@@ -128,4 +147,28 @@ export function memoryRateLimit(
   buckets.set(key, arr);
   evictIfNeeded();
   return true;
+}
+
+/**
+ * Check-only variant: true = under the limit. Pair with memoryRateRecord to
+ * count only the attempts that matter (e.g. FAILED logins — counting
+ * successes would let an attacker lock a victim out of their own account by
+ * hammering the email).
+ */
+export function memoryRateCheck(key: string, max: number, windowMs: number): boolean {
+  const now = Date.now();
+  sweep(now);
+  const arr = (buckets.get(key) ?? []).filter((t) => now - t < windowMs);
+  buckets.set(key, arr);
+  return arr.length < max;
+}
+
+export function memoryRateRecord(key: string): void {
+  const now = Date.now();
+  sweep(now);
+  const arr = buckets.get(key) ?? [];
+  arr.push(now);
+  buckets.delete(key);
+  buckets.set(key, arr);
+  evictIfNeeded();
 }

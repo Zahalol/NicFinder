@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { apiFetch } from "@/lib/client/api";
 
 export function BatchActions({
   batchId,
@@ -17,10 +18,13 @@ export function BatchActions({
   async function commit() {
     setBusy(true);
     setErr(null);
-    const res = await fetch(`/api/admin/imports/${batchId}/commit`, { method: "POST" });
-    const json = await res.json().catch(() => ({}));
+    const res = await apiFetch(`/api/admin/imports/${batchId}/commit`);
     setBusy(false);
-    if (!res.ok) { setErr(json.error ?? "Commit failed."); return; }
+    if (!res.ok) {
+      setErr(res.error);
+      if (res.status === 409) router.refresh(); // batch state is stale
+      return;
+    }
     router.refresh();
   }
 
@@ -31,14 +35,13 @@ export function BatchActions({
     if (!reason) return;
     setBusy(true);
     setErr(null);
-    const res = await fetch(`/api/admin/imports/${batchId}/reverse`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ reason }),
-    });
-    const json = await res.json().catch(() => ({}));
+    const res = await apiFetch(`/api/admin/imports/${batchId}/reverse`, { body: { reason } });
     setBusy(false);
-    if (!res.ok) { setErr(json.error ?? "Reverse failed."); return; }
+    if (!res.ok) {
+      setErr(res.error);
+      if (res.status === 409) router.refresh();
+      return;
+    }
     router.refresh();
   }
 

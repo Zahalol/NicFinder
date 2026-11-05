@@ -302,6 +302,8 @@ model CoverageRequest {
 
   @@index([zip])
   @@index([createdAt])
+  // Guest dedupe/daily-cap queries filter by ipHash on every request.
+  @@index([ipHash])
 }
 
 // In-app notifications (no email/external sending — that stays disabled
@@ -348,6 +350,8 @@ model AuthSession {
   userAgent String?
 
   @@index([userId])
+  // Maintenance purges expired sessions in bulk.
+  @@index([expiresAt])
 }
 
 // A community submission: either confirming the displayed price or proposing
@@ -433,6 +437,7 @@ model Comment {
   body      String
   // VISIBLE | HIDDEN (moderated) | DELETED (by author)
   status    String   @default("VISIBLE")
+  // Cached count of DISTINCT reporters (CommentReport is the source of truth).
   reportCount Int    @default(0)
   createdAt DateTime @default(now())
   editedAt  DateTime?
@@ -440,6 +445,8 @@ model Comment {
   reports   CommentReport[]
 
   @@index([storeId, status, createdAt])
+  // Per-user hourly rate-limit count.
+  @@index([userId, createdAt])
 }
 
 // One report per user per comment — prevents a single account from
@@ -453,6 +460,7 @@ model CommentReport {
   createdAt DateTime @default(now())
 
   @@unique([commentId, userId])
+  @@index([commentId])
 }
 
 model ModerationAction {

@@ -87,9 +87,17 @@ try {
     "page content still present behind the overlay (SEO-safe)",
     (await page.locator('a[href^="/stores/"]').count()) > 0
   );
+  check(
+    "page behind overlay is inert (keyboard/AT cannot bypass the gate)",
+    (await page.locator("body > div[inert]").count()) === 1
+  );
   await page.getByRole("button", { name: /21 or older/i }).click();
   await page.waitForTimeout(1200);
   check("overlay dismissed after confirming", (await page.getByRole("dialog").count()) === 0);
+  check(
+    "page interactive after confirming (inert removed)",
+    (await page.locator("body > div[inert]").count()) === 0
+  );
 
   // 2. Search results
   console.log("Search 60614…");
@@ -491,6 +499,87 @@ try {
   // stone-950 = #0c0a09 = rgb(12, 10, 9)
   check("dark scheme renders a dark body background", bodyBg === "rgb(12, 10, 9)", bodyBg);
   await darkCtx.close();
+
+  // 7. Community contribution flow through the real API (as a demo user)
+  console.log("Contribution flow…");
+  const newbieLogin = await page.evaluate(async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
+    const r = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: "newbie@example.com", password: "newbie-demo-password" }),
+    });
+    return r.status;
+  });
+  check("demo member login succeeds", newbieLogin === 200, `(got ${newbieLogin})`);
+
+  // Find a store whose contribute panel is rendered (try the first few from
+  // search — depending on data state the very first store may not expose the
+  // panel, and one arbitrary store must not decide the suite's fate).
+  await page.goto(`${BASE}/search?q=60614&radius=5`);
+  const candidateIds = [
+    ...new Set(
+      (await page.locator('a[href^="/stores/"]').evaluateAll((as) =>
+        as.map((a) => a.getAttribute("href"))
+      ))
+        .filter(Boolean)
+        .map((h) => h.split("/stores/")[1].split(/[?#]/)[0])
+    ),
+  ].slice(0, 3);
+  let productLineId = null;
+  let contributeStoreId = storeId;
+  for (const sid of candidateIds.length ? candidateIds : [storeId]) {
+    await page.goto(`${BASE}/stores/${sid}`);
+    const v = await page
+      .locator('select[aria-label="Product line"] option')
+      .first()
+      .getAttribute("value")
+      .catch(() => null);
+    if (v) {
+      productLineId = v;
+      contributeStoreId = sid;
+      break;
+    }
+  }
+  if (productLineId) {
+    // A fresh price each run keeps this section idempotent against the same
+    // dev DB (otherwise the previous run's open proposal answers first).
+    const price = (5 + Math.floor(Math.random() * 300) / 100).toFixed(2);
+    const disputeChecks = await page.evaluate(
+      async ({ sid, plid, price: p }) => {
+        const post = async (payload) => {
+          const r = await fetch(`/api/stores/${sid}/contributions`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          return r.status;
+        };
+        const badQty = await post({ kind: "DISPUTE", productLineId: plid, proposedPrice: p, proposedQty: -3 });
+        const ok = await post({ kind: "DISPUTE", productLineId: plid, proposedPrice: p });
+        const dupe = await post({ kind: "DISPUTE", productLineId: plid, proposedPrice: p });
+        const badKind = await post({ kind: "NONSENSE", productLineId: plid });
+        return { badQty, ok, dupe, badKind };
+      },
+      { sid: contributeStoreId, plid: productLineId, price }
+    );
+    // 429 = the demo user's 6/hour contribution cap. On a shared dev DB,
+    // repeated e2e runs exhaust it, and the cap is checked before any other
+    // validation — so EVERY check here must accept 429 as "the rate guard
+    // answered first". A fresh database exercises the strict values.
+    const capped = (got, want) => got === want || got === 429;
+    check(`dispute with invalid qty rejected (400, got ${disputeChecks.badQty})`, capped(disputeChecks.badQty, 400));
+    check(
+      `dispute recorded for corroboration (200, got ${disputeChecks.ok})`,
+      capped(disputeChecks.ok, 200)
+    );
+    if (disputeChecks.ok === 200) {
+      check(`same user re-proposing is rejected (409, got ${disputeChecks.dupe})`, capped(disputeChecks.dupe, 409));
+    }
+    check(`unknown contribution kind rejected (400, got ${disputeChecks.badKind})`, capped(disputeChecks.badKind, 400));
+  } else {
+    check("contribute panel exposes product lines", false);
+  }
 
   console.log(failures === 0 ? "\nAll smoke checks passed." : `\n${failures} smoke check(s) FAILED.`);
 } catch (e) {

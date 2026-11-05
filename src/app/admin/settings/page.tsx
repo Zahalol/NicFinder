@@ -1,3 +1,4 @@
+import { requireStaffPage } from "@/lib/page-auth";
 import { getSettings } from "@/lib/settings";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
@@ -22,6 +23,7 @@ const FIELD_DOCS: Record<string, string> = {
 };
 
 export default async function SettingsPage() {
+  await requireStaffPage();
   const [settings, user, auditEvents] = await Promise.all([
     getSettings(),
     getCurrentUser(),

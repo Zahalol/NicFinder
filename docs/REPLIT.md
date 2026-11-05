@@ -29,6 +29,11 @@ expects.
 4. Tip: you can also point your local `.env` `DATABASE_URL` at this same
    connection string so your Windows machine and Replit share one database
    (no local Postgres install needed).
+5. **Autoscale + Postgres connections**: each autoscale instance opens its
+   own Prisma pool (default ≈ CPU×2+1 connections). Replit's database is
+   Neon-backed with a modest connection cap, so if you ever see
+   "too many connections" under load, append `?connection_limit=5` (or
+   lower) to `DATABASE_URL`, or cap autoscale instances.
 
 ## 3. Secrets (Tools → Secrets)
 

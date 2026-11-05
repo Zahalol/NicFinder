@@ -74,21 +74,40 @@ fine for thousands of stores; see Postgres path for scale.
 - **Sessions**: 32-byte random tokens, stored **SHA-256-hashed**; httpOnly,
   SameSite=Lax, Secure in production; 30d expiry; suspended users' sessions
   are revoked. Passwords: scrypt (16B salt, N=16384 via Node defaults).
-- **Authorization is server-side at every boundary**: `/admin` layout
-  redirects, but every `/api/admin/*` route independently re-checks the
-  role (`withStaff`/`withAdmin`); settings writes are ADMIN-only. E2E
-  verifies guests get 401s and redirects.
+- **Authorization is server-side at every boundary**: every `/api/admin/*`
+  route independently re-checks the role (`withStaff`/`withAdmin`), and
+  every `/admin` *page* calls `requireStaffPage()` itself — the layout
+  check is UX only (App Router layouts render in parallel with pages and
+  don't re-run on client navigation, so a layout is not a security
+  boundary). Settings writes are ADMIN-only. E2E verifies guests get 401s
+  and redirects. Unexpected API errors return a generic message (internal
+  error text is logged, never echoed).
 - **Validation**: zod-free hand validation at route edges (small surface);
-  prices/dates/coords validated on import and contribution paths; file
-  uploads limited to 5 MB and .csv/.xlsx parsed server-side only.
+  prices/dates/coords validated on import and contribution paths;
+  `cleanText()` strips NUL/control chars from all free text (Postgres
+  `text` rejects \0); file uploads limited to 5 MB and .csv/.xlsx parsed
+  server-side only; `src/middleware.ts` caps non-GET `/api` bodies (64 KB;
+  8 MB for the import upload).
 - **Rate limits**: DB-counted per-user limits for contributions/comments;
-  in-memory IP limits for signup/login (single-process MVP — move to
-  Redis/upstash or a reverse-proxy limiter when horizontally scaled).
+  in-memory IP **and per-email** limits for signup/login (the XFF-derived
+  IP is client-influenced, so it is never the only key). The in-memory map
+  sweeps idle buckets (attacker-controlled keys must not grow unbounded).
+  Single-process MVP — move to Redis/upstash or a reverse-proxy limiter
+  when horizontally scaled.
+- **Headers**: X-Frame-Options DENY + `frame-ancestors 'none'`, nosniff,
+  strict-origin-when-cross-origin referrer, Permissions-Policy (self
+  geolocation only) — set in `next.config.ts`.
 - **Age gate**: a full-screen client overlay rendered by the root layout
   whenever the 21+ cookie is absent — not a redirect, so public pages stay
   crawlable/indexable (SEO) while interaction is blocked until confirmed.
+  The page behind the overlay is `inert` (no focus/clicks, out of the
+  accessibility tree) so keyboard users cannot tab past the gate.
   Interstitial, not identity verification (industry norm for informational
   nicotine content; see PRODUCT_REQUIREMENTS).
+- **Google OAuth**: `email_verified` is required from userinfo before any
+  email-based account linking (unverified Google emails could otherwise
+  take over a matching password account); state cookie + 10s fetch
+  timeouts.
 - **Replit Auth**: `/api/auth/replit` trusts Replit's injected
   `X-Replit-User-*` identity headers ONLY when `REPLIT_AUTH_ENABLED=true`,
   a secret set exclusively on the Replit deployment where the proxy
@@ -118,3 +137,14 @@ prefilter, out-of-process rate limiting, pgbouncer.
   on /admin.
 - The e2e smoke test (`npm run e2e`) boots the production build on :3100
   and exercises the full guest → community → admin loop.
+- `scripts/maintenance.mjs` (hourly/daily): expires stale deals, purges
+  expired auth sessions, reconciles cached `User.reputation` against the
+  `ReputationEvent` ledger (users with no ledger events are reported, never
+  overwritten), and logs freshness counts.
+- Settings (`src/lib/settings.ts`) are cached per process for 10 s; writes
+  refresh the writing instance immediately, others converge within the TTL
+  (disabled under tests).
+- Concurrency invariants: state transitions claim their row *inside* the
+  transaction (contribution publish/reject, import commit/reverse), and
+  identical-content import commits serialize on a Postgres advisory lock —
+  see SECURITY_RELIABILITY_LOG.md for the races these close.

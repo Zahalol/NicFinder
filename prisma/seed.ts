@@ -141,6 +141,23 @@ async function main() {
     },
   });
 
+  // Reputation ledger baselines: User.reputation is a cached sum of
+  // ReputationEvent (reconciled by scripts/maintenance.mjs), so seeded
+  // grants get matching ledger entries. Idempotent via the SEED_GRANT marker.
+  for (const u of [
+    { id: admin.id, delta: 100 },
+    { id: trusted.id, delta: 80 },
+  ]) {
+    const existing = await prisma.reputationEvent.findFirst({
+      where: { userId: u.id, reason: "SEED_GRANT" },
+    });
+    if (!existing) {
+      await prisma.reputationEvent.create({
+        data: { userId: u.id, delta: u.delta, reason: "SEED_GRANT", refType: "admin" },
+      });
+    }
+  }
+
   // --- Real store directory (no prices!)
   for (const s of REAL_STORES) {
     const existing = await prisma.storeIdentity.findFirst({

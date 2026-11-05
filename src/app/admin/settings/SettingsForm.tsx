@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { AppSettings } from "@/lib/settings";
+import { apiFetch } from "@/lib/client/api";
 
 export function SettingsForm({
   settings,
@@ -24,14 +25,9 @@ export function SettingsForm({
     setBusy(true);
     setErr(null);
     setMsg(null);
-    const res = await fetch("/api/admin/settings", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(values),
-    });
-    const json = await res.json().catch(() => ({}));
+    const res = await apiFetch("/api/admin/settings", { body: values });
     setBusy(false);
-    if (!res.ok) { setErr(json.error ?? "Save failed."); return; }
+    if (!res.ok) { setErr(res.error); return; }
     setMsg("Settings saved.");
   }
 
@@ -39,8 +35,9 @@ export function SettingsForm({
     <form onSubmit={save} className="mt-4 space-y-3">
       {Object.keys(settings).map((key) => (
         <div key={key} className="flex items-center gap-3">
-          <label className="w-64 text-sm font-mono text-stone-700 dark:text-stone-300">{key}</label>
+          <label htmlFor={`setting-${key}`} className="w-64 text-sm font-mono text-stone-700 dark:text-stone-300">{key}</label>
           <input
+            id={`setting-${key}`}
             value={values[key]}
             onChange={(e) => setValues({ ...values, [key]: e.target.value })}
             disabled={readOnly}

@@ -12,6 +12,8 @@ const OAUTH_ERRORS: Record<string, string> = {
   suspended: "This account is suspended.",
   "email-exists-use-password":
     "An account with this email already exists. Sign in with your password instead.",
+  "email-has-password-account":
+    "An account with this email already exists. Sign in with your password instead.",
   "replit-not-configured": "Replit sign-in is not available here.",
   "replit-not-signed-in": "Replit did not report a signed-in user.",
 };
@@ -27,7 +29,9 @@ export default async function LoginPage({
       mode="login"
       googleEnabled={googleOAuthConfigured()}
       replitEnabled={replitAuthEnabled()}
-      initialError={error ? (OAUTH_ERRORS[error] ?? "Sign-in failed — please try again.") : null}
+      // Only KNOWN codes render a message — a stray/crafted ?error= value
+      // must not make a fresh page claim a sign-in failure that never happened.
+      initialError={error ? (OAUTH_ERRORS[error] ?? null) : null}
     />
   );
 }

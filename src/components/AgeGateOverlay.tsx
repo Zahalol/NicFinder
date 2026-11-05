@@ -13,6 +13,7 @@ import { useState } from "react";
 export function AgeGateOverlay() {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   return (
     <div
@@ -35,16 +36,36 @@ export function AgeGateOverlay() {
           Nicotine is addictive.
         </p>
         <button
+          // Focus starts on the only meaningful action: the page behind the
+          // overlay is inert, so without this a keyboard user tabs from the
+          // address bar into nothing.
+          autoFocus
           disabled={busy}
           onClick={async () => {
+            // This is the ONLY interactive control on the page (everything
+            // behind the overlay is inert) — it must never get stuck
+            // disabled: catch failures, re-enable, and say what happened.
             setBusy(true);
-            await fetch("/api/age", { method: "POST" });
-            router.refresh();
+            setFailed(false);
+            try {
+              const res = await fetch("/api/age", { method: "POST" });
+              if (!res.ok) throw new Error(String(res.status));
+              router.refresh();
+            } catch {
+              setFailed(true);
+            } finally {
+              setBusy(false);
+            }
           }}
           className="mt-6 w-full rounded-xl bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 py-3 font-medium hover:bg-stone-700 dark:hover:bg-stone-300 disabled:opacity-50"
         >
           I am 21 or older — enter
         </button>
+        {failed && (
+          <p role="alert" className="mt-3 text-sm text-red-600">
+            Couldn’t confirm — check your connection and try again.
+          </p>
+        )}
         <a
           href="https://www.fda.gov/tobacco-products"
           className="mt-4 inline-block text-xs text-stone-400 underline"

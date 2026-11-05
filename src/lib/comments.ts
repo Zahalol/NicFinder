@@ -2,16 +2,12 @@
 // unit-testable apart from the HTTP route).
 
 import { prisma } from "./db";
+import type { AppSettings } from "./settings";
 
 export type ReportResult =
   | { ok: true; already: boolean; hidden: boolean }
   | { ok: false; error: string; status: number };
 
-/**
- * Report a comment. One report counts per user per comment (unique
- * constraint) so a single account can never auto-hide someone else's comment
- * by reporting it repeatedly. Authors cannot report their own comments.
- */
 /**
  * Moderator hide/restore. Restoring also clears the report ledger —
  * otherwise one new report would recount all old distinct reporters and
@@ -20,21 +16,34 @@ export type ReportResult =
 export async function setCommentVisibility(
   commentId: string,
   visible: boolean
-): Promise<void> {
-  await prisma.$transaction([
-    prisma.comment.update({
-      where: { id: commentId },
+): Promise<boolean> {
+  // State-gated: hide only VISIBLE, restore only HIDDEN. In particular a
+  // comment the author DELETED must never be made public again by a
+  // moderator "restore". Returns false when not in the expected state.
+  return prisma.$transaction(async (tx) => {
+    const res = await tx.comment.updateMany({
+      where: { id: commentId, status: visible ? "HIDDEN" : "VISIBLE" },
       data: { status: visible ? "VISIBLE" : "HIDDEN", reportCount: 0 },
-    }),
-    prisma.commentReport.deleteMany({ where: { commentId } }),
-  ]);
+    });
+    if (res.count === 0) return false;
+    await tx.commentReport.deleteMany({ where: { commentId } });
+    return true;
+  });
 }
 
+/**
+ * Report a comment. One report counts per user per comment (unique
+ * constraint) so a single account can never auto-hide someone else's comment
+ * by reporting it repeatedly. Authors cannot report their own comments.
+ * The threshold can be passed as a number or as the settings object.
+ */
 export async function reportComment(
   commentId: string,
   userId: string,
-  autoHideReportCount: number
+  threshold: number | Pick<AppSettings, "autoHideReportCount">
 ): Promise<ReportResult> {
+  const autoHideReportCount =
+    typeof threshold === "number" ? threshold : threshold.autoHideReportCount;
   const comment = await prisma.comment.findUnique({ where: { id: commentId } });
   if (!comment || comment.status !== "VISIBLE")
     return { ok: false, error: "Comment not found.", status: 404 };

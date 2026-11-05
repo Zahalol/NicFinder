@@ -19,6 +19,13 @@ describe("price parsing", () => {
     expect(parsePriceToCents("5.99.1")).toBeNull();
     expect(parsePriceToCents(NaN)).toBeNull();
   });
+  it("rejects values that would overflow a Postgres Int", () => {
+    expect(parsePriceToCents("30000000")).toBeNull(); // $30M → 3e9¢ > 2^31
+    expect(parsePriceToCents(30_000_000)).toBeNull();
+    expect(parsePriceToCents("9".repeat(40))).toBeNull();
+    expect(parsePriceToCents("100000")).toBe(10_000_000); // $100k boundary ok
+    expect(parsePriceToCents("100000.01")).toBeNull();
+  });
   it("formats cents", () => {
     expect(formatCents(649)).toBe("$6.49");
     expect(formatCents(null)).toBe("—");

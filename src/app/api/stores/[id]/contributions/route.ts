@@ -1,9 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { requireUser, AuthError, stableIpHash } from "@/lib/auth";
 import { getSettings } from "@/lib/settings";
 import { parsePriceToCents } from "@/lib/money";
 import { countRecentContributions } from "@/lib/rate-limit";
+import { parseOptionalQty, cleanText } from "@/lib/validate";
 import { selectLatestPrice } from "@/lib/prices";
 import {
   decideDispute,
@@ -98,6 +100,14 @@ export async function POST(
           { error: "This entry has no price to confirm." },
           { status: 400 }
         );
+      // The claimed product line must be the observation's own — a mismatched
+      // line previously sidestepped the per-lineage reconfirm cooldown and
+      // wrote mis-attributed contributions.
+      if (obs.productLineId !== productLineId)
+        return NextResponse.json(
+          { error: "Product line doesn’t match that price — refresh the page." },
+          { status: 400 }
+        );
 
       // Confirming your own community observation is self-confirmation.
       if (obs.contributionId) {
@@ -138,32 +148,43 @@ export async function POST(
         Date.now() - obs.observedAt.getTime() >
         settings.expireAfterDays * 86400_000;
 
-      await prisma.$transaction(async (tx) => {
-        const v = await tx.verification.create({
-          data: { observationId: obs.id, userId: user.id, verdict: "CONFIRM" },
+      try {
+        await prisma.$transaction(async (tx) => {
+          const v = await tx.verification.create({
+            data: { observationId: obs.id, userId: user.id, verdict: "CONFIRM" },
+          });
+          await tx.contribution.create({
+            data: {
+              userId: user.id,
+              storeId,
+              productLineId,
+              kind: "CONFIRM",
+              targetObservationId: obs.id,
+              status: "PUBLISHED",
+              resolvedAt: new Date(),
+            },
+          });
+          // Confirming expired/ancient data earns nothing.
+          if (!expired) {
+            await addReputation(
+              user.id,
+              REP_DELTAS.CONFIRM_ACCURATE,
+              "CONFIRM_ACCURATE",
+              { type: "verification", id: v.id },
+              tx
+            );
+          }
         });
-        await tx.contribution.create({
-          data: {
-            userId: user.id,
-            storeId,
-            productLineId,
-            kind: "CONFIRM",
-            targetObservationId: obs.id,
-            status: "PUBLISHED",
-            resolvedAt: new Date(),
-          },
-        });
-        // Confirming expired/ancient data earns nothing.
-        if (!expired) {
-          await addReputation(
-            user.id,
-            REP_DELTAS.CONFIRM_ACCURATE,
-            "CONFIRM_ACCURATE",
-            { type: "verification", id: v.id },
-            tx
+      } catch (e) {
+        // The pre-check above races with concurrent double-submits; the
+        // unique (observationId, userId) constraint is the real guard.
+        if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002")
+          return NextResponse.json(
+            { error: "You already weighed in on this price." },
+            { status: 409 }
           );
-        }
-      });
+        throw e;
+      }
       return NextResponse.json({ ok: true, message: "Thanks — confirmation recorded." });
     }
 
@@ -191,6 +212,15 @@ export async function POST(
       const priceCents = parsePriceToCents(body?.proposedPrice);
       if (priceCents === null)
         return NextResponse.json({ error: "Enter a valid price like 6.49." }, { status: 400 });
+
+      // proposedQty is optional but must be a sane integer when present —
+      // unvalidated Number() here used to accept negatives and crash on NaN.
+      const proposedQty = parseOptionalQty(body?.proposedQty);
+      if (proposedQty === undefined)
+        return NextResponse.json(
+          { error: "Quantity must be a whole number between 1 and 100." },
+          { status: 400 }
+        );
 
       const activeObs = await prisma.priceObservation.findMany({
         where: { storeId, productLineId, status: "ACTIVE" },
@@ -241,16 +271,21 @@ export async function POST(
             targetObservationId: openProposal.id, // references the proposal
             status: "PUBLISHED",
             resolvedAt: new Date(),
-            comment: body?.comment ? String(body.comment).slice(0, 500) : null,
+            comment: body?.comment ? cleanText(body.comment, 500) || null : null,
             ipHash,
           },
         });
-        const published = await maybePublishCorroborated(openProposal.id, settings);
+        const outcome = await maybePublishCorroborated(openProposal.id, settings);
         return NextResponse.json({
           ok: true,
-          message: published
-            ? "Thanks — enough members agree; the price has been updated."
-            : "Thanks — your report matches a pending one. It needs one more confirmation.",
+          message:
+            outcome === "published"
+              ? "Thanks — enough members agree; the price has been updated."
+              : outcome === "outdated"
+                ? "Thanks — a newer price was posted in the meantime, so that pending report was archived. Submit again if the shelf price still differs."
+                : outcome === "pending"
+                  ? "Thanks — your report matches a pending one. It needs one more confirmation."
+                  : "Thanks — that report was just resolved. Refresh to see the current price.",
         });
       }
       if (openProposal && openProposal.userId === user.id) {
@@ -276,10 +311,10 @@ export async function POST(
           kind: "DISPUTE",
           ipHash,
           proposedPriceCents: priceCents,
-          proposedQty: body?.proposedQty ? Number(body.proposedQty) : null,
-          proposedStrength: body?.strength ? String(body.strength).trim().slice(0, 60) || null : null,
-          proposedFlavor: body?.flavor ? String(body.flavor).trim().slice(0, 80) || null : null,
-          comment: body?.comment ? String(body.comment).slice(0, 500) : null,
+          proposedQty,
+          proposedStrength: body?.strength ? cleanText(body.strength, 60).trim() || null : null,
+          proposedFlavor: body?.flavor ? cleanText(body.flavor, 80).trim() || null : null,
+          comment: body?.comment ? cleanText(body.comment, 500) || null : null,
           status:
             decision.action === "AUTO_PUBLISH"
               ? "PENDING" // flipped by publishDispute
@@ -290,10 +325,13 @@ export async function POST(
       });
 
       if (decision.action === "AUTO_PUBLISH") {
-        await publishDispute(contribution.id, "auto");
+        const outcome = await publishDispute(contribution.id, "auto");
         return NextResponse.json({
           ok: true,
-          message: "Price updated — thanks! (You’re a trusted contributor.)",
+          message:
+            outcome === "published"
+              ? "Price updated — thanks! (You’re a trusted contributor.)"
+              : "Thanks — a newer price observation arrived just before yours, so it wasn’t applied. Refresh to see the current price.",
         });
       }
       if (decision.action === "CORROBORATE") {

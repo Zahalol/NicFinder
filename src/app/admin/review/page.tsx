@@ -1,3 +1,4 @@
+import { requireStaffPage } from "@/lib/page-auth";
 import { prisma } from "@/lib/db";
 import { ReviewActions } from "./ReviewActions";
 import { formatCents } from "@/lib/money";
@@ -22,6 +23,7 @@ function describeDeal(json: string): string {
 }
 
 export default async function ReviewPage() {
+  await requireStaffPage();
   const [pending, corroborating, flaggedComments, observationFlags] = await Promise.all([
     prisma.contribution.findMany({
       where: { status: "PENDING", kind: { in: ["DISPUTE", "REPORT_DEAL"] } },

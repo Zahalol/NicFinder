@@ -56,13 +56,17 @@ export function ContributePanel({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setErr(data.error ?? "Something went wrong.");
+        // A 409 CONFIRM means the shown price is stale — refresh so the next
+        // attempt targets the current observation instead of looping on 409.
+        if (res.status === 409) router.refresh();
       } else {
         setMsg(data.message ?? "Thanks!");
         setMode("idle");
         setPrice("");
+        setQty("");
         setComment("");
         router.refresh();
       }

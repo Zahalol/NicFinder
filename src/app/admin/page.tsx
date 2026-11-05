@@ -1,3 +1,4 @@
+import { requireStaffPage } from "@/lib/page-auth";
 import { prisma } from "@/lib/db";
 import { getSettings } from "@/lib/settings";
 import Link from "next/link";
@@ -6,6 +7,7 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Admin — NicFinder" };
 
 export default async function AdminOverview() {
+  await requireStaffPage();
   const settings = await getSettings();
   const staleCutoff = new Date(Date.now() - settings.staleAfterDays * 86400_000);
 

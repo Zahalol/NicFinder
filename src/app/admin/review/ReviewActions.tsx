@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { apiFetch } from "@/lib/client/api";
 
 export function ReviewActions({
   contributionId,
@@ -33,14 +34,15 @@ export function ReviewActions({
     }
     setBusy(true);
     setErr(null);
-    const res = await fetch("/api/admin/moderation", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action, targetId, reason, ...extra }),
-    });
-    const json = await res.json().catch(() => ({}));
+    const res = await apiFetch("/api/admin/moderation", { body: { action, targetId, reason, ...extra } });
     setBusy(false);
-    if (!res.ok) { setErr(json.error ?? "Failed."); return; }
+    if (!res.ok) {
+      setErr(res.error);
+      // A 409 means this row is stale (already resolved elsewhere) — refresh
+      // so the queue reflects reality instead of inviting more dead clicks.
+      if (res.status === 409) router.refresh();
+      return;
+    }
     router.refresh();
   }
 

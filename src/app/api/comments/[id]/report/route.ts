@@ -11,7 +11,7 @@ export async function POST(
     const user = await requireUser();
     const { id } = await params;
     const settings = await getSettings();
-    const result = await reportComment(id, user.id, settings.autoHideReportCount);
+    const result = await reportComment(id, user.id, settings);
     if (!result.ok)
       return NextResponse.json({ error: result.error }, { status: result.status });
     return NextResponse.json({ ok: true, already: result.already });

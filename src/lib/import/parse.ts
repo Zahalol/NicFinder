@@ -39,6 +39,14 @@ export async function parseXlsx(buffer: Buffer): Promise<ParsedFile> {
   await workbook.xlsx.load(buffer as unknown as ArrayBuffer);
   const sheet = workbook.worksheets[0];
   if (!sheet) return { headers: [], rows: [] };
+  // Bound the damage of oversized/crafted workbooks before building row
+  // objects (the 10k-row import cap is enforced later; this stops the
+  // parser from materializing millions of cells first).
+  if (sheet.rowCount > 50_000 || sheet.columnCount > 200) {
+    throw new Error(
+      `Sheet too large (${sheet.rowCount} rows × ${sheet.columnCount} columns) — 50,000 rows / 200 columns max.`
+    );
+  }
 
   const headers: string[] = [];
   const headerRow = sheet.getRow(1);

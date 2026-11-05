@@ -123,18 +123,29 @@ export function confirmationWeight(
 }
 
 /**
+ * How a publish attempt ended:
+ *  - "published": the price went live.
+ *  - "already-resolved": another request published/rejected it first.
+ *  - "outdated": a newer observation arrived since the proposal was opened;
+ *    it was resolved REJECTED without publishing.
+ *  - "pending" (corroboration only): threshold not reached yet.
+ */
+export type PublishOutcome = "published" | "already-resolved" | "outdated";
+
+/**
  * Count independent corroborations for a CORROBORATING contribution and
  * publish it when the threshold is met. "Independent": distinct users other
- * than the proposer. Returns true if published.
+ * than the proposer.
  */
 export async function maybePublishCorroborated(
   contributionId: string,
   settings: AppSettings
-): Promise<boolean> {
+): Promise<PublishOutcome | "pending"> {
   const contribution = await prisma.contribution.findUnique({
     where: { id: contributionId },
   });
-  if (!contribution || contribution.status !== "CORROBORATING") return false;
+  if (!contribution || contribution.status !== "CORROBORATING")
+    return "already-resolved";
 
   // Corroborations are CONFIRM contributions that target this proposal.
   const corroborators = await prisma.contribution.findMany({
@@ -165,26 +176,46 @@ export async function maybePublishCorroborated(
     independent++;
   }
 
-  if (independent < settings.corroborationsRequired) return false;
+  if (independent < settings.corroborationsRequired) return "pending";
 
-  await publishDispute(contribution.id, "corroborated");
-  return true;
+  return publishDispute(contribution.id, "corroborated");
 }
 
 /**
  * Publish a dispute: supersede the current ACTIVE observation for that
  * store+product and create the new COMMUNITY observation.
+ *
+ * Concurrency-safe: the contribution row is atomically claimed
+ * (PENDING/CORROBORATING → PUBLISHED) inside the transaction. If another
+ * request already resolved it, this returns "already-resolved" and changes
+ * nothing — concurrent corroborations cannot double-publish or double-award
+ * reputation.
  */
 export async function publishDispute(
   contributionId: string,
   how: "auto" | "corroborated" | "moderator",
   moderatorId?: string
-): Promise<void> {
-  await prisma.$transaction(async (tx) => {
+): Promise<PublishOutcome> {
+  const outcome = await prisma.$transaction<PublishOutcome>(async (tx) => {
     const c = await tx.contribution.findUniqueOrThrow({
       where: { id: contributionId },
     });
     if (c.proposedPriceCents === null) throw new Error("No proposed price");
+
+    // Atomic claim: only one caller can move the row out of a publishable
+    // state. Concurrent callers block on the row lock, then match 0 rows.
+    const claimed = await tx.contribution.updateMany({
+      where: {
+        id: contributionId,
+        status: { in: ["PENDING", "CORROBORATING"] },
+      },
+      data: {
+        status: "PUBLISHED",
+        resolvedAt: new Date(),
+        reviewedById: moderatorId,
+      },
+    });
+    if (claimed.count === 0) return "already-resolved";
 
     const storeForZip = await tx.store.findUnique({
       where: { id: c.storeId },
@@ -201,6 +232,26 @@ export async function publishDispute(
       },
       include: { verifications: true },
     });
+
+    // Staleness guard: a proposal observes the price AT ITS CREATION TIME.
+    // If a newer observation has arrived since (fresh import, admin entry,
+    // another community price), publishing would supersede newer evidence
+    // with older — refuse and resolve the proposal as outdated instead.
+    const newest = superseded.reduce(
+      (max, o) => Math.max(max, o.observedAt.getTime()),
+      0
+    );
+    if (newest > c.createdAt.getTime()) {
+      await tx.contribution.update({
+        where: { id: c.id },
+        data: {
+          status: "REJECTED",
+          reviewNote: "Outdated: a newer price observation arrived before this proposal was confirmed.",
+          reviewedById: moderatorId,
+        },
+      });
+      return "outdated";
+    }
     await tx.priceObservation.updateMany({
       where: {
         storeId: c.storeId,
@@ -244,14 +295,7 @@ export async function publishDispute(
       },
     });
 
-    await tx.contribution.update({
-      where: { id: c.id },
-      data: {
-        status: "PUBLISHED",
-        resolvedAt: new Date(),
-        reviewedById: moderatorId,
-      },
-    });
+    // (Status was already set to PUBLISHED by the atomic claim above.)
 
     // Alert members who saved this store (in-app only; actor excluded).
     const prevPriced = superseded
@@ -304,11 +348,15 @@ export async function publishDispute(
         tx
       );
     }
+    return "published";
   });
-  await audit("PRICE_PUBLISHED", {
-    targetType: "contribution",
-    targetId: contributionId,
-    detail: { how },
-    userId: moderatorId ?? null,
-  });
+  if (outcome === "published") {
+    await audit("PRICE_PUBLISHED", {
+      targetType: "contribution",
+      targetId: contributionId,
+      detail: { how },
+      userId: moderatorId ?? null,
+    });
+  }
+  return outcome;
 }

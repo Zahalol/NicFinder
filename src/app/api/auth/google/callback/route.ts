@@ -31,12 +31,14 @@ export async function GET(req: NextRequest) {
         redirect_uri: `${appUrl}/api/auth/google/callback`,
         grant_type: "authorization_code",
       }),
+      signal: AbortSignal.timeout(10_000),
     });
     if (!tokenRes.ok) throw new Error("token exchange failed");
     const tokens = (await tokenRes.json()) as { access_token: string };
 
     const infoRes = await fetch("https://openidconnect.googleapis.com/v1/userinfo", {
       headers: { Authorization: `Bearer ${tokens.access_token}` },
+      signal: AbortSignal.timeout(10_000),
     });
     if (!infoRes.ok) throw new Error("userinfo failed");
     const info = (await infoRes.json()) as {
@@ -46,6 +48,12 @@ export async function GET(req: NextRequest) {
       name?: string;
     };
     if (!info.email) throw new Error("no email from Google");
+    // ACCOUNT-TAKEOVER GUARD: only a VERIFIED Google email may link to (or
+    // create) an account keyed by that address. Google allows unverified
+    // emails on some accounts — without this check, registering a Google
+    // account with someone else's email would take over their NicFinder
+    // account on first OAuth sign-in.
+    if (info.email_verified !== true) throw new Error("google email not verified");
 
     const email = info.email.toLowerCase();
     let user = await prisma.user.findUnique({ where: { googleId: info.sub } });

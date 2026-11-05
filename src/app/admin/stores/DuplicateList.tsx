@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { apiFetch } from "@/lib/client/api";
 
 interface StoreLite {
   id: string;
@@ -17,15 +18,18 @@ export function DuplicateList({
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
 
   async function act(id: string, action: "merge" | "dismiss", keepId?: string) {
+    if (busy) return; // one resolution in flight at a time
     setBusy(id);
-    await fetch(`/api/admin/duplicates/${id}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action, keepId }),
-    });
+    setErr(null);
+    const res = await apiFetch(`/api/admin/duplicates/${id}`, { body: { action, keepId } });
     setBusy(null);
+    // Surface failures: a 409 here means the candidate or a store was already
+    // resolved/merged elsewhere — silently refreshing made every click look
+    // like a no-op.
+    if (!res.ok) setErr(res.error);
     router.refresh();
   }
 
@@ -34,6 +38,7 @@ export function DuplicateList({
       <h2 className="text-sm font-medium text-amber-900 dark:text-amber-200">
         Possible duplicate stores ({duplicates.length})
       </h2>
+      {err && <p className="mt-1 text-sm text-red-600">{err}</p>}
       <ul className="mt-2 space-y-3">
         {duplicates.map((d) => (
           <li key={d.id} className="rounded-lg bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 p-3 text-sm">
