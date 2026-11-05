@@ -29,3 +29,15 @@ body {
   border-radius: 0.75rem;
   z-index: 0;
 }
+
+/* Dark mode: dim + invert OSM tiles so the map doesn't glare. Markers and
+   popups are our own DOM and stay theme-colored. */
+@media (prefers-color-scheme: dark) {
+  /* higher specificity than leaflet.css's own .leaflet-tile{filter:inherit} */
+  .leaflet-container .leaflet-tile {
+    filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9) saturate(0.7);
+  }
+  .leaflet-container {
+    background: #1c1917;
+  }
+}
