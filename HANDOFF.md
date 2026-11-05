@@ -1,6 +1,49 @@
 # HANDOFF
 
-## Current state
+## Merge of parallel sessions (2026-11-05)
+
+Five cloud sessions worked on this repo at the same time, each on its own
+branch off the same commit. They were merged into
+`claude/relaxed-ptolemy-u7r8fp`, in this order, with all quality gates green
+after each step (lint, typecheck, vitest, prod build, e2e):
+
+1. `exciting-franklin`: business research docs in `research/` (no overlap).
+2. `keen-planck`: the largest branch (described below); the base.
+3. `focused-darwin`: security/reliability hardening + GitHub Actions CI.
+   Overlapping fixes were combined, not picked: atomic publish claims +
+   IP-independent corroboration, the bulk import pipeline + alerts/hours/
+   availability rows, CSP + API body-size guard. Duplicate `CommentReport`
+   migration removed (migrations verified to equal the schema).
+4. `beautiful-keller`: UX cycles 1-43. For the four screens both
+   sessions redesigned (search results, search page, store page, ZIP
+   pages) keen-planck's versions were kept, and keller's unique features
+   were then ported in separate commits: did-you-mean ZIPs, nearest covered
+   area, quick-search chips, store-name matches, one-tap confirm, desktop
+   list+map split view with pin-to-card sync, remembered filters, deal-aware
+   "what you'd pay" strip, store mini-map, breadcrumbs, ZIP-page price
+   summary + Ultra column + FAQ JSON-LD. keller's standalone additions
+   (price drops, covered-areas index, OG images, offline service worker,
+   PWA icons) were kept as-is.
+5. `adoring-hypatia`: skipped; everything but a stale screenshot refresh
+   was already contained in `beautiful-keller`.
+
+Features built twice were resolved to one implementation: reliability
+badges (keen-planck) over the confidence pill; `/compare` page over the
+compare dialog; keen-planck's history sparkline and trip-value math;
+`/how-it-works` canonical, with `/about` 301-redirecting to it. keller's
+`UX_EXPERIMENTS_LOG.md` still describes the removed duplicates; read it as
+history.
+
+Gates at merge HEAD: **171 vitest tests**, **83-check e2e**, lint,
+typecheck, prod build, `migrate deploy` from scratch.
+
+**Working in parallel again?** Give each session a separate area, branch
+from the latest `main`, open a PR per session and merge often, and keep
+shared logs (this file, DEVLOG, README, screenshots) out of parallel work.
+Most conflicts in this merge came from sessions editing the same screens
+and these docs.
+
+## Current state (Session 2, before the merge)
 _Date: 2026-11-05 — Session 2 (autonomous overnight marathon)_
 
 - NicFinder remains a **complete, verified Postgres MVP, ready to deploy on
