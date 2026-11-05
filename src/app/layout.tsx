@@ -18,6 +18,11 @@ export const metadata: Metadata = {
   openGraph: {
     siteName: "NicFinder",
     type: "website",
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: "NicFinder — nicotine pouch price comparison" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/og.png"],
   },
   robots: { index: true, follow: true },
   appleWebApp: {
