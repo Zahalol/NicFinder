@@ -1,3 +1,4 @@
+import { jsonLdString } from "@/lib/json-ld";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
@@ -170,8 +171,8 @@ export default async function StorePage({
       {jsonLd && (
         <script
           type="application/ld+json"
-          // escape "<" so a store name can never close the script tag
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
+          // jsonLdString escapes <, >, & so a store name can never close the script tag
+          dangerouslySetInnerHTML={{ __html: jsonLdString(jsonLd) }}
         />
       )}
       <BackLink fallback="/search?q=60614">← Back to search</BackLink>
