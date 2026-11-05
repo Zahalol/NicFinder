@@ -759,3 +759,25 @@ sandbox).
 green (72 tests, 50 e2e checks).
 
 **Recommendation: Keep.**
+
+---
+
+## Cycles 36–38 — ZIP OG images, Ultra column, self-code-review
+
+- **36**: dynamic OG images for ZIP landing pages (area + stores-tracked
+  count, no prices); store-page address ZIP links to its area page; footer
+  gained a site nav (areas / price drops / about).
+- **37**: ZIP landing pages show an Ultra column when any Ultra price is
+  reported in the area (never inherited from regular ZYN).
+- **38**: adversarial code review of the whole session diff (8 angles,
+  10 findings, all addressed). Notable catches, all fixed: the price-drop /
+  home-feed "vs prior" baselines could use a REVERSED (reversed bad import)
+  observation — an honesty bug; the offline page depended on CSS chunks the
+  service worker never caches (now fully inline-styled); breadcrumb JSON-LD
+  used relative URLs; trip savings could disagree with displayed totals by
+  a few cents on mixed deals (now uses exact totals, +1 test); OG routes
+  re-read 800KB of fonts per request; plus small dead-code/duplicate-work
+  cleanups. One efficiency note deliberately skipped as fine at pilot scale
+  (no-coverage nearest-area scan) — logged for the scaling backlog.
+
+**Recommendation: Keep all.**
