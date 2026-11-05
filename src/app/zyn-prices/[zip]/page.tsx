@@ -22,9 +22,14 @@ export async function generateMetadata({
   const { zip } = await params;
   const info = zipInfo(zip);
   if (!info) return { title: "ZYN prices — NicFinder" };
+  // Thin-content hygiene: a ZIP page with no tracked stores is noindexed
+  // (still crawlable for links) until it has something to say.
+  const hasStores =
+    (await prisma.store.count({ where: { status: "ACTIVE", zip } })) > 0;
   return {
     title: `ZYN prices in ${info.city}, ${info.state} ${zip} — NicFinder`,
     description: `Compare reported ZYN nicotine pouch prices at gas stations and convenience stores near ${info.city}, ${info.state} ${zip}. Community-verified, updated continuously. Adults 21+.`,
+    robots: hasStores ? undefined : { index: false, follow: true },
   };
 }
 
