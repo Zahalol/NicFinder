@@ -21,12 +21,16 @@ export function SearchResults({
   qty,
   productSlug,
   initialPricedOnly = false,
+  signedIn = false,
+  initialSavedIds = [],
 }: {
   results: StoreResult[];
   center: { lat: number; lng: number };
   qty: number;
   productSlug: string;
   initialPricedOnly?: boolean;
+  signedIn?: boolean;
+  initialSavedIds?: string[];
 }) {
   const [view, setView] = useState<"list" | "map">("list");
   const [pricedOnly, setPricedOnlyState] = useState(initialPricedOnly);
@@ -62,6 +66,21 @@ export function SearchResults({
     [results]
   );
   const [nameFilter, setNameFilter] = useState("");
+  const [savedIds, setSavedIds] = useState<Set<string>>(() => new Set(initialSavedIds));
+  async function toggleSave(id: string) {
+    const isSaved = savedIds.has(id);
+    const res = await fetch(`/api/stores/${id}/save`, {
+      method: isSaved ? "DELETE" : "POST",
+    }).catch(() => null);
+    if (res?.ok) {
+      setSavedIds((prev) => {
+        const next = new Set(prev);
+        if (isSaved) next.delete(id);
+        else next.add(id);
+        return next;
+      });
+    }
+  }
   const pricedCount = results.filter((r) => r.latest).length;
   // "Priced only" keeps availability-signal stores visible: "not carried"
   // is information, hiding it would misrepresent coverage.
@@ -202,6 +221,24 @@ export function SearchResults({
                   </div>
                   <div className="flex flex-col items-end gap-1.5 shrink-0">
                     <PriceBadge result={r} qty={qty} />
+                    {signedIn && (
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          toggleSave(r.id);
+                        }}
+                        aria-pressed={savedIds.has(r.id)}
+                        title={savedIds.has(r.id) ? "Remove from watchlist" : "Save to watchlist (price alerts)"}
+                        className={`rounded border px-1.5 py-0.5 text-[11px] ${
+                          savedIds.has(r.id)
+                            ? "border-amber-400 bg-amber-50 text-amber-600"
+                            : "border-stone-200 bg-white text-stone-400 hover:border-stone-300 hover:text-stone-600"
+                        }`}
+                      >
+                        {savedIds.has(r.id) ? "★ saved" : "☆ save"}
+                      </button>
+                    )}
                     <button
                       onClick={(e) => {
                         e.preventDefault();

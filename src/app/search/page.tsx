@@ -5,6 +5,7 @@ import { SearchResults } from "@/components/SearchResults";
 import { CoverageRequestButton } from "@/components/CoverageRequestButton";
 import { formatCents } from "@/lib/money";
 import { prisma } from "@/lib/db";
+import { getCurrentUser } from "@/lib/auth";
 import Link from "next/link";
 
 export const metadata = { title: "Search — NicFinder" };
@@ -57,9 +58,20 @@ export default async function SearchPage({
   }
 
   const hasLocation = lat !== null && lng !== null && !Number.isNaN(lat) && !Number.isNaN(lng);
-  const search = hasLocation
-    ? await searchStores({ lat: lat!, lng: lng!, radiusMiles: radius, productSlug: product, qty, sort })
-    : null;
+  const [search, user] = await Promise.all([
+    hasLocation
+      ? searchStores({ lat: lat!, lng: lng!, radiusMiles: radius, productSlug: product, qty, sort })
+      : Promise.resolve(null),
+    getCurrentUser().catch(() => null),
+  ]);
+  const savedIds = user
+    ? (
+        await prisma.savedStore.findMany({
+          where: { userId: user.id },
+          select: { storeId: true },
+        })
+      ).map((s) => s.storeId)
+    : [];
 
   const baseParams = new URLSearchParams();
   if (q) baseParams.set("q", q);
@@ -160,6 +172,8 @@ export default async function SearchPage({
                 qty={qty}
                 productSlug={product}
                 initialPricedOnly={params.priced === "1"}
+                signedIn={Boolean(user)}
+                initialSavedIds={savedIds}
               />
             </>
           )}
