@@ -1,5 +1,13 @@
 # Autonomous worklog
 
+> **Historical record — not current instructions.** This log was written on
+> the session branch `claude/keen-planck-rmqrm9` before the five parallel sessions were
+> merged into `main` on 2026-11-05. Branch names, test counts and "next
+> steps" here are as of that branch. For the current state read
+> [`HANDOFF.md`](../../HANDOFF.md); for what the merge kept, changed or
+> removed see [`DECISIONS.md`](../DECISIONS.md) ("Merge of parallel
+> sessions"). This branch became the merge base. One reversal: row 21's "no service worker" decision was overridden — beautiful-keller's network-first offline service worker was kept (it never serves cached prices).
+
 Unattended improvement marathon, 2026-11-04 → 05 (UTC). One row per completed
 cycle. Recommendation is mine, not a decision on the owner's behalf.
 

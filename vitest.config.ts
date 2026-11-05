@@ -13,7 +13,7 @@ export default defineConfig({
       SESSION_SECRET: "test-secret",
       NOMINATIM_ENABLED: "false",
     },
-    // DB-backed tests share one SQLite file: run serially.
+    // DB-backed tests share one Postgres test database: run serially.
     fileParallelism: false,
     testTimeout: 30_000,
   },

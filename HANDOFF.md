@@ -1,145 +1,165 @@
 # HANDOFF
 
-## Merge of parallel sessions (2026-11-05)
+The entry point for the next person or AI session. It describes the project
+**as it is now**; history lives in `DEVLOG.md` and `docs/history/`.
+_Last updated: 2026-11-05, after merging the five parallel sessions._
 
-Five cloud sessions worked on this repo at the same time, each on its own
-branch off the same commit. They were merged into
-`claude/relaxed-ptolemy-u7r8fp`, in this order, with all quality gates green
-after each step (lint, typecheck, vitest, prod build, e2e):
+## Current state
 
-1. `exciting-franklin`: business research docs in `research/` (no overlap).
-2. `keen-planck`: the largest branch (described below); the base.
-3. `focused-darwin`: security/reliability hardening + GitHub Actions CI.
-   Overlapping fixes were combined, not picked: atomic publish claims +
-   IP-independent corroboration, the bulk import pipeline + alerts/hours/
-   availability rows, CSP + API body-size guard. Duplicate `CommentReport`
-   migration removed (migrations verified to equal the schema).
-4. `beautiful-keller`: UX cycles 1-43. For the four screens both
-   sessions redesigned (search results, search page, store page, ZIP
-   pages) keen-planck's versions were kept, and keller's unique features
-   were then ported in separate commits: did-you-mean ZIPs, nearest covered
-   area, quick-search chips, store-name matches, one-tap confirm, desktop
-   list+map split view with pin-to-card sync, remembered filters, deal-aware
-   "what you'd pay" strip, store mini-map, breadcrumbs, ZIP-page price
-   summary + Ultra column + FAQ JSON-LD. keller's standalone additions
-   (price drops, covered-areas index, OG images, offline service worker,
-   PWA icons) were kept as-is.
-5. `adoring-hypatia`: skipped; everything but a stale screenshot refresh
-   was already contained in `beautiful-keller`.
+- **What it is:** NicFinder, an informational (21+, no sales) price-comparison
+  site for nicotine pouches, piloting ZYN in Chicago. Next.js 15 (App Router)
+  + Prisma 6 + PostgreSQL. A complete, verified MVP, **not yet deployed**.
+- **Repository:** `github.com/Zahalol/NicFinder`. `main` is the only branch
+  and it is **protected**: every change goes through a pull request, and the
+  `verify` GitHub Actions check (lint, typecheck, vitest, build) must pass.
+  No approvals are required (solo owner). CI does not run the e2e test.
+- **Quality gates, all green on `main`:** 171 vitest tests (22 files), the
+  85-check browser e2e smoke test, lint, typecheck, production build, and
+  `prisma migrate deploy` onto an empty database with no schema drift.
+- **Data:** real Chicago stores appear as a directory **without prices**;
+  synthetic prices only on fictional "Demo" stores (`DEMO_MODE=true`). Real
+  price collection has not started.
+- **Business direction:** the latest research
+  ([`research/99_FOUNDER_DECISION_BRIEF.md`](research/99_FOUNDER_DECISION_BRIEF.md))
+  is a conditional GO as a low-cost side project and **NO-GO on automated
+  calling for now**: first test the within-Chicago price spread and B2B
+  willingness to pay with manual collection.
 
-Features built twice were resolved to one implementation: reliability
-badges (keen-planck) over the confidence pill; `/compare` page over the
-compare dialog; keen-planck's history sparkline and trip-value math;
-`/how-it-works` canonical, with `/about` 301-redirecting to it. keller's
-`UX_EXPERIMENTS_LOG.md` still describes the removed duplicates; read it as
-history.
+## What the product does
 
-Gates at merge HEAD: **171 vitest tests**, **83-check e2e**, lint,
-typecheck, prod build, `migrate deploy` from scratch.
+- **Search:** ZIP or address (Nominatim, cached), "near me", recent-search
+  and neighbourhood chips, "Did you mean" for mistyped ZIPs, store-name
+  matches, nearest covered area when outside coverage, coverage requests.
+  Results: best-price card, reliability tiers (high/medium/low with
+  reasons), deal-aware pricing at 1/3/5/10 cans, value-of-trip savings,
+  "Priced only" and name filters, honest "Not carried" / "No price yet".
+  Desktop shows the list beside a sticky map (pin click highlights the
+  card); phones toggle List/Map. Filter choices are remembered per device.
+- **Store pages:** per-line prices, "What you'd pay" deal strip, price
+  history sparkline, mini-map, hours, tap-to-call, nearby alternatives,
+  share, notes, LocalBusiness + breadcrumb structured data (real stores only).
+- **Community:** confirm (including one tap from results) or dispute a
+  price, flag observations or deals, report multi-can deals; corroboration
+  needs distinct accounts on distinct networks; trusted contributors
+  publish directly; reputation ledger; watchlist with in-app price alerts
+  and resolution notices; account settings.
+- **Pages:** `/compare` (two stores), `/zyn-prices` (covered areas) and
+  `/zyn-prices/<zip>` (SEO landing pages with price summary, Ultra column,
+  FAQ data, share images), `/price-drops`, `/how-it-works` (`/about`
+  redirects here), `/offline`, user profiles.
+- **Admin:** overview, CSV/XLSX import with preview, commit and reverse,
+  store management with hours and CSV export, the `/admin/collect` calling
+  worksheet, review queue, coverage demand, analytics, pilot economics,
+  settings, audit log. A key-protected import API with signed webhooks
+  exists but is off unless `IMPORT_API_KEY` is set (`docs/API.md`).
+- **Platform:** nonce CSP and API body-size guard (`src/middleware.ts`),
+  pluggable rate limiting (`RATE_LIMIT_BACKEND=db` for multiple instances),
+  network-first service worker, dark mode, maintenance job.
 
-**Working in parallel again?** Give each session a separate area, branch
-from the latest `main`, open a PR per session and merge often, and keep
-shared logs (this file, DEVLOG, README, screenshots) out of parallel work.
-Most conflicts in this merge came from sessions editing the same screens
-and these docs.
+## How the code got here
 
-## Current state (Session 2, before the merge)
-_Date: 2026-11-05 — Session 2 (autonomous overnight marathon)_
-
-- NicFinder remains a **complete, verified Postgres MVP, ready to deploy on
-  Replit** — now substantially deeper after 74 verified improvement cycles
-  on branch `claude/keen-planck-rmqrm9` (pushed; contains the full history
-  from `claude/hopeful-feynman-mchyuv`, which is now stale).
-- **Review the session via `AUTONOMOUS_WORKLOG.md`** (one row per cycle:
-  what/why/files/evidence/limitations/Keep-Consider recommendation) and
-  `AUTONOMOUS_BACKLOG.md` (remaining ranked ideas). Every cycle is its own
-  commit with a descriptive message.
-- Quality gates, all green at HEAD: **132 vitest tests** (Postgres test
-  schema), **56-check Playwright e2e** (including a two-user trust-loop and
-  a dark-mode regression guard),
-  lint, typecheck, prod build. The whole migration chain was verified to
-  `migrate deploy` + seed cleanly onto a virgin database.
-- Headline additions since Session 1:
-  - **Data honesty**: availability-only observations ("not carried"/"out of
-    stock", `priceCents` now nullable — no invented prices anywhere),
-    observation + deal flagging with moderator resolution, community
-    multi-can deal reports (moderator-reviewed), reliability tiers
-    (high/medium/low with auditable reasons), price-history sparklines.
-  - **Engagement**: in-app price alerts for saved stores, resolution notices
-    for contributors, /how-it-works trust page, contributor credibility
-    profiles, comment editing, account self-management (password change,
-    sign-out-everywhere).
-  - **Product depth**: value-of-trip math, two-store compare (+watchlist
-    quick-compare), nearby alternatives, priced-only + name filters,
-    save-from-search, data-driven product toggle (multi-brand verified by a
-    dry run), per-store SEO + JSON-LD + share, **dark mode** (system
-    preference, incl. the map), store hours end to end.
-  - **Ops/hardening**: security pass (OAuth linking, report dedupe, error
-    hygiene), corroboration network-independence (salted ipHash), pluggable
-    rate-limit storage (`RATE_LIMIT_BACKEND=db` for Autoscale), import fuzz
-    hardening, nearest-500 search fix (found by the new 10k benchmark),
-    duplicate-store scan, CSV price export, pilot-economics dashboard,
-    audit-log viewer, security headers + nonce CSP, PWA manifest,
-    **automated import API + signed webhooks** (disabled by default),
-    coverage-arrived notifications, the /admin/collect G1 worksheet.
+Five Claude sessions worked in parallel on 2026-11-04/05, each on its own
+branch, and were merged on 2026-11-05: research (`research/`), keen-planck
+(the base: product depth, community trust, dark mode), focused-darwin
+(security hardening and CI), and beautiful-keller (UX). Overlapping security
+fixes were **combined**; for the four screens two sessions both redesigned,
+keen-planck's version was kept and beautiful-keller's unique features were
+ported onto it; duplicate features were reduced to one implementation. Every
+decision is recorded in [`docs/DECISIONS.md`](docs/DECISIONS.md) ("Merge of
+parallel sessions"). The sessions' own logs are in
+[`docs/history/`](docs/history/); treat them as history.
 
 ## Open items
-- [ ] Deploy to Replit per docs/REPLIT.md (unchanged plan; set
-      `RATE_LIMIT_BACKEND=db` there — new)
-- [ ] Change/replace seeded demo credentials before any shared deployment
-- [ ] After deploy: promote owner's account to ADMIN; verify /api/health
-- [ ] Real Chicago price collection (gate G1) still not started; DEMO_MODE=true
-- [ ] Email verification / password reset still not implemented (password
-      *change* now exists for signed-in users)
-- [ ] Rotate ElevenLabs/Twilio credentials from old workbooks — status unknown
-- [ ] `npm audit`: remaining advisories need breaking majors (Next 16,
-      Prisma 7, exceljs) — deliberate owner decision, not done unattended
 
-## Next steps
-1. Skim `AUTONOMOUS_WORKLOG.md` top to bottom; everything is reversible
-   per-commit if you disagree with a change.
-2. Deploy per docs/REPLIT.md §1–2 (DB, secrets incl. RATE_LIMIT_BACKEND=db,
-   Replit Auth, Autoscale) + scheduled `node scripts/maintenance.mjs`.
-3. Collect real prices for the 27 Chicago stores; `/admin/economics` now
-   models what an automated refresh would cost, `/admin/coverage` shows
-   demand, `/admin/stores` exports current prices as CSV.
+**Before or at deployment**
+- [ ] Deploy to Replit per [`docs/REPLIT.md`](docs/REPLIT.md), with
+      `RATE_LIMIT_BACKEND=db` and the maintenance job scheduled.
+- [ ] Replace the seeded demo credentials before any shared deployment;
+      promote the owner's account to ADMIN; check `/api/health`.
+- [ ] Rotate the ElevenLabs/Twilio credentials that were in the old research
+      workbook (status unknown).
+- [ ] Decide on `npm audit` advisories that need breaking upgrades (Next 16,
+      Prisma 7, exceljs). Not done unattended on purpose.
+
+**Product and data**
+- [ ] Start real price collection (manual, per `research/05` and `research/99`)
+      and turn `DEMO_MODE` off once real prices exist.
+- [ ] Email verification and password reset (password *change* exists).
+- [ ] Stronger corroboration against fake accounts: email or phone
+      verification, or a minimum account age for corroborators.
+- [ ] Ideas still open from the sessions: suggest-a-missing-store, watchlist
+      deal badges, view transitions, Overpass/OSM store enrichment, more
+      brands in the seed (the product toggle is already data-driven).
+
+**Engineering**
+- [ ] Add the e2e smoke test to CI (it needs a built app, a seeded database
+      and Playwright); today it runs only locally.
+- [ ] Streaming XLSX parsing (imports are capped at 50,000 rows × 200 columns
+      instead), and the `StoreIdentity` null-source caveat from
+      `docs/history/SECURITY_RELIABILITY_LOG.md`.
+- [ ] The nearest-covered-area lookup on the no-coverage page scans up to 500
+      stores; fine at pilot scale, revisit if coverage grows.
+- [ ] `confirmationWeight` in `src/lib/reputation.ts` is tested but not used
+      at runtime: wire it in or remove it.
+- [ ] Remove the unused `public/icon-192.png` and `public/icon-512.png` (the
+      manifest and service worker use `public/icons/`).
 
 ## How to run things
-```
-# branch claude/keen-planck-rmqrm9
+
+Requires Node 20+ (22 tested) and PostgreSQL. Full setup in `README.md`.
+
+```bash
 npm install
-cp .env.example .env        # set SESSION_SECRET + Postgres DATABASE_URL
-npx prisma generate && npx prisma migrate deploy
-npm run db:seed             # demo users + Chicago directory + demo prices
-npm run dev                 # http://localhost:3000
-
-npm test                    # 128 tests (needs nicfinder_test DB)
-npm run build && npm run e2e  # ~48-check browser smoke on port 3100
-DATABASE_URL=...nicfinder_bench npx tsx scripts/bench-search.ts  # perf bench
+cp .env.example .env        # set DATABASE_URL and SESSION_SECRET
+npx prisma generate
+npx prisma migrate deploy
+npm run db:seed             # product lines, demo users, Chicago directory, demo prices
+npm run dev                 # http://localhost:3000, try ZIP 60614
 ```
-Demo logins & new-feature demo flows: docs/DEMO_GUIDE.md (updated).
 
-## Gotchas (Session 1 list still applies, plus:)
-- `priceCents` is **nullable** now: availability-only rows carry no price.
-  Any new query that reads prices must filter `priceCents: { not: null }`
-  or go through `selectLatestPrice` (which already does).
-- `.gitignore` had an unanchored `coverage/` that silently ignored
-  `src/app/admin/coverage/` — fixed (anchored to `/coverage/`); watch for
-  that pattern with other tool-output names.
-- Contribution kinds are now `CONFIRM | DISPUTE | FLAG_OBSERVATION |
-  FLAG_DEAL | REPORT_DEAL`; generic "approve/reject pending contribution"
-  code must branch on kind (the moderation route shows how).
-- Corroboration independence uses a **stable salted ipHash**; unknown/local
-  origins store null (counts as distinct) — don't "fix" that by hashing a
-  fallback constant, it bricks corroboration behind no proxy.
-- Restoring a hidden comment clears its CommentReport ledger on purpose.
-- e2e creates a throwaway user per run (unique email) in the dev DB.
-- A crashed e2e still orphans `next-server` on port 3100: `pkill -f next-server`.
+```bash
+npm run lint && npm run typecheck
+npm test                    # needs a database named nicfinder_test (wiped each run)
+npm run build && npm run e2e  # browser smoke test on port 3100; needs Playwright
+```
+
+Demo accounts and a guided walkthrough: [`docs/DEMO_GUIDE.md`](docs/DEMO_GUIDE.md).
+
+## Gotchas
+
+- **`priceCents` is nullable.** Availability-only rows ("not carried", "out
+  of stock") have no price. Any query that reads prices must filter
+  `priceCents: { not: null }` or go through `selectLatestPrice`.
+- **e2e and the screenshot script write to the database.** Point them at a
+  throwaway database. Prisma refuses `migrate reset` from an AI agent
+  without the owner's explicit consent, so agents should create a **new**
+  database and run `migrate deploy` + seed instead of resetting one.
+- **Corroboration independence uses a salted IP hash.** Unknown or local
+  origins store `null`, which counts as distinct. Don't "fix" that by
+  hashing a fallback constant: it would block corroboration behind a proxy.
+  Rotating `SESSION_SECRET` changes every hash.
+- **Contribution kinds** are `CONFIRM | DISPUTE | FLAG_OBSERVATION |
+  FLAG_DEAL | REPORT_DEAL`; moderation code must branch on kind (see
+  `src/app/api/admin/moderation/route.ts`).
+- **Publishing is concurrency-safe**: `publishDispute` returns
+  `"published" | "already-resolved" | "outdated"`; callers must handle all
+  three.
+- **Comment hide/restore is state-gated** and clears the report ledger; a
+  deleted comment can never be restored.
+- **`.gitignore` patterns must be anchored**: an unanchored `coverage/` once
+  silently dropped `src/app/admin/coverage/` from every commit.
+- **A crashed e2e run can leave `next-server` holding port 3100**
+  (`pkill -f next-server`). A stale server keeps serving the *old* build.
+- **Dark mode uses `dark:` Tailwind classes** keyed to the system
+  preference; new UI needs both variants.
 
 ## Resume prompt
+
 ```
-Project: /home/user/NicFinder (github.com/Zahalol/NicFinder, branch claude/keen-planck-rmqrm9)
-Read first: HANDOFF.md, AUTONOMOUS_WORKLOG.md, README.md, docs/REPLIT.md
-State: verified Postgres MVP + 74 autonomous improvement cycles, all gates green, not yet deployed.
-Next: owner reviews AUTONOMOUS_WORKLOG.md, then Replit deployment per docs/REPLIT.md.
+Project: github.com/Zahalol/NicFinder (branch main, protected: PRs + `verify` check).
+Read first: HANDOFF.md, CLAUDE.md, README.md.
+State: verified Postgres MVP, all gates green, not yet deployed; demo data only.
+Next: owner decides on deployment (docs/REPLIT.md) and starts manual price
+collection (research/99_FOUNDER_DECISION_BRIEF.md). Work on a new branch from
+main and open a PR.
 ```

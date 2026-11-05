@@ -1,5 +1,14 @@
 # NicFinder — ElevenLabs Agents Outbound Calling: Research & Design Document
 
+> **Read with [`research/`](../research/RESEARCH_INDEX.md) — its later findings win where they differ.**
+> The 2026-11-05 due diligence re-checked this doc
+> ([`research/00_SOURCE_AND_CONTRADICTION_REGISTER.md`](../research/00_SOURCE_AND_CONTRADICTION_REGISTER.md)):
+> - **Recommendation:** [`research/99`](../research/99_FOUNDER_DECISION_BRIEF.md) is **NO-GO on automated calling for now**. Validate price spread and B2B demand with manual collection first.
+> - **Unit economics:** ≈$0.21 per generated price but ≈$0.45 per *accurate* price once failed and wrong answers are counted (research/04, with model CSV).
+> - **Illinois eavesdropping:** the "$10,000 per violation" figure below is not in 720 ILCS 5/14-6; the civil remedy is actual plus punitive damages (research/01, register L7).
+> - **Business-landline TCPA:** treat "no consent needed" as an open question for counsel, not settled (register L4).
+> - **Refresh cadence:** this doc's monthly baseline and BUSINESS_RESEARCH's 3-week cadence disagree; research/09 has the freshness analysis.
+
 **Status:** Research only. No system has been built. No calls have been placed. No API has been tested.
 **Scope:** Future outbound-calling system (ElevenLabs Agents + Twilio) to ask Chicago-area gas stations and convenience stores the shelf price of ZYN nicotine pouches.
 **Research date:** 2026-11-04 (all "accessed" dates below are 2026-11-04 unless noted).

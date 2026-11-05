@@ -1,53 +1,58 @@
 # Screenshot tour
 
-Captured from a seeded local production build (demonstration data —
-fictional "Demo" stores carry synthetic prices; real directory stores
-honestly show "No price yet"). Desktop shots at 1440×900, mobile at
-390×844 (iPhone-class), both at 2× scale.
+Captured 2026-11-05 from a production build of `main` against a freshly
+seeded database, so everything shown is demo data. Fictional "Demo" stores
+carry synthetic prices; real directory stores honestly show "No price yet".
+Desktop shots are 1440×900 and mobile shots 390×844, both at 2× scale.
 
-## Visitor experience
+**Retaking them:** `node scripts/capture-screenshots.mjs` regenerates every
+image in this folder. Run it after `npm run build`, against a **new, empty**
+database that you have migrated and seeded; the script header has the steps.
+The file names below are the script's, so keep the two in sync.
+
+## Visitor
 
 | | |
 |---|---|
-| **21+ age gate** — overlay (content stays indexable) | ![Age gate](01-age-gate.png) |
-| **Home** — one-box search, "near me" + neighborhood quick chips, latest price reports feed | ![Home](02-home.png) |
-| **Search results (desktop split view)** — scrolling list beside a sticky live map, labeled filter groups, best-price card with "worth the trip?" math, confidence pills, collapsed no-price directory | ![Search list](03-search-list.png) |
-| **Map view (mobile)** — teal price chips, faded chips for stale prices, small dots for unpriced stores | ![Map](04-search-map.png) |
-| **5-can deal comparison** — effective per-can pricing re-ranks the list; unknown deal terms are never extrapolated | ![Deals](05-search-5can-deals.png) |
-| **Store detail** — per-product prices with confidence reasons, price-history sparkline + trend, "what you'd pay" quantity strip, cheaper-nearby links, location mini-map, share | ![Store](06-store-detail.png) |
-| **Confirm / report a price** — community verification flow (one-tap confirm also available right on search cards) | ![Contribute](07-contribute.png) |
-| **Account** — watchlist cards computed by the site-wide price policy, cheapest-saved highlight, contribution history, reputation | ![Account](08-account-watchlist.png) |
-| **SEO landing page** — `/zyn-prices/60614`: answer-first stats, best deal, FAQ structured data | ![SEO page](09-seo-zip-page.png) |
+| **21+ age gate.** A client overlay; the page behind it stays indexable and is `inert` until confirmed. | ![Age gate](01-age-gate.png) |
+| **Home.** One-box search, "near me" and neighbourhood quick chips, latest price reports. | ![Home](02-home.png) |
+| **Search, desktop.** List beside a sticky live map, best-price card, reliability tiers, "Priced only" and name filters, honest "Not carried" / "No price yet" states. | ![Search](03-search-desktop.png) |
+| **Search at 5 cans.** Deal-aware per-can pricing re-ranks stores; unknown deal terms are never extrapolated. | ![5 cans](04-search-5-cans.png) |
+| **Store detail.** Per-line prices with reliability, "What you'd pay" strip, mini-map, history sparkline, nearby alternatives, hours, notes. | ![Store](05-store-detail.png) |
+| **Two-store compare** (`/compare`). Per-line prices and N-can deal math. | ![Compare](06-compare.png) |
+| **ZIP landing page** (`/zyn-prices/60614`). Price summary tiles, best deal, Ultra column, FAQ structured data. | ![ZIP page](07-zip-landing-page.png) |
+| **Covered areas index** (`/zyn-prices`). | ![Covered areas](08-covered-areas.png) |
+| **Recent price drops** (`/price-drops`). | ![Price drops](09-price-drops.png) |
+| **How NicFinder works** (`/how-it-works`). Data sources, freshness, reliability, verification. `/about` redirects here. | ![How it works](10-how-it-works.png) |
+| **No coverage yet.** Nearest covered area plus a coverage request (Joliet, 60435). | ![No coverage](11-no-coverage.png) |
+
+## Signed-in member
+
+| | |
+|---|---|
+| **Search, signed in.** One-tap "Still this price?" and save-to-watchlist on result cards. | ![Signed-in search](12-search-signed-in.png) |
+| **Confirm or report a price** on the store page. | ![Contribute](13-contribute.png) |
+| **Account.** Price alerts, settings, watchlist with quick-compare, contribution history. | ![Account](14-account.png) |
 
 ## Admin
 
 | | |
 |---|---|
-| **Overview** — live metrics, queues, audit log | ![Admin](10-admin-overview.png) |
-| **Import preview** — per-row validation outcomes, column remapping, commit/reverse | ![Import](11-admin-import-preview.png) |
-| **Review queue** — guardrail-tripping price reports, flagged comments | ![Review](12-admin-review.png) |
-| **Coverage demand** — ZIPs users asked us to cover, ranked | ![Coverage](13-admin-coverage.png) |
-| **Analytics** — price dispersion by ZIP, freshness, contribution trends | ![Analytics](14-admin-analytics.png) |
-| **Settings** — every trust threshold in one place | ![Settings](15-admin-settings.png) |
+| **Overview.** Live metrics, queues, audit log. | ![Admin](15-admin-overview.png) |
+| **Import preview.** Per-row outcomes for `sample-data/sample-import.csv`: accepted, flagged, rejected, duplicate. | ![Import preview](16-admin-import-preview.png) |
+| **Review queue.** Disputes, deal reports, observation and deal flags, comments. | ![Review](17-admin-review.png) |
+| **Collect prices.** The calling worksheet: tap-to-call, inline entry, availability-only facts. | ![Collect](18-admin-collect.png) |
+| **Coverage demand.** Requests by ZIP, joined with store and price coverage. | ![Coverage](19-admin-coverage.png) |
+| **Pilot economics.** Coverage stats plus a what-if call-cost calculator. | ![Economics](20-admin-economics.png) |
+| **Analytics.** Price dispersion, freshness, contribution trends. | ![Analytics](21-admin-analytics.png) |
+| **Settings.** Every trust threshold in one place. | ![Settings](22-admin-settings.png) |
 
-## Mobile
-
-| | |
-|---|---|
-| **Search** | ![Mobile search](16-mobile-search.png) |
-| **Store detail** | ![Mobile store](17-mobile-store.png) |
-
-## Session 2 additions (2026-11-05, autonomous overnight session)
+## Mobile and dark mode
 
 | | |
 |---|---|
-| **Store detail v2** — reliability chips, price-history sparkline, hours, nearby alternatives, flag/deal-report affordances | ![Store v2](18-store-detail-v2.png) |
-| **Two-store comparison** — per-line prices and N-can deal math, honest not-carried states | ![Compare](19-compare.png) |
-| **How it works** — trust explainer (data sources, confidence labels, verification flows) | ![How it works](20-how-it-works.png) |
-| **Admin: collect prices** — the G1 worksheet (tap-to-call, inline entry, availability-only facts) | ![Collect](21-admin-collect.png) |
-| **Admin: coverage demand** — requests by ZIP joined with store/price coverage | ![Coverage](22-admin-coverage.png) |
-| **Admin: pilot economics** — coverage stats + what-if call-cost calculator | ![Economics](23-admin-economics.png) |
-| **Admin: review queue v2** — disputes, deal reports, observation & deal flags, comments | ![Review v2](24-admin-review-v2.png) |
-| **Account v2** — price alerts, settings, watchlist with quick-compare | ![Account v2](25-account-v2.png) |
-| **Dark mode (system preference)** — search | ![Dark search](26-dark-search.png) |
-| **Dark mode** — store detail with theme-aware sparkline | ![Dark store](27-dark-store.png) |
+| **Mobile search** with the List/Map toggle. | ![Mobile search](23-mobile-search.png) |
+| **Mobile map.** Price chips; faded chips are stale prices, dots are unpriced stores. | ![Mobile map](24-mobile-map.png) |
+| **Mobile store page.** | ![Mobile store](25-mobile-store.png) |
+| **Dark mode, search.** Follows the system preference, including the map tiles. | ![Dark search](26-dark-search.png) |
+| **Dark mode, store page.** | ![Dark store](27-dark-store.png) |

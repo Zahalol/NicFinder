@@ -10,13 +10,7 @@ A 10-minute walkthrough of every key flow. Setup: see README quick start.
 | Trusted user | `trusted@example.com` | `trusted-demo-password` | Reputation 80 → in-range price edits publish instantly |
 | New user | `newbie@example.com` | `newbie-demo-password` | Reputation 0 → reports need corroboration |
 
-> **Since the enhancement pass:** the age gate is now an overlay (not a
-> separate page); search results lead with a **Best price nearby** card;
-> uncovered areas offer **“Request prices for this area”** (view demand at
-> /admin/coverage); store pages have a **☆ Save** watchlist button (list on
-> /account); SEO pages live at **/zyn-prices/60614**; admin gained
-> **Coverage demand** and **Analytics** tabs. Database is now PostgreSQL —
-> see README "Database setup".
+Screenshots of every step are in [`screenshots/`](screenshots/README.md).
 
 ## 1. Guest browsing (no account)
 
@@ -25,7 +19,9 @@ A 10-minute walkthrough of every key flow. Setup: see README quick start.
    - Fictional "Demo …" stores with synthetic prices and a **demo data** badge.
    - Real Chicago stores (Shell, bp, …) honestly showing **No price yet**.
    - A **5-can deal** badge on Demo Fuel Stop #1.
-3. Toggle **List/Map** (map pins show prices; needs network for OSM tiles).
+3. On a wide screen the **map sits beside the list** (pins show prices;
+   needs network for OSM tiles). Click a pin: its card is highlighted and
+   scrolled into view. On a phone, use the **List/Map** toggle instead.
 4. Set **Buying = 5**: Demo Fuel Stop #1's per-can price drops by $1.00
    (deal applied); sort by **price** and watch the ranking change — the
    1-can ranking is *not* affected by the deal.
@@ -34,7 +30,20 @@ A 10-minute walkthrough of every key flow. Setup: see README quick start.
 6. Open **Demo Station #6** — its price is >21 days old and labeled
    "may be outdated". **Demo Depot #7** shows "No recent price" (expired).
 7. Search **10001** (New York): accepted nationwide, shows the honest
-   **no coverage** state.
+   **no coverage** state with a coverage request button. Search **60435**
+   (Joliet) instead and it also suggests the **nearest covered area**.
+8. Search **99999**: "Did you mean" suggests real ZIPs. Search a store
+   name such as **Mobil**: matching stores are offered directly.
+9. Open **/search** with no query: "Near me", recent searches and
+   neighbourhood chips. Your last product/cans/radius/sort choices are
+   re-applied to new searches on this device.
+10. Open **Demo Fuel Stop #1**: the **What you'd pay** strip shows deal-aware
+    totals at 1/3/5/10 cans, plus a mini-map, hours, price history and
+    cheaper nearby stores. Pick two stores' **compare** buttons for the
+    side-by-side **/compare** page.
+11. Also try **/zyn-prices/60614** (ZIP landing page with price summary and
+    an Ultra column), **/zyn-prices** (covered areas), **/price-drops** and
+    **/how-it-works**. Switch your OS to dark mode: the whole site follows.
 
 ## 2. Community flows
 
@@ -45,8 +54,9 @@ A 10-minute walkthrough of every key flow. Setup: see README quick start.
    the *same* price → it may publish immediately (if within ±50% of current)
    or count as corroboration of the pending report.
 3. Try an absurd price (`24.99`) as any user → routed to moderator review.
-4. Click **✓ Confirm current price** — note the confirm appears on the
-   store card ("✓ 1 confirm"). You can't confirm twice, can't confirm your
+4. Click **✓ Confirm current price**, or tap **✓ Still this price?** right
+   on a search result card. The confirm appears on the store card
+   ("✓ 1 confirm"). You can't confirm twice, can't confirm your
    own report, and re-confirming the same store is rate-limited by cooldown.
 5. Post a store note; as the other user, **report** it. Three reports from
    **distinct users** auto-hide it pending review (one person reporting
@@ -96,8 +106,10 @@ A 10-minute walkthrough of every key flow. Setup: see README quick start.
 ## 4. Proving the quality gates
 
 ```bash
-npm test        # 122 unit/integration tests
+npm run lint && npm run typecheck
+npm test        # 171 unit/integration tests (nicfinder_test database)
 npm run build   # production build
-npm run e2e     # ~41 end-to-end checks incl. authz, import idempotency,
-                # and the watchlist-alert trust loop
+npm run e2e     # 85 browser checks incl. authz, import idempotency, the
+                # watchlist-alert trust loop and the ported search features;
+                # needs Playwright and a migrated + seeded DATABASE_URL
 ```

@@ -1,5 +1,13 @@
 # Autonomous backlog
 
+> **Historical record — not current instructions.** This log was written on
+> the session branch `claude/keen-planck-rmqrm9` before the five parallel sessions were
+> merged into `main` on 2026-11-05. Branch names, test counts and "next
+> steps" here are as of that branch. For the current state read
+> [`HANDOFF.md`](../../HANDOFF.md); for what the merge kept, changed or
+> removed see [`DECISIONS.md`](../DECISIONS.md) ("Merge of parallel
+> sessions"). Status updates after the merge: #15 PWA offline shell — done (beautiful-keller's service worker + `/offline`); #18 a11y sweep — done (the "focus traps" part is obsolete: the dialog it targeted was removed); #24 "no SW, deliberate" — overridden; #30 DEVLOG/HANDOFF refresh — done. Live open items are tracked in `HANDOFF.md` and `docs/ROADMAP.md`.
+
 Prioritized ideas for the unattended improvement marathon (2026-11-04).
 Status: `todo` | `in-progress` | `done` | `blocked` | `rejected`.
 
