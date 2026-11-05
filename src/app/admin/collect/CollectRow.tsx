@@ -20,6 +20,7 @@ export function CollectRow({
   productLineId: string;
 }) {
   const [price, setPrice] = useState("");
+  const [hours, setHours] = useState("");
   const [availability, setAvailability] = useState("IN_STOCK");
   const [state, setState] = useState<"idle" | "busy" | "saved">("idle");
   const [err, setErr] = useState<string | null>(null);
@@ -43,6 +44,14 @@ export function CollectRow({
       setState("idle");
       setErr(json.error ?? "Failed.");
       return;
+    }
+    // Hours learned on the same call ride along (best-effort).
+    if (hours.trim()) {
+      await fetch(`/api/admin/stores/${store.id}/details`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hours: hours.trim() }),
+      }).catch(() => {});
     }
     setState("saved");
   }
@@ -99,6 +108,13 @@ export function CollectRow({
               <option value="NOT_CARRIED">not carried</option>
               <option value="UNKNOWN">unknown</option>
             </select>
+            <input
+              value={hours}
+              onChange={(e) => setHours(e.target.value)}
+              placeholder="hours (optional)"
+              aria-label={`Opening hours at ${store.name}`}
+              className="w-36 rounded-lg border border-stone-300 px-2 py-1.5 text-xs"
+            />
             <button
               onClick={save}
               disabled={

@@ -73,8 +73,9 @@ const DEMO_STORES: Array<{
   history?: Array<{ cents: number; days: number }>;
   /** availability-only fact: this store reports not carrying ZYN (no price) */
   notCarried?: { days: number };
+  hours?: string;
 }> = [
-  { name: "Demo Fuel Stop #1 (fictional)", street: "100 Example Ave", zip: "60614", lat: 41.9289, lng: -87.6440, zyn: { cents: 649, days: 2 }, ultra: { cents: 749, days: 2 }, deal: { minQty: 5, discountPerCanCents: 100, appliesAboveMinQty: true }, history: [{ cents: 629, days: 24 }, { cents: 639, days: 16 }, { cents: 659, days: 9 }] },
+  { name: "Demo Fuel Stop #1 (fictional)", street: "100 Example Ave", zip: "60614", lat: 41.9289, lng: -87.6440, zyn: { cents: 649, days: 2 }, ultra: { cents: 749, days: 2 }, deal: { minQty: 5, discountPerCanCents: 100, appliesAboveMinQty: true }, history: [{ cents: 629, days: 24 }, { cents: 639, days: 16 }, { cents: 659, days: 9 }], hours: "Mon–Sat 6am–11pm, Sun 8am–9pm (demo)" },
   { name: "Demo Corner Mart #2 (fictional)", street: "200 Example St", zip: "60614", lat: 41.9222, lng: -87.6531, zyn: { cents: 599, days: 1 }, history: [{ cents: 599, days: 20 }, { cents: 619, days: 11 }] },
   { name: "Demo Gas & Go #3 (fictional)", street: "300 Example Blvd", zip: "60657", lat: 41.9403, lng: -87.6540, zyn: { cents: 729, days: 4 }, deal: { minQty: 3, pricePerCanCents: 649, appliesAboveMinQty: null, conditions: "Loyalty members only (demo)" } },
   { name: "Demo Quick Stop #4 (fictional)", street: "400 Example Rd", zip: "60613", lat: 41.9500, lng: -87.6600, zyn: { cents: 679, days: 6 }, ultra: { cents: 829, days: 6 } },
@@ -192,6 +193,7 @@ async function main() {
         latitude: s.lat,
         longitude: s.lng,
         isDemo: true,
+        hours: s.hours ?? null,
       },
     });
     await prisma.storeIdentity.create({
