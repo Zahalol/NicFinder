@@ -6,6 +6,7 @@ import { formatCents } from "@/lib/money";
 import { getSettings } from "@/lib/settings";
 import { NotificationsPanel } from "./NotificationsPanel";
 import { SettingsPanel } from "./SettingsPanel";
+import { WatchlistCompare } from "./WatchlistCompare";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Your account — NicFinder" };
@@ -109,31 +110,20 @@ export default async function AccountPage() {
           to track it here.
         </p>
       ) : (
-        <ul className="mt-2 divide-y divide-stone-100 rounded-xl border border-stone-200 bg-white">
-          {savedStores.map((s) => {
+        <WatchlistCompare
+          items={savedStores.map((s) => {
             const latest = s.store.observations[0];
-            return (
-              <li key={s.id} className="p-3 text-sm flex items-center justify-between gap-2">
-                <span>
-                  <Link href={`/stores/${s.store.id}`} className="text-teal-700 hover:underline font-medium">
-                    {s.store.name}
-                  </Link>{" "}
-                  <span className="text-stone-500">{s.store.address}</span>
-                </span>
-                <span className="text-stone-700 shrink-0">
-                  {latest ? (
-                    <>
-                      {formatCents(latest.priceCents)}
-                      <span className="text-xs text-stone-400"> · {latest.productLine.name} · {latest.observedAt.toLocaleDateString()}</span>
-                    </>
-                  ) : (
-                    <span className="text-stone-400">no price yet</span>
-                  )}
-                </span>
-              </li>
-            );
+            return {
+              storeId: s.store.id,
+              name: s.store.name,
+              address: s.store.address,
+              priceLabel: latest ? formatCents(latest.priceCents) : null,
+              priceMeta: latest
+                ? `${latest.productLine.name} · ${latest.observedAt.toLocaleDateString()}`
+                : null,
+            };
           })}
-        </ul>
+        />
       )}
 
       <h2 className="mt-8 font-medium text-stone-900">Your contributions</h2>
