@@ -20,7 +20,16 @@ export default async function SearchPage({
 }) {
   const params = await searchParams;
   const q = params.q?.trim() ?? "";
-  const product = params.product === "zyn-ultra" ? "zyn-ultra" : "zyn";
+  // Product lines come from the DB (the engine is brand-agnostic); the
+  // first active line is the default.
+  const productLines = await prisma.productLine.findMany({
+    where: { active: true },
+    orderBy: { sortOrder: "asc" },
+    select: { slug: true, name: true },
+  });
+  const product = productLines.some((l) => l.slug === params.product)
+    ? params.product!
+    : (productLines[0]?.slug ?? "zyn");
   const qty = QTYS.includes(Number(params.qty)) ? Number(params.qty) : 1;
   const radius = RADII.includes(Number(params.radius)) ? Number(params.radius) : 5;
   const sort: SortKey = ["distance", "price", "recency"].includes(params.sort ?? "")
@@ -97,10 +106,18 @@ export default async function SearchPage({
               Near <span className="text-stone-800">{locationLabel ?? "selected point"}</span>
               {approximate && " (ZIP center)"} ·
             </span>
-            {/* Product toggle */}
+            {/* Product toggle — rendered from active product lines */}
             <span className="inline-flex rounded-lg border border-stone-300 overflow-hidden">
-              <Link href={href({ product: "zyn" })} aria-current={product === "zyn" ? "true" : undefined} className={`px-3 py-1 ${product === "zyn" ? "bg-stone-900 text-white" : "bg-white text-stone-600"}`}>ZYN</Link>
-              <Link href={href({ product: "zyn-ultra" })} aria-current={product === "zyn-ultra" ? "true" : undefined} className={`px-3 py-1 ${product === "zyn-ultra" ? "bg-stone-900 text-white" : "bg-white text-stone-600"}`}>ZYN Ultra</Link>
+              {productLines.map((l) => (
+                <Link
+                  key={l.slug}
+                  href={href({ product: l.slug })}
+                  aria-current={product === l.slug ? "true" : undefined}
+                  className={`px-3 py-1 whitespace-nowrap ${product === l.slug ? "bg-stone-900 text-white" : "bg-white text-stone-600"}`}
+                >
+                  {l.name.replace(" (regular)", "")}
+                </Link>
+              ))}
             </span>
             {/* Quantity */}
             <label className="text-stone-500 ml-1">Buying</label>
