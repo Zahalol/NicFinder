@@ -54,6 +54,31 @@ export default async function SearchPage({
     }
   }
 
+  // The query may be a store name ("Mobil Fullerton") rather than a place —
+  // geocoders happily send that to the wrong city (e.g. Fullerton, CA).
+  // Offer direct name/address matches from the covered directory whenever
+  // the query isn't a plain ZIP.
+  const wordish = q && !/^\d{5}(-\d{4})?$/.test(q);
+  const nameMatches = wordish
+    ? await prisma.store.findMany({
+        where: {
+          status: "ACTIVE",
+          OR: q
+            .split(/\s+/)
+            .filter((w) => w.length >= 3)
+            .slice(0, 4)
+            .map((w) => ({
+              OR: [
+                { name: { contains: w, mode: "insensitive" as const } },
+                { address: { contains: w, mode: "insensitive" as const } },
+              ],
+            })),
+        },
+        select: { id: true, name: true, address: true, city: true, zip: true, isDemo: true },
+        take: 5,
+      }).catch(() => [])
+    : [];
+
   const hasLocation = lat !== null && lng !== null && !Number.isNaN(lat) && !Number.isNaN(lng);
   const [search, user] = await Promise.all([
     hasLocation
@@ -123,6 +148,36 @@ export default async function SearchPage({
             </div>
           ) : null;
           })()}
+          {nameMatches.length > 0 && (
+            <div className="mt-4 text-left">
+              <p className="text-sm text-stone-600 dark:text-stone-400 text-center">
+                Stores matching “{q}”:
+              </p>
+              <ul className="mt-2 space-y-1.5">
+                {nameMatches.map((m) => (
+                  <li key={m.id}>
+                    <Link
+                      href={`/stores/${m.id}`}
+                      className="block rounded-lg border border-stone-200 dark:border-stone-800 px-3 py-2 text-sm hover:border-teal-400 transition"
+                    >
+                      <span className="font-medium text-stone-800 dark:text-stone-200">
+                        {m.name}
+                      </span>
+                      {m.isDemo && (
+                        <span className="ml-1.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 text-[9px] font-medium px-1 py-0.5 uppercase align-middle">
+                          demo
+                        </span>
+                      )}
+                      <span className="block text-xs text-stone-500">
+                        {m.address}
+                        {m.city ? `, ${m.city}` : ""} {m.zip ?? ""}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           <p className="mt-3 text-sm text-stone-600 dark:text-stone-400">
             Try a 5-digit ZIP code (ZIP search works even offline) or a fuller
             street address. Address lookup uses OpenStreetMap and may be
@@ -137,6 +192,26 @@ export default async function SearchPage({
             Near <span className="text-stone-800 dark:text-stone-200 font-medium">{locationLabel ?? "selected point"}</span>
             {approximate && <span className="text-stone-400"> (ZIP center)</span>}
           </p>
+
+          {nameMatches.length > 0 && (
+            <div className="mt-3 rounded-xl border border-teal-200 dark:border-teal-800 bg-teal-50/50 dark:bg-teal-950/40 px-4 py-3 text-sm">
+              <p className="text-stone-600 dark:text-stone-400">
+                Looking for a specific store? These match “{q}”:
+              </p>
+              <p className="mt-1.5 flex flex-wrap gap-2">
+                {nameMatches.map((m) => (
+                  <Link
+                    key={m.id}
+                    href={`/stores/${m.id}`}
+                    className="rounded-lg border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-900 px-2.5 py-1 text-teal-700 dark:text-teal-400 hover:border-teal-400"
+                  >
+                    {m.name}
+                    <span className="text-stone-400 text-xs"> · {m.address}</span>
+                  </Link>
+                ))}
+              </p>
+            </div>
+          )}
 
           {/* Filter bar: labeled control groups, horizontally scrollable on mobile */}
           <div

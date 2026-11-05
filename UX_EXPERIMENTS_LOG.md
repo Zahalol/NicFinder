@@ -781,3 +781,32 @@ green (72 tests, 50 e2e checks).
   (no-coverage nearest-area scan) — logged for the scaling backlog.
 
 **Recommendation: Keep all.**
+
+---
+
+## Cycle 39 — Accessibility refinements
+
+Live regions for contribute success/errors and the one-tap confirm outcome;
+`prefers-reduced-motion` respected for programmatic smooth scrolls and CSS
+animations/transitions; the compare dialog gained a Tab/Shift-Tab focus trap.
+
+**Recommendation: Keep.**
+
+---
+
+## Cycle 40 — Store-name search matches
+
+**Problem.** Typing a store name ("Milito Fullerton") into the search box
+either geocoded to the wrong city or failed outright — the box silently
+only understood places.
+
+**What changed.** Non-ZIP queries also match covered store names/addresses
+(word-wise, case-insensitive, ≤5 results). Matches render as a labeled
+"Looking for a specific store?" chip strip above the results when a
+location was found, and inside the couldn't-locate card when geocoding
+failed. ZIP queries skip the lookup entirely.
+
+**Testing.** "Milito Fullerton" shows chips for Mobil (Milito's) and the
+bp on Fullerton; "60614" shows no strip; nonsense queries show nothing.
+
+**Recommendation: Keep.**
