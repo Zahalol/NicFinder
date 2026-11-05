@@ -303,3 +303,32 @@ describe("stableIpHash", () => {
     expect(stableIpHash("203.0.113.6")).not.toBe(a);
   });
 });
+
+describe("variant detail on community price reports", () => {
+  beforeEach(resetDb);
+
+  it("publishDispute carries strength/flavor onto the published observation", async () => {
+    const { zyn } = await seedProductLines();
+    const store = await prisma.store.create({ data: { name: "Variant Store", isDemo: true } });
+    const u = await makeUser({ email: "variant@x.com" });
+    const c = await prisma.contribution.create({
+      data: {
+        userId: u.id,
+        storeId: store.id,
+        productLineId: zyn.id,
+        kind: "DISPUTE",
+        proposedPriceCents: 649,
+        proposedStrength: "6mg",
+        proposedFlavor: "Wintergreen",
+        status: "CORROBORATING",
+      },
+    });
+    await publishDispute(c.id, "moderator", undefined);
+    const obs = await prisma.priceObservation.findFirst({
+      where: { contributionId: c.id },
+    });
+    expect(obs!.strength).toBe("6mg");
+    expect(obs!.flavor).toBe("Wintergreen");
+    expect(obs!.sourceType).toBe("COMMUNITY");
+  });
+});

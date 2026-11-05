@@ -29,6 +29,8 @@ export function ContributePanel({
   const [lineId, setLineId] = useState(productLines[0]?.id ?? "");
   const [price, setPrice] = useState("");
   const [qty, setQty] = useState("");
+  const [strength, setStrength] = useState("");
+  const [flavor, setFlavor] = useState("");
   const [comment, setComment] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -203,6 +205,8 @@ export function ContributePanel({
               productLineId: lineId,
               proposedPrice: price,
               proposedQty: qty ? Number(qty) : undefined,
+              strength: strength || undefined,
+              flavor: flavor || undefined,
               comment: comment || undefined,
             });
           }}
@@ -229,6 +233,22 @@ export function ContributePanel({
                 className="w-16 rounded-lg border border-stone-300 px-2 py-1.5"
               />
             </label>
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            <input
+              value={strength}
+              onChange={(e) => setStrength(e.target.value)}
+              placeholder="Strength (e.g. 6mg) — optional"
+              maxLength={60}
+              className="w-40 rounded-lg border border-stone-300 px-2 py-1.5 text-sm"
+            />
+            <input
+              value={flavor}
+              onChange={(e) => setFlavor(e.target.value)}
+              placeholder="Flavor — optional"
+              maxLength={80}
+              className="w-40 rounded-lg border border-stone-300 px-2 py-1.5 text-sm"
+            />
           </div>
           <textarea
             value={comment}

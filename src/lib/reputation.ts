@@ -234,6 +234,8 @@ export async function publishDispute(
         storeId: c.storeId,
         productLineId: c.productLineId,
         priceCents: c.proposedPriceCents,
+        strength: c.proposedStrength,
+        flavor: c.proposedFlavor,
         observedAt: c.createdAt,
         sourceType: "COMMUNITY",
         contributionId: c.id,

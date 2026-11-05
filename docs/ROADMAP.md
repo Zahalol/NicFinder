@@ -39,8 +39,9 @@
 ## Next
 6. **Price alerts** — in-app alerts ✅ done; email delivery still open
    (needs the email provider from item 3).
-7. **Flavor/strength availability reports** as structured community data
-   (schema fields already exist on observations).
+7. ~~Flavor/strength on community reports~~ ✅ done (optional fields on the
+   report form, carried to published observations; corroboration stays
+   price-keyed). Standalone availability-by-flavor reporting still open.
 8. **Receipt photo evidence** (size/type-limited upload, EXIF stripping,
    moderation queue) feeding a higher-confidence verification tier.
 9. **Anti-abuse v2**: IP/device clustering on corroborations, geo

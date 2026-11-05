@@ -369,6 +369,9 @@ model Contribution {
   proposedPriceCents Int?
   proposedQty   Int?
   proposedDealJson String?
+  // Optional variant detail on price reports (shown on the observation)
+  proposedStrength String?
+  proposedFlavor   String?
   comment       String?
   // sha256(ip + SESSION_SECRET) — stable salted hash (never a raw IP) used
   // only to require corroborations to come from distinct networks.

@@ -262,6 +262,8 @@ export async function POST(
           ipHash,
           proposedPriceCents: priceCents,
           proposedQty: body?.proposedQty ? Number(body.proposedQty) : null,
+          proposedStrength: body?.strength ? String(body.strength).trim().slice(0, 60) || null : null,
+          proposedFlavor: body?.flavor ? String(body.flavor).trim().slice(0, 80) || null : null,
           comment: body?.comment ? String(body.comment).slice(0, 500) : null,
           status:
             decision.action === "AUTO_PUBLISH"
