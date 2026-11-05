@@ -68,7 +68,7 @@ try {
   server = spawn("npx", ["next", "start", "-p", String(PORT)], {
     cwd: process.cwd(),
     stdio: ["ignore", "pipe", "pipe"],
-    env: { ...process.env },
+    env: { ...process.env, IMPORT_API_KEY: "e2e-import-api-key-0123" },
     detached: true,
   });
   server.stderr.on("data", (d) => process.stderr.write(`[server] ${d}`));
@@ -444,6 +444,44 @@ try {
   check("approved deal appears on the store page", dealShown);
 
   await ctx2.close();
+
+  // Automated import API: auth boundary + preview round-trip.
+  const apiChecks = await page.evaluate(async () => {
+    const out = {};
+    out.noKey = (await fetch("/api/imports", { method: "POST" })).status;
+    out.badKey = (
+      await fetch("/api/imports", {
+        method: "POST",
+        headers: { authorization: "Bearer wrong-key-wrong-key" },
+      })
+    ).status;
+    const fd = new FormData();
+    fd.append(
+      "file",
+      new Blob(
+        [
+          "store_name,address,observed_at,product_line,price_usd\n" +
+            "API Probe Store (fictional),1 Api St,2026-11-01T10:00:00Z,zyn,6.49\n",
+        ],
+        { type: "text/csv" }
+      ),
+      "api-probe.csv"
+    );
+    const prev = await fetch("/api/imports", {
+      method: "POST",
+      headers: { authorization: "Bearer e2e-import-api-key-0123" },
+      body: fd,
+    });
+    const pj = await prev.json();
+    const status = await fetch(`/api/imports/${pj.batchId}`, {
+      headers: { authorization: "Bearer e2e-import-api-key-0123" },
+    });
+    out.preview = prev.ok && pj.status === "PREVIEW";
+    out.statusGet = status.ok;
+    return out;
+  });
+  check("import API rejects missing/invalid keys", apiChecks.noKey === 401 && apiChecks.badKey === 401);
+  check("import API preview + status round-trip", apiChecks.preview === true && apiChecks.statusGet === true);
 
   // Dark mode regression guard: a dark-preferring browser gets a dark body.
   const darkCtx = await browser.newContext({ colorScheme: "dark" });

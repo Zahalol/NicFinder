@@ -8,7 +8,8 @@ The site works like a calmer GasBuddy for pouches: search any US address or
 ZIP, see nearby stores on a list or map, compare single-can prices and
 multi-can deal pricing, and see exactly how fresh and trustworthy every
 number is. Prices arrive by **file import** (CSV/XLSX from a future calling
-system — see `docs/IMPORT_CONTRACT.md`), by **community reports**, and by
+system — see `docs/IMPORT_CONTRACT.md`, or programmatically via the disabled-
+by-default API in `docs/API.md`), by **community reports**, and by
 **manual admin entry**. There is deliberately **no calling code** in this
 application (`docs/ELEVENLABS_CALLING_RESEARCH.md` covers that future workstream).
 
