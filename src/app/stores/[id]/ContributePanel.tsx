@@ -21,7 +21,11 @@ export function ContributePanel({
   signedIn: boolean;
 }) {
   const router = useRouter();
-  const [mode, setMode] = useState<"idle" | "dispute">("idle");
+  // When the store has no reported price at all, open the report form right
+  // away — there is nothing to "confirm" yet.
+  const [mode, setMode] = useState<"idle" | "dispute">(() =>
+    Object.values(latest).every((l) => l === null) ? "dispute" : "idle"
+  );
   const [lineId, setLineId] = useState(productLines[0]?.id ?? "");
   const [price, setPrice] = useState("");
   const [qty, setQty] = useState("");
@@ -68,10 +72,19 @@ export function ContributePanel({
   }
 
   const currentLatest = latest[lineId] ?? null;
+  const nothingReported = Object.values(latest).every((l) => l === null);
 
   return (
     <div className="mt-6 rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-5">
-      <h2 className="font-medium text-stone-900 dark:text-stone-100 text-sm">Was this price right?</h2>
+      <h2 className="font-medium text-stone-900 dark:text-stone-100 text-sm">
+        {nothingReported ? "Know the price here?" : "Was this price right?"}
+      </h2>
+      {nothingReported && (
+        <p className="mt-1 text-xs text-stone-500">
+          No one has reported a price for this store yet — yours would be the
+          first, and it helps everyone nearby.
+        </p>
+      )}
       {msg && <p className="mt-2 text-sm text-teal-700 dark:text-teal-400">{msg}</p>}
       {err && <p className="mt-2 text-sm text-red-600 dark:text-red-400">{err}</p>}
 
@@ -102,7 +115,7 @@ export function ContributePanel({
           onClick={() => setMode(mode === "dispute" ? "idle" : "dispute")}
           className="rounded-lg border border-stone-300 dark:border-stone-700 px-3 py-1.5 text-sm text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-800"
         >
-          Report a different price
+          {currentLatest ? "Report a different price" : "Report a price"}
         </button>
       </div>
 

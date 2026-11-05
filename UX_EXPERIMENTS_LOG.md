@@ -716,3 +716,27 @@ and the sitemap.
 a genuine "where do you have data?" answer for users.
 
 **Recommendation: Keep.**
+
+---
+
+## Cycles 31–34 — share image, signup e2e, explainer links, first-price UX
+
+- **31**: branded 1200×630 OpenGraph/Twitter image (`public/og.png`) wired
+  via layout metadata — shared links now render a proper preview.
+- **32**: e2e covers the new-member signup path (unique-email API signup →
+  one-tap confirm chips offered).
+- **33**: `/about` sections got anchor ids; the store-page confidence line
+  links to `/about#what-the-confidence-label-means`; e2e now posts a store
+  note; fixed an e2e race where the age-gate's `router.refresh()` briefly
+  swapped in the loading skeleton. Suite: 50 checks.
+- **34**: verified end-to-end that members can report the **first** price
+  for a real directory store through the existing trust engine (trusted
+  member's report published instantly as community-reported with a
+  confidence pill). Fixed the copy/UX around it: stores with no reported
+  price ask "Know the price here?", the button reads "Report a price"
+  (not "a different price"), and the report form opens automatically.
+  This is the critical path to real Chicago data (business gate G1).
+
+**Recommendation: Keep all.** Also verified mobile pages load in <200 ms
+with tiny payloads (native timing; Lighthouse CLI unavailable in this
+sandbox).
