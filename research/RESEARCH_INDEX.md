@@ -12,7 +12,7 @@ Research-only due diligence. No application code, configuration, or existing doc
 | 5 | [05 Call scaling & Chicago launch plan](05_CALL_SCALING_AND_CHICAGO_LAUNCH_PLAN.md) | ✅ Done | Chicago has 1,904 active tobacco licenses at 1,791 addresses (City data); throughput isn't the constraint (cadence, phone numbers, and law are); all-Chicago launch ≈$1.2k + ≈$200/mo | Medium |
 | 6 | [06 City expansion ranking](06_CITY_EXPANSION_RANKING.md) | ✅ Done | Next: Chicago suburbs + NW Indiana (IL 45% vs IN ~$0.13/can), then Minneapolis (95%) and NYC (new 75% tax, Sept 2026); college towns rank poorly | Medium-Low (demand proxies coarse) |
 | 7 | [07 Backlog](07_RESEARCH_BACKLOG_AND_PHASE7_INDEX.md) · [08 Demand & competitors](08_DEMAND_COMPETITORS_AND_ACQUISITION.md) · [09 Dispersion & data sources](09_DISPERSION_FRESHNESS_AND_DATA_SOURCES.md) · [10 Financials & kill criteria](10_FINANCIAL_SCENARIOS_AND_KILL_CRITERIA.md) | ✅ Done | Chicago consumer ceiling ≈1–4k monthly users (≈160k metro pouch users); new competitor PouchBuddy; manual collection beats calling financially; B2B carries every positive scenario | Medium-Low |
-| — | 99 Founder decision brief | Pending | | |
+| — | [99 Founder decision brief](99_FOUNDER_DECISION_BRIEF.md) | ✅ Done | **Conditional GO** as a low-cost, data-first side project; **no-go on automated calling for now**; decided by a 90-day manual dispersion pilot + B2B willingness-to-pay test | Medium-Low |
 
 ## Open decisions for the founder
 1. Whether to pursue automated calling at all, given that the risk is concentrated there (Phase 1 §7).
@@ -21,3 +21,6 @@ Research-only due diligence. No application code, configuration, or existing doc
 4. Run five B2B buyer conversations before funding collection beyond the pilot (Phase 3 §5).
 5. Any calling pilot must include an in-person ground-truth arm (Phase 4 §8).
 6. Source phone numbers without Google Maps (the license dataset has none) (Phase 5 §3).
+
+## Status
+All seven phases and the founder brief are complete (2026-11-05). Per the founder's revised instruction, research stopped here rather than continuing open-ended cycles.
