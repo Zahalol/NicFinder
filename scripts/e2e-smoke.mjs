@@ -228,7 +228,7 @@ try {
     const compareBody = await page.textContent("body");
     check(
       "compare page renders both stores",
-      compareBody.includes("Compare stores") && compareBody.includes("5 cans of regular ZYN")
+      compareBody.includes("Compare stores") && /5 cans of ZYN/.test(compareBody)
     );
   } else {
     check("compare page renders both stores", false, "fewer than 2 stores in search results");

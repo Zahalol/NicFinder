@@ -260,13 +260,21 @@ export default async function ComparePage({
                 <td className="py-3"><PriceCell d={B} lineId={line.id} /></td>
               </tr>
             ))}
-            <tr className="border-t border-stone-200 align-top">
-              <td className="py-3 pr-2 text-xs text-stone-500">
-                {qty} can{qty > 1 ? "s" : ""} of regular ZYN
-              </td>
-              <td className="py-3 pr-4"><QtyCell d={A} lineId={productLines.find((l) => l.slug === "zyn")?.id ?? ""} /></td>
-              <td className="py-3"><QtyCell d={B} lineId={productLines.find((l) => l.slug === "zyn")?.id ?? ""} /></td>
-            </tr>
+            {productLines
+              .filter((line) =>
+                [A, B].some(
+                  (d) => d.byLine.find((x) => x.line.id === line.id)?.total !== null
+                )
+              )
+              .map((line) => (
+                <tr key={`qty-${line.id}`} className="border-t border-stone-200 align-top">
+                  <td className="py-3 pr-2 text-xs text-stone-500">
+                    {qty} can{qty > 1 ? "s" : ""} of {line.name}
+                  </td>
+                  <td className="py-3 pr-4"><QtyCell d={A} lineId={line.id} /></td>
+                  <td className="py-3"><QtyCell d={B} lineId={line.id} /></td>
+                </tr>
+              ))}
           </tbody>
         </table>
       </div>
