@@ -46,7 +46,6 @@ _Date: 2026-11-05 — Session 2 (autonomous overnight marathon)_
 - [ ] Rotate ElevenLabs/Twilio credentials from old workbooks — status unknown
 - [ ] `npm audit`: remaining advisories need breaking majors (Next 16,
       Prisma 7, exceljs) — deliberate owner decision, not done unattended
-- [ ] CSP header deferred (needs nonce work for Next inline scripts)
 
 ## Next steps
 1. Skim `AUTONOMOUS_WORKLOG.md` top to bottom; everything is reversible
