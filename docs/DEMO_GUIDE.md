@@ -48,8 +48,20 @@ A 10-minute walkthrough of every key flow. Setup: see README quick start.
 4. Click **✓ Confirm current price** — note the confirm appears on the
    store card ("✓ 1 confirm"). You can't confirm twice, can't confirm your
    own report, and re-confirming the same store is rate-limited by cooldown.
-5. Post a store note; as the other user, **report** it. Three reports
-   auto-hide it pending review.
+5. Post a store note; as the other user, **report** it. Three reports from
+   **distinct users** auto-hide it pending review (one person reporting
+   repeatedly counts once). Authors can **edit** their notes — edited notes
+   are labeled.
+6. In **Price history** on any store page, click **report issue** on a row
+   to flag a specific (even historical) observation; on a listed deal,
+   **report issue** flags the deal as ended/wrong. Both land in the
+   moderator review queue.
+7. Click **Report a multi-can deal** ("buy 5, $1 off each") — deal reports
+   are always moderator-reviewed before they appear.
+8. **Save** a store (☆). When its price later changes (community publish,
+   admin entry, or import), an in-app alert appears — bell in the header,
+   list under /account. Your own reports also notify you when a moderator
+   resolves them.
 
 ## 3. Admin flows (`admin@example.com`)
 
@@ -67,15 +79,24 @@ A 10-minute walkthrough of every key flow. Setup: see README quick start.
    are invalidated (history retained), orphan stores retire, search updates.
 5. **/admin/stores** — resolve the seeded **possible duplicate** (two Exxons
    sharing a corporate phone): merge or dismiss. Add a manual price entry.
-6. **/admin/review** — approve/reject pending price reports (rejections
-   require a reason and cost the reporter reputation), restore/hide comments.
+6. **/admin/review** — approve/reject pending price reports and community
+   deal reports (rejections require a reason and cost the reporter
+   reputation), uphold/dismiss observation flags (upholding invalidates the
+   entry append-only) and deal flags (resolve as *ended* or *invalid*),
+   restore/hide comments.
 7. **/admin/settings** — every trust threshold lives here (corroborations
-   required, trusted reputation, max price-change ratio, rate limits…).
+   required, trusted reputation, max price-change ratio, rate limits…), plus
+   the append-only **audit log**.
+8. **/admin/coverage** — demand by ZIP vs store/price coverage (expansion
+   planning); **/admin/economics** — real coverage stats + a what-if calling
+   cost calculator (initiates nothing); **/admin/stores** — duplicate scan
+   button and a CSV export of current displayed prices.
 
 ## 4. Proving the quality gates
 
 ```bash
-npm test        # 51 unit/integration tests
+npm test        # 122 unit/integration tests
 npm run build   # production build
-npm run e2e     # 20 end-to-end checks incl. authz + import idempotency
+npm run e2e     # ~41 end-to-end checks incl. authz, import idempotency,
+                # and the watchlist-alert trust loop
 ```
