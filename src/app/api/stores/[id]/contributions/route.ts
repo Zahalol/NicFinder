@@ -24,7 +24,7 @@ export async function POST(
     const { id: storeId } = await params;
     const settings = await getSettings();
     const ipHash = stableIpHash(
-      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local"
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
     );
 
     const recent = await countRecentContributions(user.id);

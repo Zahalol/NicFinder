@@ -289,3 +289,17 @@ describe("corroboration network independence (anti-sockpuppet)", () => {
     expect(await maybePublishCorroborated(proposal.id, S)).toBe(true);
   });
 });
+
+describe("stableIpHash", () => {
+  it("returns null for unknown/local origins (never a constant bucket)", async () => {
+    const { stableIpHash } = await import("@/lib/auth");
+    expect(stableIpHash(null)).toBeNull();
+    expect(stableIpHash(undefined)).toBeNull();
+    expect(stableIpHash("")).toBeNull();
+    expect(stableIpHash("local")).toBeNull();
+    const a = stableIpHash("203.0.113.5");
+    expect(a).toMatch(/^[0-9a-f]{64}$/);
+    expect(stableIpHash("203.0.113.5")).toBe(a); // stable
+    expect(stableIpHash("203.0.113.6")).not.toBe(a);
+  });
+});
