@@ -66,7 +66,7 @@ SSO, Autoscale deployment, scheduled maintenance).
 | `npm run dev` | Dev server on :3000 |
 | `npm run build` / `npm start` | Production build / serve |
 | `npm test` | 51 unit/integration tests (isolated `prisma/test.db`) |
-| `npm run e2e` | 20-check Playwright smoke test against a production build |
+| `npm run e2e` | 46-check Playwright smoke test against a production build |
 | `npm run lint` / `npm run typecheck` | ESLint / `tsc --noEmit` |
 | `npm run db:seed` | Idempotent seed |
 | `node scripts/make-sample-xlsx.mjs` | Regenerate the XLSX import sample |

@@ -131,6 +131,63 @@ try {
     bodyText.includes("no reported price yet") && bodyText.includes("$7.49")
   );
 
+  // 2b. Session-2 UX features
+  console.log("UX features…");
+  await page.goto(`${BASE}/search?q=60614&radius=5`);
+  check(
+    "confidence pills on priced cards",
+    (await page.locator("text=High confidence").count()) > 0
+  );
+  // Compare flow: pick two stores → tray → dialog → Escape closes
+  const compareBtns = page.locator("button", { hasText: "+ Compare" });
+  check("compare toggles offered", (await compareBtns.count()) >= 2);
+  await compareBtns.nth(0).click();
+  await compareBtns.nth(0).click(); // next card (first now reads "Comparing")
+  await page.locator("button", { hasText: /^Compare \(2\)$/ }).click();
+  await page.waitForTimeout(400);
+  check("compare dialog opens", (await page.getByRole("dialog").count()) > 0);
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(300);
+  check("compare dialog closes on Escape", (await page.getByRole("dialog").count()) === 0);
+
+  await page.goto(`${BASE}/search?q=60614&qty=5&radius=5`);
+  check(
+    "worth-the-trip verdict at qty=5",
+    (await page.locator("text=Worth the trip?").count()) > 0
+  );
+
+  await page.goto(`${BASE}/search?q=99999`);
+  check(
+    "ZIP typo recovery offers suggestions",
+    (await page.locator("text=Did you mean").count()) > 0
+  );
+
+  await page.goto(`${BASE}/search?q=60435`); // Joliet: outside coverage, near Chicago
+  check(
+    "nearest covered area suggested when reachable",
+    (await page.locator("text=Nearest covered area").count()) > 0
+  );
+
+  await page.goto(`${BASE}/price-drops`);
+  const dropsBody = await page.textContent("body");
+  check(
+    "price-drops page lists a seeded drop",
+    /Recent price drops/.test(dropsBody) && /cheaper/.test(dropsBody)
+  );
+
+  await page.goto(`${BASE}/about`);
+  check(
+    "about page explains the honesty system",
+    (await page.locator("text=How NicFinder works").count()) > 0
+  );
+
+  const manifest = await page.evaluate(async () =>
+    (await fetch("/manifest.webmanifest")).json()
+  );
+  check("web manifest served", manifest?.short_name === "NicFinder");
+  const offlineStatus = await page.evaluate(async () => (await fetch("/offline")).status);
+  check("offline fallback page served", offlineStatus === 200);
+
   // 3. Store detail + watchlist authz
   console.log("Store detail…");
   await page.goto(`${BASE}/search?q=60614&radius=5`);
@@ -198,6 +255,13 @@ try {
     return r.status;
   });
   check("admin login succeeds", login === 200, `(got ${login})`);
+
+  // Signed-in members get the one-tap confirm chip on result cards.
+  await page.goto(`${BASE}/search?q=60614&radius=5`);
+  check(
+    "one-tap confirm offered when signed in",
+    (await page.locator("button", { hasText: "Still this price?" }).count()) > 0
+  );
 
   const saveRes = await page.evaluate(async (sid) => {
     const r = await fetch(`/api/stores/${sid}/save`, { method: "POST" });
