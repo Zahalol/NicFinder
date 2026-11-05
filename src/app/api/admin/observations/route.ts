@@ -4,7 +4,7 @@ import { withStaff } from "@/lib/admin-api";
 import { prisma } from "@/lib/db";
 import { parsePriceToCents, isPriceSane } from "@/lib/money";
 import { audit } from "@/lib/audit";
-import { notifyPriceChange } from "@/lib/notifications";
+import { notifyPriceChange, maybeNotifyCoverageArrived, zipHasPricedStore } from "@/lib/notifications";
 
 export async function POST(req: NextRequest) {
   return withStaff(async (user) => {
@@ -40,6 +40,8 @@ export async function POST(req: NextRequest) {
       select: { priceCents: true },
     });
 
+    const zipHadPricedStoreBefore = await zipHasPricedStore(store.zip);
+
     const obs = await prisma.priceObservation.create({
       data: {
         storeId,
@@ -66,6 +68,13 @@ export async function POST(req: NextRequest) {
       previousPriceCents: prev?.priceCents ?? null,
       actorUserId: user.id,
     });
+    if (!availabilityOnly) {
+      await maybeNotifyCoverageArrived({
+        zip: store.zip,
+        storeName: store.name,
+        zipHadPricedStoreBefore,
+      });
+    }
     return NextResponse.json({ ok: true, id: obs.id });
   });
 }

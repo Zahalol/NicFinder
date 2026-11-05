@@ -8,7 +8,11 @@ import { parsePriceToCents } from "../money";
 import { normalizePhone, normalizeAddress, nameSimilarity, splitUsAddress } from "../normalize";
 import { metersBetween } from "../geo";
 import { audit } from "../audit";
-import { notifyPriceChange } from "../notifications";
+import {
+  notifyPriceChange,
+  maybeNotifyCoverageArrived,
+  zipHasPricedStore,
+} from "../notifications";
 import {
   type CanonicalField,
   type CanonicalRow,
@@ -589,6 +593,17 @@ export async function commitBatch(
       l.name,
     ])
   );
+  // ZIPs with un-notified signed-in coverage requests — the only ones where
+  // first-price detection is worth per-row queries.
+  const requestZips = new Set(
+    (
+      await prisma.coverageRequest.findMany({
+        where: { userId: { not: null }, notifiedAt: null },
+        select: { zip: true },
+        distinct: ["zip"],
+      })
+    ).map((r) => r.zip)
+  );
   const watchedStoreNames = new Map(
     watchedStoreIds.size
       ? (
@@ -711,6 +726,21 @@ export async function commitBatch(
                 tx
               );
             }
+            // Coverage-arrived pre-check (before the insert changes the answer).
+            let coverageInfo: { zip: string; name: string; had: boolean } | null = null;
+            if (requestZips.size) {
+              const st = await tx.store.findUnique({
+                where: { id: storeId },
+                select: { zip: true, name: true },
+              });
+              if (st?.zip && requestZips.has(st.zip)) {
+                coverageInfo = {
+                  zip: st.zip,
+                  name: st.name,
+                  had: await zipHasPricedStore(st.zip, tx),
+                };
+              }
+            }
             await tx.priceObservation.create({
               data: {
                 storeId,
@@ -731,6 +761,17 @@ export async function commitBatch(
                   : c.notes,
               },
             });
+            if (coverageInfo) {
+              await maybeNotifyCoverageArrived(
+                {
+                  zip: coverageInfo.zip,
+                  storeName: coverageInfo.name,
+                  zipHadPricedStoreBefore: coverageInfo.had,
+                },
+                tx
+              );
+              if (!coverageInfo.had) requestZips.delete(coverageInfo.zip);
+            }
           } else if (row.observedAt && row.productLineId && c.availability) {
             // Availability-only rows (e.g. "not carried") record evidence as a
             // price-less observation — we never invent a price for them.

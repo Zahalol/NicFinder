@@ -24,7 +24,12 @@
 import { prisma } from "./db";
 import type { AppSettings } from "./settings";
 import { audit } from "./audit";
-import { notifyPriceChange, notifyReportResolved } from "./notifications";
+import {
+  notifyPriceChange,
+  notifyReportResolved,
+  maybeNotifyCoverageArrived,
+  zipHasPricedStore,
+} from "./notifications";
 import type { Prisma } from "@prisma/client";
 
 export const REP_DELTAS = {
@@ -181,6 +186,13 @@ export async function publishDispute(
     });
     if (c.proposedPriceCents === null) throw new Error("No proposed price");
 
+    const storeForZip = await tx.store.findUnique({
+      where: { id: c.storeId },
+      select: { zip: true, name: true },
+    });
+    // Must be answered BEFORE superseding/creating anything in this tx.
+    const zipHadPricedStoreBefore = await zipHasPricedStore(storeForZip?.zip ?? null, tx);
+
     const superseded = await tx.priceObservation.findMany({
       where: {
         storeId: c.storeId,
@@ -255,6 +267,15 @@ export async function publishDispute(
         newPriceCents: c.proposedPriceCents,
         previousPriceCents: prevPriced?.priceCents ?? null,
         actorUserId: c.userId,
+      },
+      tx
+    );
+
+    await maybeNotifyCoverageArrived(
+      {
+        zip: storeForZip?.zip ?? null,
+        storeName: storeForZip?.name ?? "A store",
+        zipHadPricedStoreBefore,
       },
       tx
     );

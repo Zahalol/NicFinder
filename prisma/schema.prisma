@@ -297,6 +297,8 @@ model CoverageRequest {
   // sha256(ip + daily salt) for guest dedupe/rate limiting; never raw IPs
   ipHash    String?
   createdAt DateTime @default(now())
+  // Set when the requester was told coverage arrived (one notice per request).
+  notifiedAt DateTime?
 
   @@index([zip])
   @@index([createdAt])

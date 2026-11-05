@@ -1,7 +1,13 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { prisma } from "@/lib/db";
 import { resetDb, seedProductLines } from "./helpers";
-import { notifyPriceChange, unreadCount, markAllRead } from "@/lib/notifications";
+import {
+  notifyPriceChange,
+  unreadCount,
+  markAllRead,
+  maybeNotifyCoverageArrived,
+  zipHasPricedStore,
+} from "@/lib/notifications";
 import { publishDispute } from "@/lib/reputation";
 
 async function fixtures() {
@@ -148,5 +154,74 @@ describe("in-app price-watch notifications", () => {
     const n = await prisma.notification.findFirst({ where: { userId: watcher.id } });
     expect(n!.title).toContain("Watched Store");
     expect(n!.title).toContain("down to $5.99");
+  });
+});
+
+describe("coverage-arrived notifications", () => {
+  beforeEach(resetDb);
+
+  it("notifies signed-in requesters once when their ZIP gains its first price", async () => {
+    const { zyn } = await seedProductLines();
+    const requester = await prisma.user.create({
+      data: { email: "req@test.local", displayName: "Requester" },
+    });
+    await prisma.coverageRequest.createMany({
+      data: [
+        { zip: "60699", userId: requester.id },
+        { zip: "60699", userId: requester.id }, // duplicate request → one notice
+        { zip: "60699" }, // guest request → no notice possible
+      ],
+    });
+    const store = await prisma.store.create({
+      data: { name: "First Priced", zip: "60699", isDemo: true },
+    });
+
+    // pre-check honest: no priced store yet
+    expect(await zipHasPricedStore("60699")).toBe(false);
+    await prisma.priceObservation.create({
+      data: {
+        storeId: store.id,
+        productLineId: zyn.id,
+        priceCents: 649,
+        observedAt: new Date(),
+        sourceType: "ADMIN",
+      },
+    });
+    const created = await maybeNotifyCoverageArrived({
+      zip: "60699",
+      storeName: store.name,
+      zipHadPricedStoreBefore: false,
+    });
+    expect(created).toBe(1);
+    const n = await prisma.notification.findFirst({
+      where: { userId: requester.id, kind: "COVERAGE_ARRIVED" },
+    });
+    expect(n!.title).toContain("60699");
+    expect(n!.url).toBe("/zyn-prices/60699");
+
+    // All requests for the zip marked notified → a second price never re-notifies.
+    const again = await maybeNotifyCoverageArrived({
+      zip: "60699",
+      storeName: store.name,
+      zipHadPricedStoreBefore: false,
+    });
+    expect(again).toBe(0);
+    // And the pre-check now answers true, guarding the normal path.
+    expect(await zipHasPricedStore("60699")).toBe(true);
+  });
+
+  it("never notifies when the ZIP already had a priced store", async () => {
+    await seedProductLines();
+    const requester = await prisma.user.create({
+      data: { email: "req2@test.local", displayName: "R2" },
+    });
+    await prisma.coverageRequest.create({ data: { zip: "60698", userId: requester.id } });
+    const created = await maybeNotifyCoverageArrived({
+      zip: "60698",
+      storeName: "Any",
+      zipHadPricedStoreBefore: true,
+    });
+    expect(created).toBe(0);
+    expect(await unreadCount(requester.id)).toBe(0);
   });
 });

@@ -109,6 +109,68 @@ export async function notifyReportResolved(
   });
 }
 
+/**
+ * Close the coverage-demand loop: when a ZIP that people asked about gains
+ * its FIRST priced store, tell each signed-in requester once.
+ *
+ * Call AFTER creating a priced observation. `zipHadPricedStoreBefore` is the
+ * caller's pre-insert answer, so this function stays cheap and race-honest.
+ */
+export async function maybeNotifyCoverageArrived(
+  opts: {
+    zip: string | null;
+    storeName: string;
+    zipHadPricedStoreBefore: boolean;
+  },
+  tx: Tx = prisma
+): Promise<number> {
+  if (!opts.zip || opts.zipHadPricedStoreBefore) return 0;
+  const requests = await tx.coverageRequest.findMany({
+    where: { zip: opts.zip, userId: { not: null }, notifiedAt: null },
+    select: { id: true, userId: true },
+  });
+  if (!requests.length) return 0;
+
+  const seen = new Set<string>();
+  let created = 0;
+  for (const r of requests) {
+    if (!r.userId || seen.has(r.userId)) continue;
+    seen.add(r.userId);
+    await tx.notification.create({
+      data: {
+        userId: r.userId,
+        kind: "COVERAGE_ARRIVED",
+        title: `Coverage arrived in ${opts.zip}`,
+        body: `${opts.storeName} now has a reported price — you asked us to cover this area.`,
+        url: `/zyn-prices/${opts.zip}`,
+      },
+    });
+    created++;
+  }
+  await tx.coverageRequest.updateMany({
+    where: { id: { in: requests.map((r) => r.id) } },
+    data: { notifiedAt: new Date() },
+  });
+  return created;
+}
+
+/** Pre-insert check for maybeNotifyCoverageArrived. */
+export async function zipHasPricedStore(
+  zip: string | null,
+  tx: Tx = prisma
+): Promise<boolean> {
+  if (!zip) return true; // unknown zip → never notify
+  const existing = await tx.priceObservation.findFirst({
+    where: {
+      status: "ACTIVE",
+      priceCents: { not: null },
+      store: { status: "ACTIVE", zip },
+    },
+    select: { id: true },
+  });
+  return existing !== null;
+}
+
 export async function unreadCount(userId: string): Promise<number> {
   return prisma.notification.count({ where: { userId, readAt: null } });
 }
