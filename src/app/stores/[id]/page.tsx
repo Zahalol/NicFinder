@@ -385,9 +385,20 @@ export default async function StorePage({
             </thead>
             <tbody>
               {store.observations.map((o) => (
-                <tr key={o.id} className="border-b border-stone-100 text-stone-700">
+                <tr
+                  key={o.id}
+                  className="border-b border-stone-100 text-stone-700"
+                  title={o.notes ?? undefined}
+                >
                   <td className="py-1.5 pr-2">{o.observedAt.toLocaleDateString()}</td>
-                  <td className="py-1.5 pr-2">{o.productLine.name}</td>
+                  <td className="py-1.5 pr-2">
+                    {o.productLine.name}
+                    {(o.strength || o.flavor || o.canSize) && (
+                      <span className="block text-[11px] text-stone-400">
+                        {[o.strength, o.flavor, o.canSize].filter(Boolean).join(" · ")}
+                      </span>
+                    )}
+                  </td>
                   <td className="py-1.5 pr-2 font-medium">
                     {o.priceCents !== null ? (
                       formatCents(o.priceCents)
