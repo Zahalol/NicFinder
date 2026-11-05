@@ -136,7 +136,15 @@ export default async function AccountPage() {
           {contributions.map((c) => (
             <li key={c.id} className="p-3 text-sm flex items-center justify-between gap-2">
               <span>
-                {c.kind === "CONFIRM" ? "Confirmed price at" : `Reported ${formatCents(c.proposedPriceCents)} at`}{" "}
+                {c.kind === "CONFIRM"
+                  ? "Confirmed price at"
+                  : c.kind === "DISPUTE"
+                    ? `Reported ${formatCents(c.proposedPriceCents)} at`
+                    : c.kind === "REPORT_DEAL"
+                      ? "Reported a deal at"
+                      : c.kind === "FLAG_DEAL"
+                        ? "Flagged a deal at"
+                        : "Flagged an entry at"}{" "}
                 <Link href={`/stores/${c.store.id}`} className="text-teal-700 hover:underline">{c.store.name}</Link>
               </span>
               <span className={`text-xs rounded px-1.5 py-0.5 ${
