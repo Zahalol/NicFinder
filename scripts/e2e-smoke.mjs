@@ -219,10 +219,16 @@ try {
 
   // Two-store comparison: pick two stores from the list, open /compare.
   await page.goto(`${BASE}/search?q=60614&radius=5`);
-  const storeHrefs = await page
-    .locator('a[href^="/stores/"]')
-    .evaluateAll((els) => els.map((e) => e.getAttribute("href")));
-  const storeIds = [...new Set(storeHrefs.map((h) => h.split("/")[2]?.split("?")[0]))].filter(Boolean);
+  // Pick two stores that are KNOWN priced (seeded demo fixtures) — arbitrary
+  // nearest stores may be unpriced and the qty row would legitimately be absent.
+  const namedHref = async (name) =>
+    page.locator("a", { hasText: name }).first().getAttribute("href").catch(() => null);
+  const hrefA = await namedHref("Demo Fuel Stop #1");
+  const hrefB = await namedHref("Demo Corner Mart #2");
+  const storeIds = [hrefA, hrefB]
+    .filter(Boolean)
+    .map((h) => h.split("/")[2]?.split("?")[0])
+    .filter(Boolean);
   if (storeIds.length >= 2) {
     await page.goto(`${BASE}/compare?a=${storeIds[0]}&b=${storeIds[1]}&qty=5`);
     const compareBody = await page.textContent("body");
@@ -400,6 +406,44 @@ try {
     check("flag affordance present for signed-in member", flagged === true);
   }
   await ctx2.close();
+
+  // Moderation UI journey: member reports a deal → admin clicks
+  // "Approve & publish" in the review queue → deal appears on the store page.
+  const dealTarget = storeMeta; // the watched store from the trust loop
+  const dealReported = await page.evaluate(async (sid) => {
+    const html = await (await fetch(`/stores/${sid}`)).text();
+    const line = (html.match(/value="([a-z0-9]{20,})"/) || [])[1];
+    const r = await fetch(`/api/stores/${sid}/contributions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        kind: "REPORT_DEAL",
+        productLineId: line,
+        minQty: 4,
+        dealDiscount: "0.75",
+        conditions: "e2e journey deal",
+      }),
+    });
+    return r.ok;
+  }, dealTarget);
+  check("member can submit a deal report", dealReported === true);
+
+  await page.goto(`${BASE}/admin/review`);
+  const approveBtn = page.locator("button", { hasText: "Approve & publish" }).first();
+  check("deal report visible in review queue", await approveBtn.isVisible());
+  await approveBtn.click();
+  // Poll — the approval POST + queue refresh can take a moment.
+  let dealShown = false;
+  for (let i = 0; i < 10 && !dealShown; i++) {
+    await page.waitForTimeout(500);
+    const storePage = await page.evaluate(async (sid) => {
+      return await (await fetch(`/stores/${sid}`)).text();
+    }, dealTarget);
+    // React splits "buy 4+" across text nodes in the payload, so match the
+    // unique conditions marker only.
+    dealShown = storePage.includes("e2e journey deal");
+  }
+  check("approved deal appears on the store page", dealShown);
 
   // Dark mode regression guard: a dark-preferring browser gets a dark body.
   const darkCtx = await browser.newContext({ colorScheme: "dark" });
