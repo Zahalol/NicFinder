@@ -110,12 +110,17 @@ export default async function RootLayout({
         <main id="main" className="mx-auto max-w-5xl px-4 pb-16">{children}</main>
         <footer className="border-t border-stone-200 dark:border-stone-800 mt-8">
           <div className="mx-auto max-w-5xl px-4 py-6 text-xs text-stone-500 space-y-2">
-            <p>
+            <nav className="flex flex-wrap gap-x-4 gap-y-1" aria-label="Site">
+              <Link href="/zyn-prices" className="underline hover:text-stone-700 dark:hover:text-stone-300">
+                Prices by area
+              </Link>
+              <Link href="/price-drops" className="underline hover:text-stone-700 dark:hover:text-stone-300">
+                Recent price drops
+              </Link>
               <Link href="/about" className="underline hover:text-stone-700 dark:hover:text-stone-300">
                 How NicFinder works
-              </Link>{" "}
-              · data honesty, confidence labels, and contribution rules.
-            </p>
+              </Link>
+            </nav>
             <p>
               NicFinder is an informational price-comparison service for adults
               21+. We do not sell, deliver, or promote nicotine products.
