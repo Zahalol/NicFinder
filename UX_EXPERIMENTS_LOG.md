@@ -810,3 +810,20 @@ failed. ZIP queries skip the lookup entirely.
 bp on Fullerton; "60614" shows no strip; nonsense queries show nothing.
 
 **Recommendation: Keep.**
+
+---
+
+## Cycles 41–43 — hardening & core-loop test coverage
+
+- **41**: security hardening found by self-audit — JSON-LD blocks embedded
+  `JSON.stringify` output in `<script>` tags; a store name containing
+  `</script>` (possible via import/admin data) could break out and inject
+  markup. New `lib/json-ld.ts` escapes `<`, `>`, `&`, U+2028/29 as JSON
+  unicode escapes (round-trip-safe for parsers); unit tests added.
+- **42**: store pages added to the sitemap (bounded; scale note inline).
+- **43**: integration tests for `lib/search.ts` — radius filtering, the
+  expired-observation honesty rule, distance/price sort invariants
+  (no unpriced store ever ranks above a priced one), quantity-deal
+  application with distance tiebreak. Suite: **81 tests + 50 e2e checks.**
+
+**Recommendation: Keep all.**
