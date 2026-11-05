@@ -159,6 +159,7 @@ export default async function SearchPage({
                 center={{ lat: lat!, lng: lng! }}
                 qty={qty}
                 productSlug={product}
+                initialPricedOnly={params.priced === "1"}
               />
             </>
           )}

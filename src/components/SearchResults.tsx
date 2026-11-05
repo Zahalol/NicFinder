@@ -20,14 +20,30 @@ export function SearchResults({
   center,
   qty,
   productSlug,
+  initialPricedOnly = false,
 }: {
   results: StoreResult[];
   center: { lat: number; lng: number };
   qty: number;
   productSlug: string;
+  initialPricedOnly?: boolean;
 }) {
   const [view, setView] = useState<"list" | "map">("list");
-  const [pricedOnly, setPricedOnly] = useState(false);
+  const [pricedOnly, setPricedOnlyState] = useState(initialPricedOnly);
+  // Keep the filter in the URL (?priced=1) so refreshes and shared links
+  // preserve it — history.replaceState avoids a server round-trip.
+  function setPricedOnly(update: (v: boolean) => boolean) {
+    setPricedOnlyState((v) => {
+      const next = update(v);
+      try {
+        const url = new URL(window.location.href);
+        if (next) url.searchParams.set("priced", "1");
+        else url.searchParams.delete("priced");
+        window.history.replaceState(null, "", url.toString());
+      } catch {}
+      return next;
+    });
+  }
   // Two-store comparison picker (max 2; picking a third swaps the oldest out).
   const [compareIds, setCompareIds] = useState<string[]>([]);
   function toggleCompare(id: string) {

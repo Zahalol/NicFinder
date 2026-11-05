@@ -41,6 +41,12 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body className="min-h-screen antialiased">
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-[200] focus:rounded-lg focus:bg-stone-900 focus:px-3 focus:py-2 focus:text-white"
+        >
+          Skip to content
+        </a>
         {!ageConfirmed && <AgeGateOverlay />}
         {demoMode && (
           <div className="bg-amber-100 text-amber-900 text-center text-xs px-3 py-1.5 border-b border-amber-200">
@@ -95,7 +101,7 @@ export default async function RootLayout({
             </nav>
           </div>
         </header>
-        <main className="mx-auto max-w-5xl px-4 pb-16">{children}</main>
+        <main id="main" className="mx-auto max-w-5xl px-4 pb-16">{children}</main>
         <footer className="border-t border-stone-200 mt-8">
           <div className="mx-auto max-w-5xl px-4 py-6 text-xs text-stone-500 space-y-2">
             <p>
