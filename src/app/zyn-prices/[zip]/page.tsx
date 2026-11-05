@@ -8,6 +8,7 @@ import { prisma } from "@/lib/db";
 import { geocodeZip, zipInfo } from "@/lib/geocode";
 import { searchStores } from "@/lib/search";
 import { formatCents } from "@/lib/money";
+import { jsonLdString } from "@/lib/json-ld";
 
 // Server-rendered per request (the root layout reads the age cookie, which
 // opts the tree into dynamic rendering). Crawlers receive the full HTML —
@@ -132,7 +133,7 @@ export default async function ZipLandingPage({
       {jsonLd && (
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          dangerouslySetInnerHTML={{ __html: jsonLdString(jsonLd) }}
         />
       )}
 

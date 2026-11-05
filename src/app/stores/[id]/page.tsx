@@ -7,6 +7,7 @@ import { selectLatestPrice } from "@/lib/prices";
 import { searchStores } from "@/lib/search";
 import { effectivePerCanCents, totalCents, type DealInput } from "@/lib/deals";
 import { formatCents } from "@/lib/money";
+import { jsonLdString } from "@/lib/json-ld";
 import { DemoBadge, ConfidenceBadge } from "@/components/badges";
 import { computeConfidence } from "@/lib/confidence";
 import { PriceSparkline, trendSummary, type SparkPoint } from "@/components/PriceSparkline";
@@ -290,7 +291,7 @@ export default async function StorePage({
     <div className="py-6 max-w-3xl mx-auto">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(storeLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdString(storeLd) }}
       />
       <BackLink fallback="/search?q=60614">← Back to search</BackLink>
 
