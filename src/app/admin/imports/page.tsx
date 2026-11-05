@@ -60,7 +60,7 @@ export default async function ImportsPage() {
                 {b.acceptedRows}/{b.updatedRows}/{b.skippedRows}/{b.flaggedRows}/{b.rejectedRows}
                 <span className="text-stone-400"> of {b.totalRows}</span>
               </td>
-              <td className="py-2 text-stone-500">{b.uploadedBy?.displayName ?? "—"}</td>
+              <td className="py-2 text-stone-500">{b.uploadedBy?.displayName ?? "API / system"}</td>
             </tr>
           ))}
         </tbody>
