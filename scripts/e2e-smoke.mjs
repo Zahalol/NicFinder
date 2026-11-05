@@ -401,6 +401,15 @@ try {
   }
   await ctx2.close();
 
+  // Dark mode regression guard: a dark-preferring browser gets a dark body.
+  const darkCtx = await browser.newContext({ colorScheme: "dark" });
+  const darkPage = await darkCtx.newPage();
+  await darkPage.goto(`${BASE}/`);
+  const bodyBg = await darkPage.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  // stone-950 = #0c0a09 = rgb(12, 10, 9)
+  check("dark scheme renders a dark body background", bodyBg === "rgb(12, 10, 9)", bodyBg);
+  await darkCtx.close();
+
   console.log(failures === 0 ? "\nAll smoke checks passed." : `\n${failures} smoke check(s) FAILED.`);
 } catch (e) {
   failures++;
