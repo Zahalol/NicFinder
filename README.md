@@ -8,7 +8,8 @@ The site works like a calmer GasBuddy for pouches: search any US address or
 ZIP, see nearby stores on a list or map, compare single-can prices and
 multi-can deal pricing, and see exactly how fresh and trustworthy every
 number is. Prices arrive by **file import** (CSV/XLSX from a future calling
-system — see `docs/IMPORT_CONTRACT.md`), by **community reports**, and by
+system — see `docs/IMPORT_CONTRACT.md`, or programmatically via the disabled-
+by-default API in `docs/API.md`), by **community reports**, and by
 **manual admin entry**. There is deliberately **no calling code** in this
 application (`docs/ELEVENLABS_CALLING_RESEARCH.md` covers that future workstream).
 
@@ -56,8 +57,8 @@ SSO, Autoscale deployment, scheduled maintenance).
 | --- | --- |
 | `npm run dev` | Dev server on :3000 |
 | `npm run build` / `npm start` | Production build / serve |
-| `npm test` | 51 unit/integration tests (isolated `prisma/test.db`) |
-| `npm run e2e` | 20-check Playwright smoke test against a production build |
+| `npm test` | 171 unit/integration tests (isolated Postgres test schema) |
+| `npm run e2e` | 83-check Playwright smoke test against a production build |
 | `npm run lint` / `npm run typecheck` | ESLint / `tsc --noEmit` |
 | `npm run db:seed` | Idempotent seed |
 | `node scripts/make-sample-xlsx.mjs` | Regenerate the XLSX import sample |
@@ -79,7 +80,11 @@ SSO, Autoscale deployment, scheduled maintenance).
 | --- | --- |
 | `HANDOFF.md` | Entry point for the next session: state, open items, gotchas |
 | `DEVLOG.md` | Dated log of finished work, decisions, and lessons |
+| `AUTONOMOUS_WORKLOG.md` | 2026-11-04/05 autonomous session — per-cycle evidence & recommendations |
+| `AUTONOMOUS_BACKLOG.md` | Remaining ranked improvement ideas from that session |
+| `UX_EXPERIMENTS_LOG.md` | UX/product experiment log: what, why, testing, keep/discard |
 | `docs/REPLIT.md` | Replit deployment guide (DB, SSO, Autoscale, cron) |
+| `docs/API.md` | Automated import API (bearer key, webhooks — disabled by default) |
 | `docs/PRODUCT_REQUIREMENTS.md` | Scope, user flows, edge cases |
 | `docs/ARCHITECTURE.md` | Data model, latest-price policy, security, Postgres path |
 | `docs/IMPORT_CONTRACT.md` | CSV/XLSX schema, aliases, validation, idempotency |

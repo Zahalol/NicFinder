@@ -41,12 +41,13 @@ manually in the preview UI. All optional unless marked required.
 
 | Column | Type | Notes |
 | --- | --- | --- |
+| `hours` | string ≤120 | Optional free-text opening hours (e.g. "Mon–Sat 6am–11pm"); enriches the store record, display-only. |
 | `observed_at` | ISO 8601 datetime, **required** | When the price was observed (not exported). Include a UTC offset (`2026-11-01T14:05:00-06:00`); naive timestamps are interpreted by the server JS runtime and should be avoided. Future or pre-2000 dates → rejected. |
 | `product_line` | slug | `zyn` or `zyn-ultra` (more may exist in DB). Unknown value → rejected. **Omitted** → attached to the regular line with confidence capped at 0.6 and an explanatory note; never attributed to Ultra. |
-| `price_usd` | decimal, ≥0, ≤2dp | Regular single-can shelf price. `$`/commas tolerated. Outside $1.00–$25.00 → **flagged** for review, not published. |
+| `price_usd` | decimal, ≥0, ≤2dp | Regular single-can shelf price. `$`/commas tolerated. Outside $1.00–$25.00 → **flagged** for review, not published. **May be blank** for availability-only rows (see `availability`): the row records a price-less observation and no price is ever invented. A row with no price, no deal and no explicit availability asserts no fact → **flagged**. |
 | `currency` | string | Only `USD` (default). Anything else → rejected. |
 | `tax_included` | `true/false/yes/no/1/0` | Blank = unknown (never assumed). |
-| `availability` | `in_stock` \| `out_of_stock` \| `not_carried` \| `unknown` | Aliases like "does not carry" accepted. |
+| `availability` | `in_stock` \| `out_of_stock` \| `not_carried` \| `unknown` | Aliases like "does not carry" accepted. With a blank `price_usd`, an explicit value here creates an **availability-only observation** (e.g. a store that doesn't carry ZYN) — shown on the site as "Not carried"/"Out of stock", never as a price. |
 | `confidence` | 0–1 | Producer's confidence in the extraction. |
 | `strength` / `flavor` / `can_size` | string | Optional variant detail. |
 
@@ -85,10 +86,20 @@ manually in the preview UI. All optional unless marked required.
    coordinates within 75 m with name similarity. Multiple plausible
    candidates → `FLAGGED`, never guessed. New stores created near existing
    ones also open a **duplicate candidate** for admin review.
+   **In-batch dedupe:** several rows describing the same *new* store (same
+   identity, e.g. two observation dates or two product lines) create ONE
+   store; later rows carry an informational `NEW_STORE_SHARED` issue and
+   attach their observations to it.
 4. **Idempotency:** the file's SHA-256 is stored; re-committing an identical
-   file applies nothing. Independently, each row carries a content hash, so
-   the same observation arriving in two different files is also skipped.
-   Verification counts are never inflated by re-imports.
+   file applies nothing (commits of the same content serialize on a
+   Postgres advisory lock, so even concurrent commits apply once).
+   Independently, each row carries a content hash, so the same observation
+   arriving in two different files is also skipped. Verification counts are
+   never inflated by re-imports.
+   **Field bounds:** free-text fields have hard length limits (store name
+   120, address 200, city 80, notes 1000, conditions 500, …); exceeding one
+   rejects the row with `FIELD_TOO_LONG`. The error-report CSV neutralizes
+   leading formula characters (OWASP CSV injection).
 5. **Append-only history:** observations are never overwritten. "Latest
    price" is computed (see `ARCHITECTURE.md`). **Reversal** of a committed
    batch invalidates (not deletes) its observations/deals and retires

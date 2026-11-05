@@ -130,6 +130,22 @@ export function replitAuthEnabled(): boolean {
   return process.env.REPLIT_AUTH_ENABLED === "true";
 }
 
+/**
+ * Stable salted IP hash (never a raw IP) — used to require corroborating
+ * price reports to come from distinct networks. Unlike the daily-salted
+ * coverage-request hash, this one is stable so sockpuppet corroborations on
+ * different days still collide.
+ */
+export function stableIpHash(ip: string | null | undefined): string | null {
+  // Unknown origin (no proxy header, e.g. local dev) stores null, which the
+  // independence check treats as distinct — hashing a constant fallback
+  // would silently collapse ALL direct traffic into one "network" and make
+  // corroboration unreachable on a single machine.
+  if (!ip || ip === "local") return null;
+  const salt = process.env.SESSION_SECRET ?? "dev";
+  return createHash("sha256").update(`${ip}|${salt}|corroboration`).digest("hex");
+}
+
 // --- Validation ------------------------------------------------------------
 
 export function validatePassword(pw: string): string | null {

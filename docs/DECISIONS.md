@@ -103,3 +103,31 @@ noted.
     the research doc specifies transparent automated-agent disclosure and
     flags TCPA wireless-consent as the gating legal risk requiring counsel
     before any calling.
+
+## Session 2 (2026-11-04/05, autonomous overnight)
+
+20. **Flags and deal reports are moderator-resolved, never auto-published.**
+    Historical corrections and deal math are too error-prone for the
+    corroboration shortcut; the review queue is the safety valve.
+21. **Reliability is three explained tiers, never a percentage.** A number
+    would be false precision; the tooltip lists every factor instead.
+22. **Corroboration independence = distinct accounts on distinct networks**
+    (stable salted ipHash, never raw IPs). Unknown/local origins store null
+    and count as distinct — tightening must never brick corroboration where
+    no proxy exists.
+23. **No service worker with the PWA manifest.** Cached stale prices would
+    violate the freshness promise; the app is useless offline anyway.
+24. **In-app notifications only.** No email/external sending until a
+    provider is configured and authorized; alerts collapse per store
+    (newest wins) while resolution notices stay per-event.
+25. **Automated import API ships disabled** (404 without IMPORT_API_KEY);
+    webhooks HTTPS-only and HMAC-signed; identity tags share one source
+    across channels so matching can't split.
+26. **Dark mode is additive and media-based** (system preference, no
+    toggle); OSM tiles are CSS-filtered rather than swapping tile
+    providers. One commit, trivially revertible.
+27. **npm audit majors deferred to the owner** (Next 16 / Prisma 7 /
+    exceljs): breaking upgrades don't belong in an unattended session.
+28. **OSM Overpass hours enrichment blocked** (API unreachable through this
+    environment's proxy) — manual staff-maintained hours shipped instead,
+    display-only, never used to compute "open now".

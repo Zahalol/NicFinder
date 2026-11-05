@@ -69,15 +69,22 @@ const DEMO_STORES: Array<{
   zyn?: { cents: number; days: number; avail?: string };
   ultra?: { cents: number; days: number };
   deal?: { minQty: number; pricePerCanCents?: number; discountPerCanCents?: number; appliesAboveMinQty?: boolean | null; conditions?: string };
+  /** older superseded prices (feeds the price-history sparkline) */
+  history?: Array<{ cents: number; days: number }>;
+  /** availability-only fact: this store reports not carrying ZYN (no price) */
+  notCarried?: { days: number };
+  hours?: string;
 }> = [
-  { name: "Demo Fuel Stop #1 (fictional)", street: "100 Example Ave", zip: "60614", lat: 41.9289, lng: -87.6440, zyn: { cents: 649, days: 2 }, ultra: { cents: 749, days: 2 }, deal: { minQty: 5, discountPerCanCents: 100, appliesAboveMinQty: true } },
-  { name: "Demo Corner Mart #2 (fictional)", street: "200 Example St", zip: "60614", lat: 41.9222, lng: -87.6531, zyn: { cents: 599, days: 1 } },
+  { name: "Demo Fuel Stop #1 (fictional)", street: "100 Example Ave", zip: "60614", lat: 41.9289, lng: -87.6440, zyn: { cents: 649, days: 2 }, ultra: { cents: 749, days: 2 }, deal: { minQty: 5, discountPerCanCents: 100, appliesAboveMinQty: true }, history: [{ cents: 629, days: 24 }, { cents: 639, days: 16 }, { cents: 659, days: 9 }], hours: "Mon–Sat 6am–11pm, Sun 8am–9pm (demo)" },
+  { name: "Demo Corner Mart #2 (fictional)", street: "200 Example St", zip: "60614", lat: 41.9222, lng: -87.6531, zyn: { cents: 599, days: 1 }, history: [{ cents: 599, days: 20 }, { cents: 619, days: 11 }] },
   { name: "Demo Gas & Go #3 (fictional)", street: "300 Example Blvd", zip: "60657", lat: 41.9403, lng: -87.6540, zyn: { cents: 729, days: 4 }, deal: { minQty: 3, pricePerCanCents: 649, appliesAboveMinQty: null, conditions: "Loyalty members only (demo)" } },
   { name: "Demo Quick Stop #4 (fictional)", street: "400 Example Rd", zip: "60613", lat: 41.9500, lng: -87.6600, zyn: { cents: 679, days: 6 }, ultra: { cents: 829, days: 6 } },
   { name: "Demo Pantry #5 (fictional)", street: "500 Example Pl", zip: "60622", lat: 41.9080, lng: -87.6570, zyn: { cents: 559, days: 3, avail: "IN_STOCK" } },
   { name: "Demo Station #6 (fictional)", street: "600 Example Dr", zip: "60618", lat: 41.9380, lng: -87.6800, zyn: { cents: 619, days: 35 } }, // stale
   { name: "Demo Depot #7 (fictional)", street: "700 Example Ct", zip: "60647", lat: 41.9170, lng: -87.6900, zyn: { cents: 699, days: 200 } }, // expired -> "no recent price"
   { name: "Demo Express #8 (fictional)", street: "800 Example Ln", zip: "60610", lat: 41.9050, lng: -87.6350, zyn: { cents: 899, days: 2, avail: "OUT_OF_STOCK" } },
+  // Availability-only demo: honestly shows "Not carried" with no price.
+  { name: "Demo Smoke-Free Deli #9 (fictional)", street: "900 Example Way", zip: "60614", lat: 41.9260, lng: -87.6480, notCarried: { days: 5 } },
 ];
 
 async function main() {
@@ -134,6 +141,23 @@ async function main() {
     },
   });
 
+  // Reputation ledger baselines: User.reputation is a cached sum of
+  // ReputationEvent (reconciled by scripts/maintenance.mjs), so seeded
+  // grants get matching ledger entries. Idempotent via the SEED_GRANT marker.
+  for (const u of [
+    { id: admin.id, delta: 100 },
+    { id: trusted.id, delta: 80 },
+  ]) {
+    const existing = await prisma.reputationEvent.findFirst({
+      where: { userId: u.id, reason: "SEED_GRANT" },
+    });
+    if (!existing) {
+      await prisma.reputationEvent.create({
+        data: { userId: u.id, delta: u.delta, reason: "SEED_GRANT", refType: "admin" },
+      });
+    }
+  }
+
   // --- Real store directory (no prices!)
   for (const s of REAL_STORES) {
     const existing = await prisma.storeIdentity.findFirst({
@@ -186,6 +210,7 @@ async function main() {
         latitude: s.lat,
         longitude: s.lng,
         isDemo: true,
+        hours: s.hours ?? null,
       },
     });
     await prisma.storeIdentity.create({
@@ -221,6 +246,38 @@ async function main() {
         },
       });
     }
+    if (s.history) {
+      for (const h of s.history) {
+        await prisma.priceObservation.create({
+          data: {
+            storeId: store.id,
+            productLineId: zyn.id,
+            priceCents: h.cents,
+            taxIncluded: false,
+            availability: "IN_STOCK",
+            observedAt: daysAgo(h.days),
+            sourceType: "ADMIN",
+            confidence: 1,
+            status: "SUPERSEDED",
+            notes: "Synthetic demonstration price history (seeded, fictional store).",
+          },
+        });
+      }
+    }
+    if (s.notCarried) {
+      await prisma.priceObservation.create({
+        data: {
+          storeId: store.id,
+          productLineId: zyn.id,
+          priceCents: null, // availability-only: no price is ever invented
+          availability: "NOT_CARRIED",
+          observedAt: daysAgo(s.notCarried.days),
+          sourceType: "ADMIN",
+          confidence: 1,
+          notes: "Synthetic demonstration availability report (seeded, fictional store).",
+        },
+      });
+    }
     if (s.deal) {
       await prisma.quantityDeal.create({
         data: {
@@ -236,6 +293,44 @@ async function main() {
         },
       });
     }
+  }
+
+  // --- Synthetic price history for a few demo stores (drives the store-page
+  // sparkline). Older observations are stored as SUPERSEDED — they were
+  // replaced by the newer seeded price above. Idempotent: skipped when the
+  // store already has more than one ZYN observation.
+  const DEMO_HISTORY: Array<{ street: string; zip: string; series: Array<{ cents: number; days: number }> }> = [
+    // Gentle decline toward today's 649
+    { street: "100 Example Ave", zip: "60614", series: [{ cents: 729, days: 88 }, { cents: 699, days: 61 }, { cents: 699, days: 40 }, { cents: 679, days: 21 }] },
+    // Stable then a drop to today's 559
+    { street: "500 Example Pl", zip: "60622", series: [{ cents: 599, days: 75 }, { cents: 599, days: 47 }, { cents: 589, days: 26 }] },
+    // Creeping up to today's 729
+    { street: "300 Example Blvd", zip: "60657", series: [{ cents: 679, days: 83 }, { cents: 699, days: 52 }, { cents: 719, days: 28 }] },
+  ];
+  for (const h of DEMO_HISTORY) {
+    const identity = await prisma.storeIdentity.findFirst({
+      where: { kind: "ADDRESS", value: normalizeAddressSeed(`${h.street} chicago il ${h.zip}`) },
+    });
+    if (!identity) continue;
+    const zynCount = await prisma.priceObservation.count({
+      where: { storeId: identity.storeId, productLineId: zyn.id },
+    });
+    if (zynCount > 1) continue; // history already seeded
+    await prisma.priceObservation.createMany({
+      data: h.series.map((p) => ({
+        storeId: identity.storeId,
+        productLineId: zyn.id,
+        priceCents: p.cents,
+        taxIncluded: false,
+        availability: "IN_STOCK",
+        observedAt: daysAgo(p.days),
+        sourceType: "ADMIN" as const,
+        status: "SUPERSEDED" as const,
+        confidence: 1,
+        notes: "Synthetic demonstration price history (seeded, fictional store).",
+      })),
+      skipDuplicates: true,
+    });
   }
 
   // --- Demo community activity on demo store #1

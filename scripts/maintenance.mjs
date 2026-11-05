@@ -2,9 +2,17 @@
 // Designed for Replit Scheduled Deployments (see docs/REPLIT.md):
 //   command: node scripts/maintenance.mjs
 //
-// What it does (all append-only/status changes, nothing deleted):
+// What it does (price evidence is never deleted — only status changes):
 //   1. Marks ACTIVE quantity deals past their expiresAt as EXPIRED.
-//   2. Reports data-freshness counts (for logs/alerting).
+//   2. Deletes expired auth sessions (they are dead credentials, not
+//      evidence — leaving them accumulates rows forever; getUserByToken
+//      also rejects them individually, this is the bulk cleanup).
+//   3. Reconciles cached User.reputation against the ReputationEvent ledger
+//      (the sum is the source of truth; drift is corrected and reported).
+//   4. Prunes rate-limit events older than a day and READ notifications
+//      older than 90 days (operational ephemera, not evidence).
+//   5. Expires community proposals left uncorroborated for 21 days.
+//   6. Reports data-freshness counts (for logs/alerting).
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
@@ -16,6 +24,68 @@ async function main() {
     where: { status: "ACTIVE", expiresAt: { not: null, lt: now } },
     data: { status: "EXPIRED" },
   });
+
+  // Prune short-lived rate-limit events (db backend); windows are minutes-
+  // to-hours, so a day of retention is generous.
+  const prunedRateLimitEvents = await prisma.rateLimitEvent.deleteMany({
+    where: { createdAt: { lt: new Date(now.getTime() - 86400_000) } },
+  });
+
+  // Prune READ in-app notifications after 90 days (unread ones stay until
+  // seen). Operational convenience data, not price evidence.
+  const prunedNotifications = await prisma.notification.deleteMany({
+    where: {
+      readAt: { not: null, lt: new Date(now.getTime() - 90 * 86400_000) },
+    },
+  });
+
+  const purgedSessions = await prisma.authSession.deleteMany({
+    where: { expiresAt: { lt: now } },
+  });
+
+  // Community proposals that never gathered corroboration go stale: left
+  // open forever, a months-old price could still publish later and shadow
+  // newer evidence (publishDispute also guards this at publish time).
+  const expiredProposals = await prisma.contribution.updateMany({
+    where: {
+      status: "CORROBORATING",
+      createdAt: { lt: new Date(now.getTime() - 21 * 86400_000) },
+    },
+    data: {
+      status: "REJECTED",
+      reviewNote: "Expired: no corroboration within 21 days.",
+      resolvedAt: now,
+    },
+  });
+
+  // Reputation reconciliation: User.reputation is a cached sum of the
+  // append-only ReputationEvent ledger. Fix any drift (bugs, manual DB
+  // edits) and report it — repeated drift would indicate a code path that
+  // updates one side without the other.
+  const ledger = await prisma.reputationEvent.groupBy({
+    by: ["userId"],
+    _sum: { delta: true },
+  });
+  const ledgerByUser = new Map(ledger.map((l) => [l.userId, l._sum.delta ?? 0]));
+  const users = await prisma.user.findMany({ select: { id: true, reputation: true } });
+  let reputationDriftFixed = 0;
+  let reputationUnledgered = 0;
+  for (const u of users) {
+    if (!ledgerByUser.has(u.id)) {
+      // No ledger events at all (e.g. pre-ledger seeded baselines): report,
+      // never overwrite — zeroing these would destroy legitimate grants.
+      if (u.reputation !== 0) reputationUnledgered++;
+      continue;
+    }
+    const expected = ledgerByUser.get(u.id) ?? 0;
+    if (u.reputation !== expected) {
+      await prisma.user.update({ where: { id: u.id }, data: { reputation: expected } });
+      reputationDriftFixed++;
+      console.error(
+        `reputation drift: user ${u.id} cached=${u.reputation} ledger=${expected} (fixed)`
+      );
+    }
+  }
 
   const staleCutoff = new Date(now.getTime() - 21 * 86400_000);
   const [activeObs, staleObs, openReviews, coverageRequests] = await Promise.all([
@@ -31,6 +101,12 @@ async function main() {
     JSON.stringify({
       ranAt: now.toISOString(),
       dealsExpired: expired.count,
+      prunedRateLimitEvents: prunedRateLimitEvents.count,
+      prunedNotifications: prunedNotifications.count,
+      sessionsPurged: purgedSessions.count,
+      proposalsExpired: expiredProposals.count,
+      reputationDriftFixed,
+      reputationUnledgered,
       activeObservations: activeObs,
       staleObservations: staleObs,
       openReviewItems: openReviews,

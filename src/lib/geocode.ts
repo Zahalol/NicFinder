@@ -94,9 +94,12 @@ let lastNominatimAt = 0;
 async function nominatimSearch(query: string): Promise<GeocodeResult | null> {
   if (process.env.NOMINATIM_ENABLED === "false") return null;
   // Throttle: >= 1100ms between requests (Nominatim policy is max 1/sec).
-  const wait = lastNominatimAt + 1100 - Date.now();
-  if (wait > 0) await new Promise((r) => setTimeout(r, wait));
-  lastNominatimAt = Date.now();
+  // Reserve the slot BEFORE sleeping — updating the timestamp after the wait
+  // let N concurrent requests all read the same old value and fire together.
+  const now = Date.now();
+  const slot = Math.max(now, lastNominatimAt + 1100);
+  lastNominatimAt = slot;
+  if (slot > now) await new Promise((r) => setTimeout(r, slot - now));
 
   const url = new URL("https://nominatim.openstreetmap.org/search");
   url.searchParams.set("q", query);

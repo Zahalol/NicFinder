@@ -3,10 +3,14 @@ import { prisma } from "@/lib/db";
 /** Wipe all data (order matters for FK constraints). */
 export async function resetDb() {
   await prisma.$transaction([
+    prisma.commentReport.deleteMany(),
+    prisma.savedStore.deleteMany(),
+    prisma.coverageRequest.deleteMany(),
     prisma.verification.deleteMany(),
     prisma.reputationEvent.deleteMany(),
     prisma.moderationAction.deleteMany(),
     prisma.auditEvent.deleteMany(),
+    prisma.commentReport.deleteMany(),
     prisma.comment.deleteMany(),
     prisma.priceObservation.deleteMany(),
     prisma.quantityDeal.deleteMany(),
@@ -21,6 +25,8 @@ export async function resetDb() {
     prisma.productLine.deleteMany(),
     prisma.setting.deleteMany(),
     prisma.geocodeCache.deleteMany(),
+    prisma.rateLimitEvent.deleteMany(),
+    prisma.notification.deleteMany(),
   ]);
 }
 

@@ -6,6 +6,11 @@
  * non-numeric, and values with more than 2 decimal places.
  * Returns null when unparseable.
  */
+// Hard ceiling for any parsed price: $100,000. Anything above is garbage
+// input, and unchecked values overflowed Postgres Int (→ 500s / failed
+// import transactions).
+const MAX_PARSE_CENTS = 10_000_000;
+
 export function parsePriceToCents(input: unknown): number | null {
   if (input === null || input === undefined) return null;
   if (typeof input === "number") {
@@ -13,13 +18,16 @@ export function parsePriceToCents(input: unknown): number | null {
     const cents = Math.round(input * 100);
     // Guard float noise: 5.99 -> 599, but reject sub-cent intent like 5.999
     if (Math.abs(input * 100 - cents) > 0.001) return null;
+    if (cents > MAX_PARSE_CENTS) return null;
     return cents;
   }
   const s = String(input).trim().replace(/^\$/, "").replace(/,/g, "");
   if (!s) return null;
   if (!/^\d+(\.\d{1,2})?$/.test(s)) return null;
   const [whole, frac = ""] = s.split(".");
-  return parseInt(whole, 10) * 100 + parseInt((frac + "00").slice(0, 2), 10);
+  const cents = parseInt(whole, 10) * 100 + parseInt((frac + "00").slice(0, 2), 10);
+  if (!Number.isSafeInteger(cents) || cents > MAX_PARSE_CENTS) return null;
+  return cents;
 }
 
 export function formatCents(cents: number | null | undefined): string {

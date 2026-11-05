@@ -9,13 +9,13 @@ export default function Error({
 }) {
   return (
     <div className="py-24 text-center">
-      <h1 className="text-xl font-medium text-stone-900">Something went wrong</h1>
-      <p className="mt-2 text-sm text-stone-500">
+      <h1 className="text-xl font-medium text-stone-900 dark:text-stone-100">Something went wrong</h1>
+      <p className="mt-2 text-sm text-stone-500 dark:text-stone-400">
         An unexpected error occurred{error.digest ? ` (ref ${error.digest})` : ""}. Your data is safe.
       </p>
       <button
         onClick={reset}
-        className="mt-6 rounded-xl bg-stone-900 text-white px-5 py-2.5 font-medium hover:bg-stone-700"
+        className="mt-6 rounded-xl bg-stone-900 text-white px-5 py-2.5 font-medium hover:bg-stone-700 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-300"
       >
         Try again
       </button>

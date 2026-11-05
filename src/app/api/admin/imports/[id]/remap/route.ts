@@ -40,7 +40,24 @@ export async function POST(
     const validated = await validateRows(rawRows, next);
     const counts = countOutcomes(validated);
 
-    await prisma.$transaction(async (tx) => {
+    const applied = await prisma.$transaction(async (tx) => {
+      // Conditional claim FIRST: a remap racing a concurrent commit blocks
+      // on the batch row lock (the commit claims PREVIEW→COMMITTED), then
+      // matches 0 rows here and aborts instead of overwriting the committed
+      // batch's row outcomes (which reversal depends on).
+      const claimed = await tx.importBatch.updateMany({
+        where: { id, status: "PREVIEW" },
+        data: {
+          mappingJson: JSON.stringify(next),
+          totalRows: counts.total,
+          acceptedRows: counts.accepted,
+          updatedRows: counts.updated,
+          skippedRows: counts.skipped,
+          flaggedRows: counts.flagged,
+          rejectedRows: counts.rejected,
+        },
+      });
+      if (claimed.count === 0) return false;
       for (let i = 0; i < validated.length; i++) {
         await tx.importRow.update({
           where: { id: batch.rows[i].id },
@@ -52,19 +69,13 @@ export async function POST(
           },
         });
       }
-      await tx.importBatch.update({
-        where: { id },
-        data: {
-          mappingJson: JSON.stringify(next),
-          totalRows: counts.total,
-          acceptedRows: counts.accepted,
-          updatedRows: counts.updated,
-          skippedRows: counts.skipped,
-          flaggedRows: counts.flagged,
-          rejectedRows: counts.rejected,
-        },
-      });
+      return true;
     });
+    if (!applied)
+      return NextResponse.json(
+        { error: "Batch is no longer in preview — it was committed or reversed." },
+        { status: 409 }
+      );
 
     return NextResponse.json({ ok: true, counts });
   });

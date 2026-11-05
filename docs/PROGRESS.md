@@ -1,6 +1,20 @@
 # Progress
 
-_Last updated: 2026-11-04 (enhancement pass, same day)._
+_Last updated: 2026-11-05 (autonomous overnight session)._
+
+## Autonomous overnight session ✅ (third block, 2026-11-04 → 05)
+
+32 verified improvement cycles on branch `claude/keen-planck-rmqrm9` — full
+table with evidence, limitations and keep/consider recommendations in
+**AUTONOMOUS_WORKLOG.md** (repo root). Highlights: availability-only
+observations ("not carried" without invented prices), observation + deal
+flagging, community deal reports, in-app price alerts + resolution notices,
+reliability tiers, price-history sparklines, value-of-trip math, two-store
+compare, nearest-500 search correctness fix (found by a 10k-store benchmark),
+a security pass, import fuzz hardening, account self-management, and admin
+tooling (coverage demand, economics, duplicate scan, CSV export, audit log).
+Quality gates at the end of the session: 121 vitest tests, ~36-check e2e
+smoke, lint, typecheck, prod build — all green.
 
 ## Enhancement pass ✅ (second block)
 

@@ -29,6 +29,11 @@ expects.
 4. Tip: you can also point your local `.env` `DATABASE_URL` at this same
    connection string so your Windows machine and Replit share one database
    (no local Postgres install needed).
+5. **Autoscale + Postgres connections**: each autoscale instance opens its
+   own Prisma pool (default ≈ CPU×2+1 connections). Replit's database is
+   Neon-backed with a modest connection cap, so if you ever see
+   "too many connections" under load, append `?connection_limit=5` (or
+   lower) to `DATABASE_URL`, or cap autoscale instances.
 
 ## 3. Secrets (Tools → Secrets)
 
@@ -72,6 +77,11 @@ The app has a built-in **Replit Auth** provider (`/api/auth/replit`):
    then `npm start`). Migrations run on every deploy — safe and idempotent.
 2. Health check path: `/api/health` (returns 503 if the DB is unreachable).
 3. Attach a custom domain in deployment settings when ready.
+
+Autoscale runs **multiple instances**, so set the secret
+`RATE_LIMIT_BACKEND=db` there: login/signup throttling then uses a shared
+Postgres sliding window (`RateLimitEvent`, pruned by the maintenance job)
+instead of per-process memory. Locally the default (`memory`) is fine.
 
 Autoscale notes: the filesystem is ephemeral (fine — all state is in
 Postgres) and the in-memory login rate limiter is per-instance (documented

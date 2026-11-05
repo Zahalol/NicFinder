@@ -11,6 +11,8 @@ export async function POST(req: NextRequest) {
     const name = String(b?.name ?? "").trim();
     if (name.length < 2)
       return NextResponse.json({ error: "Name required." }, { status: 400 });
+    if (name.length > 120)
+      return NextResponse.json({ error: "Name too long (120 max)." }, { status: 400 });
     const lat = b?.latitude !== undefined && b?.latitude !== "" ? Number(b.latitude) : null;
     const lng = b?.longitude !== undefined && b?.longitude !== "" ? Number(b.longitude) : null;
     if ((lat !== null && (Number.isNaN(lat) || lat < -90 || lat > 90)) ||
@@ -20,8 +22,8 @@ export async function POST(req: NextRequest) {
     const store = await prisma.store.create({
       data: {
         name,
-        address: b?.address ? String(b.address).trim() : null,
-        city: b?.city ? String(b.city).trim() : null,
+        address: b?.address ? String(b.address).trim().slice(0, 200) : null,
+        city: b?.city ? String(b.city).trim().slice(0, 80) : null,
         state: b?.state ? String(b.state).trim().toUpperCase().slice(0, 2) : null,
         zip: b?.zip ? String(b.zip).trim().slice(0, 5) : null,
         latitude: lat,

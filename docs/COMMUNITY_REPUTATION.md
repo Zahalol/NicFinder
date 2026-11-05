@@ -44,6 +44,10 @@ and creates a `COMMUNITY` observation tied to the contribution.
 | Confirmation of a current, non-expired observation | **+2** | Confirming expired data earns **0** |
 | Your confirmed price is replaced within 7 days | **−3** | "Stale confirm" — the price was already wrong |
 | Replacement rejected by moderation | **−8** | Rejection requires a written reason |
+| Observation/deal flag upheld | **+3** | Flag on a specific listed observation or deal, confirmed by a moderator |
+| Observation/deal flag dismissed | **−2** | Mild cost so spam-flagging isn't free; reason required |
+| Deal report published | **+4** | Community-reported multi-can deal approved by a moderator |
+| Deal report rejected | **−2** | Reason required |
 | Abuse penalty (admin suspension) | **−15** | Sessions revoked |
 
 Reputation is the sum of `ReputationEvent` rows (auditable), cached on the
@@ -71,10 +75,34 @@ half-life (45d) so old agreement doesn't dominate.
   independence rule + account-age damping + rate limits; stronger signals
   (IP/device clustering, geo plausibility) are listed in `ROADMAP.md`.
 
+## Flags, deal reports and notifications (added 2026-11-05)
+
+- **Observation flags** (`FLAG_OBSERVATION`): any signed-in member can flag a
+  specific listed observation — current or historical — as wrong. Flags never
+  auto-publish; a moderator upholds (observation `INVALIDATED`, append-only,
+  the reason kept as provenance) or dismisses with a reason. One flag per
+  user per observation, including after dismissal.
+- **Deal flags** (`FLAG_DEAL`): same model for quantity deals, resolved as
+  *ended* (`EXPIRED` — it existed) or *invalid* (`INVALIDATED` — bad data).
+- **Deal reports** (`REPORT_DEAL`): members propose multi-can deals (min qty,
+  per-can price XOR discount, conditions). Always moderator-reviewed; approval
+  creates a `COMMUNITY` QuantityDeal that supersedes same-quantity deals and
+  never extrapolates `appliesAboveMinQty`.
+- **Notifications** (in-app only, no email): watchers of a saved store get a
+  collapsed price-change alert (one unread per store, newest wins); reporters
+  get per-event resolution notices (published/rejected/upheld/dismissed, with
+  the moderator's note on negative outcomes). Trusted auto-publishes don't
+  self-notify.
+- **Confirmations require a price**: availability-only observations
+  ("not carried", no price) cannot be confirmed — there is no price to vouch
+  for.
+
 ## Comments
 
 Store notes are deliberately lightweight: visible by default, author
-deletion, member reporting (auto-hidden at `autoHideReportCount`, default
-3, pending review), moderator hide/restore. Comments earn **no
-reputation** — they're context, not evidence, and granting points would
-invite spam.
+deletion and editing (marked "(edited)"), member reporting (one report per
+user per comment — auto-hidden at `autoHideReportCount` **distinct**
+reporters, default 3, pending review), moderator hide/restore (restoring
+clears the report ledger so old reports can't instantly re-hide it).
+Comments earn **no reputation** — they're context, not evidence, and
+granting points would invite spam.

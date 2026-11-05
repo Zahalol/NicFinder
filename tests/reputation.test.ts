@@ -116,7 +116,7 @@ describe("corroboration & publication flows (acceptance 10, 11)", () => {
         status: "PUBLISHED",
       },
     });
-    expect(await maybePublishCorroborated(proposal.id, S)).toBe(false);
+    expect(await maybePublishCorroborated(proposal.id, S)).toBe("pending");
 
     // One independent corroborator (threshold is 2): still unpublished.
     await prisma.contribution.create({
@@ -129,7 +129,7 @@ describe("corroboration & publication flows (acceptance 10, 11)", () => {
         status: "PUBLISHED",
       },
     });
-    expect(await maybePublishCorroborated(proposal.id, S)).toBe(false);
+    expect(await maybePublishCorroborated(proposal.id, S)).toBe("pending");
 
     // Duplicate submission by the SAME corroborator must not help (acceptance 11).
     await prisma.contribution.create({
@@ -142,7 +142,7 @@ describe("corroboration & publication flows (acceptance 10, 11)", () => {
         status: "PUBLISHED",
       },
     });
-    expect(await maybePublishCorroborated(proposal.id, S)).toBe(false);
+    expect(await maybePublishCorroborated(proposal.id, S)).toBe("pending");
 
     // Second independent corroborator → publish.
     const c2 = await makeUser({ email: "c2@x.com" });
@@ -156,7 +156,7 @@ describe("corroboration & publication flows (acceptance 10, 11)", () => {
         status: "PUBLISHED",
       },
     });
-    expect(await maybePublishCorroborated(proposal.id, S)).toBe(true);
+    expect(await maybePublishCorroborated(proposal.id, S)).toBe("published");
 
     // Old observation superseded; new COMMUNITY observation active; rep awarded.
     const oldObs = await prisma.priceObservation.findUnique({ where: { id: obs.id } });
@@ -225,5 +225,110 @@ describe("auth primitives (acceptance 9 plumbing)", () => {
     const { token } = await createSession(user.id);
     await prisma.user.update({ where: { id: user.id }, data: { status: "SUSPENDED" } });
     expect(await getUserByToken(token)).toBeNull();
+  });
+});
+
+describe("corroboration network independence (anti-sockpuppet)", () => {
+  beforeEach(resetDb);
+
+  it("same-IP corroborators count once; proposer's own network never counts", async () => {
+    const { zyn } = await seedProductLines();
+    const store = await prisma.store.create({ data: { name: "Indep Store", isDemo: true } });
+    await prisma.priceObservation.create({
+      data: {
+        storeId: store.id,
+        productLineId: zyn.id,
+        priceCents: 649,
+        observedAt: new Date(),
+        sourceType: "ADMIN",
+      },
+    });
+    const proposer = await makeUser({ email: "p2@x.com" });
+    const a = await makeUser({ email: "a@x.com" });
+    const b = await makeUser({ email: "b@x.com" });
+    const c = await makeUser({ email: "c@x.com" });
+    const HASH_SHARED = "hash-shared-network";
+    const HASH_PROPOSER = "hash-proposer-network";
+
+    const proposal = await prisma.contribution.create({
+      data: {
+        userId: proposer.id,
+        storeId: store.id,
+        productLineId: zyn.id,
+        kind: "DISPUTE",
+        proposedPriceCents: 699,
+        status: "CORROBORATING",
+        ipHash: HASH_PROPOSER,
+      },
+    });
+    const corroborate = (userId: string, ipHash: string | null) =>
+      prisma.contribution.create({
+        data: {
+          userId,
+          storeId: store.id,
+          productLineId: zyn.id,
+          kind: "CONFIRM",
+          targetObservationId: proposal.id,
+          status: "PUBLISHED",
+          ipHash,
+        },
+      });
+
+    // Two different accounts from the SAME network: count once (threshold 2).
+    await corroborate(a.id, HASH_SHARED);
+    await corroborate(b.id, HASH_SHARED);
+    expect(await maybePublishCorroborated(proposal.id, S)).toBe("pending");
+
+    // An account on the PROPOSER'S network doesn't count either.
+    await corroborate(c.id, HASH_PROPOSER);
+    expect(await maybePublishCorroborated(proposal.id, S)).toBe("pending");
+
+    // A genuinely distinct network completes the threshold.
+    const d = await makeUser({ email: "d@x.com" });
+    await corroborate(d.id, "hash-other-network");
+    expect(await maybePublishCorroborated(proposal.id, S)).toBe("published");
+  });
+});
+
+describe("stableIpHash", () => {
+  it("returns null for unknown/local origins (never a constant bucket)", async () => {
+    const { stableIpHash } = await import("@/lib/auth");
+    expect(stableIpHash(null)).toBeNull();
+    expect(stableIpHash(undefined)).toBeNull();
+    expect(stableIpHash("")).toBeNull();
+    expect(stableIpHash("local")).toBeNull();
+    const a = stableIpHash("203.0.113.5");
+    expect(a).toMatch(/^[0-9a-f]{64}$/);
+    expect(stableIpHash("203.0.113.5")).toBe(a); // stable
+    expect(stableIpHash("203.0.113.6")).not.toBe(a);
+  });
+});
+
+describe("variant detail on community price reports", () => {
+  beforeEach(resetDb);
+
+  it("publishDispute carries strength/flavor onto the published observation", async () => {
+    const { zyn } = await seedProductLines();
+    const store = await prisma.store.create({ data: { name: "Variant Store", isDemo: true } });
+    const u = await makeUser({ email: "variant@x.com" });
+    const c = await prisma.contribution.create({
+      data: {
+        userId: u.id,
+        storeId: store.id,
+        productLineId: zyn.id,
+        kind: "DISPUTE",
+        proposedPriceCents: 649,
+        proposedStrength: "6mg",
+        proposedFlavor: "Wintergreen",
+        status: "CORROBORATING",
+      },
+    });
+    await publishDispute(c.id, "moderator", undefined);
+    const obs = await prisma.priceObservation.findFirst({
+      where: { contributionId: c.id },
+    });
+    expect(obs!.strength).toBe("6mg");
+    expect(obs!.flavor).toBe("Wintergreen");
+    expect(obs!.sourceType).toBe("COMMUNITY");
   });
 });

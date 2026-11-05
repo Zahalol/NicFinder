@@ -3,8 +3,10 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import "./globals.css";
 import { getCurrentUser } from "@/lib/auth";
+import { unreadCount } from "@/lib/notifications";
 import { LogoutButton } from "@/components/LogoutButton";
 import { AgeGateOverlay } from "@/components/AgeGateOverlay";
+import { ServiceWorkerRegistrar } from "@/components/ServiceWorkerRegistrar";
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.APP_URL ?? "http://localhost:3000"),
@@ -17,13 +19,30 @@ export const metadata: Metadata = {
   openGraph: {
     siteName: "NicFinder",
     type: "website",
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: "NicFinder — nicotine pouch price comparison" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/og.png"],
   },
   robots: { index: true, follow: true },
+  appleWebApp: {
+    capable: true,
+    title: "NicFinder",
+    statusBarStyle: "default",
+  },
+  icons: {
+    apple: "/icons/apple-touch-icon.png",
+  },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#fafaf9" },
+    { media: "(prefers-color-scheme: dark)", color: "#0c0a09" },
+  ],
 };
 
 export default async function RootLayout({
@@ -32,6 +51,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   const user = await getCurrentUser().catch(() => null);
+  const unread = user ? await unreadCount(user.id).catch(() => 0) : 0;
   const demoMode = process.env.DEMO_MODE !== "false";
   const cookieStore = await cookies();
   const ageConfirmed = cookieStore.get("nf_age")?.value === "21plus";
@@ -39,39 +59,69 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body className="min-h-screen antialiased">
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-[200] focus:rounded-lg focus:bg-stone-900 focus:px-3 focus:py-2 focus:text-white"
+        >
+          Skip to content
+        </a>
+        <ServiceWorkerRegistrar />
         {!ageConfirmed && <AgeGateOverlay />}
+        {/* While the age gate shows, the page behind it is `inert`: keyboard
+            focus and clicks cannot reach it (previously Tab bypassed the
+            overlay) and it leaves the accessibility tree, while the HTML
+            stays server-rendered and indexable. */}
+        <div inert={!ageConfirmed || undefined}>
         {demoMode && (
-          <div className="bg-amber-100 text-amber-900 text-center text-xs px-3 py-1.5 border-b border-amber-200">
-            Demonstration data — prices shown on fictional “Demo” stores are
-            synthetic. Real stores listed have no verified current prices yet.
+          <div className="bg-amber-100 dark:bg-amber-900 text-amber-900 dark:text-amber-200 text-center text-xs px-3 py-1.5 border-b border-amber-200 dark:border-amber-800">
+            <span className="sm:hidden">
+              Demo data — prices on fictional “Demo” stores are synthetic.
+            </span>
+            <span className="hidden sm:inline">
+              Demonstration data — prices shown on fictional “Demo” stores are
+              synthetic. Real stores listed have no verified current prices yet.
+            </span>
           </div>
         )}
-        <header className="border-b border-stone-200 bg-white/90 backdrop-blur sticky top-0 z-40">
+        <header className="border-b border-stone-200 bg-white/90 backdrop-blur sticky top-0 z-40 dark:border-stone-700 dark:bg-stone-900/90">
           <div className="mx-auto max-w-5xl px-4 h-14 flex items-center justify-between gap-3">
-            <Link href="/" className="font-semibold tracking-tight text-lg text-stone-900">
+            <Link href="/" className="font-semibold tracking-tight text-lg text-stone-900 dark:text-stone-100">
               Nic<span className="text-teal-600">Finder</span>
             </Link>
             <nav className="flex items-center gap-3 text-sm">
               {user ? (
                 <>
                   {(user.role === "ADMIN" || user.role === "MODERATOR") && (
-                    <Link href="/admin" className="text-stone-500 hover:text-stone-900">
+                    <Link href="/admin" className="text-stone-500 hover:text-stone-900 dark:text-stone-400">
                       Admin
                     </Link>
                   )}
-                  <Link href="/account" className="text-stone-600 hover:text-stone-900">
+                  <Link
+                    href="/account#notifications"
+                    className="relative text-stone-600 dark:text-stone-400 hover:text-stone-900"
+                    aria-label={`Notifications: ${unread} unread`}
+                    title={`${unread} unread notification${unread === 1 ? "" : "s"}`}
+                  >
+                    <span aria-hidden="true">🔔</span>
+                    {unread > 0 && (
+                      <span className="absolute -top-1.5 -right-2 min-w-[16px] rounded-full bg-teal-600 px-1 text-center text-[10px] font-semibold leading-4 text-white">
+                        {unread > 9 ? "9+" : unread}
+                      </span>
+                    )}
+                  </Link>
+                  <Link href="/account" className="text-stone-600 dark:text-stone-400 hover:text-stone-900">
                     {user.displayName}
                   </Link>
                   <LogoutButton />
                 </>
               ) : (
                 <>
-                  <Link href="/login" className="text-stone-600 hover:text-stone-900">
+                  <Link href="/login" className="text-stone-600 hover:text-stone-900 dark:text-stone-400">
                     Sign in
                   </Link>
                   <Link
                     href="/signup"
-                    className="rounded-lg bg-stone-900 text-white px-3 py-1.5 hover:bg-stone-700"
+                    className="rounded-lg bg-stone-900 text-white px-3 py-1.5 hover:bg-stone-700 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-300"
                   >
                     Sign up
                   </Link>
@@ -80,9 +130,24 @@ export default async function RootLayout({
             </nav>
           </div>
         </header>
-        <main className="mx-auto max-w-5xl px-4 pb-16">{children}</main>
-        <footer className="border-t border-stone-200 mt-8">
-          <div className="mx-auto max-w-5xl px-4 py-6 text-xs text-stone-500 space-y-2">
+        <main id="main" className="mx-auto max-w-5xl px-4 pb-16">{children}</main>
+        <footer className="border-t border-stone-200 dark:border-stone-700 mt-8">
+          <div className="mx-auto max-w-5xl px-4 py-6 text-xs text-stone-500 dark:text-stone-400 space-y-2">
+            <p>
+              <Link href="/how-it-works" className="text-teal-700 dark:text-teal-400 underline">
+                How NicFinder works
+              </Link>{" "}
+              — where prices come from, freshness and confidence labels, and
+              how community verification keeps listings honest.
+            </p>
+            <nav className="flex flex-wrap gap-x-4 gap-y-1" aria-label="Site">
+              <Link href="/zyn-prices" className="underline hover:text-stone-700 dark:hover:text-stone-300">
+                Prices by area
+              </Link>
+              <Link href="/price-drops" className="underline hover:text-stone-700 dark:hover:text-stone-300">
+                Recent price drops
+              </Link>
+            </nav>
             <p>
               NicFinder is an informational price-comparison service for adults
               21+. We do not sell, deliver, or promote nicotine products.
@@ -97,6 +162,7 @@ export default async function RootLayout({
             </p>
           </div>
         </footer>
+        </div>
       </body>
     </html>
   );

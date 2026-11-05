@@ -2,7 +2,12 @@
 
 import { prisma } from "./db";
 import { boundingBox, haversineMiles } from "./geo";
-import { selectLatestPrice, type LatestPrice } from "./prices";
+import {
+  selectLatestPrice,
+  selectLatestAvailability,
+  type LatestPrice,
+} from "./prices";
+import { assessReliability, type Reliability } from "./reliability";
 import { effectivePerCanCents, totalCents, type DealInput } from "./deals";
 import { getSettings } from "./settings";
 
@@ -18,6 +23,7 @@ export interface StoreResult {
   isDemo: boolean;
   distanceMiles: number;
   latest: {
+    observationId: string;
     priceCents: number;
     observedAt: string;
     ageDays: number;
@@ -27,6 +33,8 @@ export interface StoreResult {
     disputeCount: number;
     availability: string;
     taxIncluded: boolean | null;
+    confidence: number | null;
+    reliability: Reliability;
   } | null;
   deal: {
     minQty: number;
@@ -35,6 +43,16 @@ export interface StoreResult {
     appliesAboveMinQty: boolean | null;
     conditions: string | null;
     expiresAt: string | null;
+  } | null;
+  /**
+   * Explicit stock signal that the price card can't already convey: set when
+   * the newest evidence is a NOT_CARRIED / OUT_OF_STOCK report newer than the
+   * displayed price (or there is no displayable price at all).
+   */
+  availabilitySignal: {
+    availability: "OUT_OF_STOCK" | "NOT_CARRIED";
+    observedAt: string;
+    ageDays: number;
   } | null;
   effective: {
     qty: number;
@@ -61,40 +79,72 @@ export async function searchStores(opts: {
   });
   if (!product) return { results: [], productLineId: null };
 
+  // Two-phase query so the 500-store cap keeps the NEAREST stores, not an
+  // arbitrary subset of the bounding box (which silently dropped close
+  // stores once a box held > 500 — caught by scripts/bench-search.ts):
+  //   1. cheap id+coords scan of the box, distance-filter and rank in JS;
+  //   2. full fetch (observations/deals) only for the nearest 500.
   const box = boundingBox(opts.lat, opts.lng, opts.radiusMiles);
-  const stores = await prisma.store.findMany({
+  const candidates = await prisma.store.findMany({
     where: {
       status: "ACTIVE",
       latitude: { gte: box.minLat, lte: box.maxLat },
       longitude: { gte: box.minLon, lte: box.maxLon },
     },
-    include: {
-      observations: {
-        where: { productLineId: product.id, status: "ACTIVE" },
-        include: { verifications: true },
-        orderBy: { observedAt: "desc" },
-        take: 10,
-      },
-      deals: {
-        where: {
-          productLineId: product.id,
-          status: "ACTIVE",
-          OR: [{ expiresAt: null }, { expiresAt: { gte: new Date() } }],
-        },
-        orderBy: { observedAt: "desc" },
-        take: 1,
-      },
-    },
-    take: 500,
+    select: { id: true, latitude: true, longitude: true },
   });
+  const distanceById = new Map<string, number>();
+  for (const c of candidates) {
+    if (c.latitude === null || c.longitude === null) continue;
+    const d = haversineMiles(opts.lat, opts.lng, c.latitude, c.longitude);
+    if (d <= opts.radiusMiles) distanceById.set(c.id, d);
+  }
+  const nearestIds = [...distanceById.entries()]
+    .sort((a, b) => a[1] - b[1])
+    .slice(0, 500)
+    .map(([id]) => id);
+
+  const stores = nearestIds.length
+    ? await prisma.store.findMany({
+        where: { id: { in: nearestIds } },
+        include: {
+          observations: {
+            where: { productLineId: product.id, status: "ACTIVE" },
+            include: { verifications: true },
+            orderBy: { observedAt: "desc" },
+            take: 10,
+          },
+          deals: {
+            where: {
+              productLineId: product.id,
+              status: "ACTIVE",
+              OR: [{ expiresAt: null }, { expiresAt: { gte: new Date() } }],
+            },
+            orderBy: { observedAt: "desc" },
+            take: 1,
+          },
+        },
+      })
+    : [];
 
   const results: StoreResult[] = [];
   for (const s of stores) {
     if (s.latitude === null || s.longitude === null) continue;
-    const distance = haversineMiles(opts.lat, opts.lng, s.latitude, s.longitude);
-    if (distance > opts.radiusMiles) continue;
+    const distance = distanceById.get(s.id)!;
 
     const latest: LatestPrice | null = selectLatestPrice(s.observations, settings);
+    const availSignal = selectLatestAvailability(s.observations, settings);
+    const availabilitySignal =
+      availSignal &&
+      (availSignal.availability === "OUT_OF_STOCK" ||
+        availSignal.availability === "NOT_CARRIED") &&
+      (!latest || availSignal.observedAt > latest.observation.observedAt)
+        ? {
+            availability: availSignal.availability,
+            observedAt: availSignal.observedAt.toISOString(),
+            ageDays: availSignal.ageDays,
+          }
+        : null;
     const dealRow = s.deals[0] ?? null;
     const deal: DealInput | null = dealRow
       ? {
@@ -122,6 +172,7 @@ export async function searchStores(opts: {
       distanceMiles: Math.round(distance * 10) / 10,
       latest: latest
         ? {
+            observationId: latest.observation.id,
             priceCents: latest.observation.priceCents,
             observedAt: latest.observation.observedAt.toISOString(),
             ageDays: latest.ageDays,
@@ -131,8 +182,18 @@ export async function searchStores(opts: {
             disputeCount: latest.disputeCount,
             availability: latest.observation.availability,
             taxIncluded: latest.observation.taxIncluded,
+            confidence: latest.observation.confidence,
+            reliability: assessReliability({
+              ageDays: latest.ageDays,
+              staleAfterDays: settings.staleAfterDays,
+              sourceType: latest.observation.sourceType,
+              confirmCount: latest.confirmCount,
+              disputeCount: latest.disputeCount,
+              confidence: latest.observation.confidence,
+            }),
           }
         : null,
+      availabilitySignal,
       deal: dealRow
         ? {
             minQty: dealRow.minQty,

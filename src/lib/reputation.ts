@@ -24,6 +24,12 @@
 import { prisma } from "./db";
 import type { AppSettings } from "./settings";
 import { audit } from "./audit";
+import {
+  notifyPriceChange,
+  notifyReportResolved,
+  maybeNotifyCoverageArrived,
+  zipHasPricedStore,
+} from "./notifications";
 import type { Prisma } from "@prisma/client";
 
 export const REP_DELTAS = {
@@ -117,18 +123,29 @@ export function confirmationWeight(
 }
 
 /**
+ * How a publish attempt ended:
+ *  - "published": the price went live.
+ *  - "already-resolved": another request published/rejected it first.
+ *  - "outdated": a newer observation arrived since the proposal was opened;
+ *    it was resolved REJECTED without publishing.
+ *  - "pending" (corroboration only): threshold not reached yet.
+ */
+export type PublishOutcome = "published" | "already-resolved" | "outdated";
+
+/**
  * Count independent corroborations for a CORROBORATING contribution and
  * publish it when the threshold is met. "Independent": distinct users other
- * than the proposer. Returns true if published.
+ * than the proposer.
  */
 export async function maybePublishCorroborated(
   contributionId: string,
   settings: AppSettings
-): Promise<boolean> {
+): Promise<PublishOutcome | "pending"> {
   const contribution = await prisma.contribution.findUnique({
     where: { id: contributionId },
   });
-  if (!contribution || contribution.status !== "CORROBORATING") return false;
+  if (!contribution || contribution.status !== "CORROBORATING")
+    return "already-resolved";
 
   // Corroborations are CONFIRM contributions that target this proposal.
   const corroborators = await prisma.contribution.findMany({
@@ -138,30 +155,74 @@ export async function maybePublishCorroborated(
       status: "PUBLISHED",
       userId: { not: contribution.userId },
     },
-    select: { userId: true },
+    select: { userId: true, ipHash: true },
     distinct: ["userId"],
   });
 
-  if (corroborators.length < settings.corroborationsRequired) return false;
+  // Independence is distinct ACCOUNTS on distinct NETWORKS: two accounts
+  // corroborating from the same salted IP hash count once, and none of them
+  // may share the proposer's hash (sockpuppet guard). A null hash (unknown
+  // origin, e.g. legacy rows) still counts — this tightens, never bricks.
+  const seenHashes = new Set<string>();
+  if (contribution.ipHash) seenHashes.add(contribution.ipHash);
+  let independent = 0;
+  for (const c of corroborators) {
+    if (c.ipHash === null) {
+      independent++;
+      continue;
+    }
+    if (seenHashes.has(c.ipHash)) continue;
+    seenHashes.add(c.ipHash);
+    independent++;
+  }
 
-  await publishDispute(contribution.id, "corroborated");
-  return true;
+  if (independent < settings.corroborationsRequired) return "pending";
+
+  return publishDispute(contribution.id, "corroborated");
 }
 
 /**
  * Publish a dispute: supersede the current ACTIVE observation for that
  * store+product and create the new COMMUNITY observation.
+ *
+ * Concurrency-safe: the contribution row is atomically claimed
+ * (PENDING/CORROBORATING → PUBLISHED) inside the transaction. If another
+ * request already resolved it, this returns "already-resolved" and changes
+ * nothing — concurrent corroborations cannot double-publish or double-award
+ * reputation.
  */
 export async function publishDispute(
   contributionId: string,
   how: "auto" | "corroborated" | "moderator",
   moderatorId?: string
-): Promise<void> {
-  await prisma.$transaction(async (tx) => {
+): Promise<PublishOutcome> {
+  const outcome = await prisma.$transaction<PublishOutcome>(async (tx) => {
     const c = await tx.contribution.findUniqueOrThrow({
       where: { id: contributionId },
     });
     if (c.proposedPriceCents === null) throw new Error("No proposed price");
+
+    // Atomic claim: only one caller can move the row out of a publishable
+    // state. Concurrent callers block on the row lock, then match 0 rows.
+    const claimed = await tx.contribution.updateMany({
+      where: {
+        id: contributionId,
+        status: { in: ["PENDING", "CORROBORATING"] },
+      },
+      data: {
+        status: "PUBLISHED",
+        resolvedAt: new Date(),
+        reviewedById: moderatorId,
+      },
+    });
+    if (claimed.count === 0) return "already-resolved";
+
+    const storeForZip = await tx.store.findUnique({
+      where: { id: c.storeId },
+      select: { zip: true, name: true },
+    });
+    // Must be answered BEFORE superseding/creating anything in this tx.
+    const zipHadPricedStoreBefore = await zipHasPricedStore(storeForZip?.zip ?? null, tx);
 
     const superseded = await tx.priceObservation.findMany({
       where: {
@@ -171,6 +232,26 @@ export async function publishDispute(
       },
       include: { verifications: true },
     });
+
+    // Staleness guard: a proposal observes the price AT ITS CREATION TIME.
+    // If a newer observation has arrived since (fresh import, admin entry,
+    // another community price), publishing would supersede newer evidence
+    // with older — refuse and resolve the proposal as outdated instead.
+    const newest = superseded.reduce(
+      (max, o) => Math.max(max, o.observedAt.getTime()),
+      0
+    );
+    if (newest > c.createdAt.getTime()) {
+      await tx.contribution.update({
+        where: { id: c.id },
+        data: {
+          status: "REJECTED",
+          reviewNote: "Outdated: a newer price observation arrived before this proposal was confirmed.",
+          reviewedById: moderatorId,
+        },
+      });
+      return "outdated";
+    }
     await tx.priceObservation.updateMany({
       where: {
         storeId: c.storeId,
@@ -204,6 +285,8 @@ export async function publishDispute(
         storeId: c.storeId,
         productLineId: c.productLineId,
         priceCents: c.proposedPriceCents,
+        strength: c.proposedStrength,
+        flavor: c.proposedFlavor,
         observedAt: c.createdAt,
         sourceType: "COMMUNITY",
         contributionId: c.id,
@@ -212,14 +295,36 @@ export async function publishDispute(
       },
     });
 
-    await tx.contribution.update({
-      where: { id: c.id },
-      data: {
-        status: "PUBLISHED",
-        resolvedAt: new Date(),
-        reviewedById: moderatorId,
+    // (Status was already set to PUBLISHED by the atomic claim above.)
+
+    // Alert members who saved this store (in-app only; actor excluded).
+    const prevPriced = superseded
+      .filter((o) => o.priceCents !== null)
+      .sort((a, b) => b.observedAt.getTime() - a.observedAt.getTime())[0];
+    const [storeRow, lineRow] = await Promise.all([
+      tx.store.findUnique({ where: { id: c.storeId }, select: { name: true } }),
+      tx.productLine.findUnique({ where: { id: c.productLineId }, select: { name: true } }),
+    ]);
+    await notifyPriceChange(
+      {
+        storeId: c.storeId,
+        storeName: storeRow?.name ?? "A saved store",
+        productLineName: lineRow?.name ?? "price",
+        newPriceCents: c.proposedPriceCents,
+        previousPriceCents: prevPriced?.priceCents ?? null,
+        actorUserId: c.userId,
       },
-    });
+      tx
+    );
+
+    await maybeNotifyCoverageArrived(
+      {
+        zip: storeForZip?.zip ?? null,
+        storeName: storeForZip?.name ?? "A store",
+        zipHadPricedStoreBefore,
+      },
+      tx
+    );
 
     await addReputation(
       c.userId,
@@ -228,11 +333,30 @@ export async function publishDispute(
       { type: "contribution", id: c.id },
       tx
     );
+
+    // Close the loop with the reporter — except for trusted auto-publishes,
+    // where they just saw it happen in the response.
+    if (how !== "auto") {
+      await notifyReportResolved(
+        {
+          userId: c.userId,
+          storeId: c.storeId,
+          storeName: storeRow?.name ?? "a store",
+          what: "price report",
+          outcome: "published",
+        },
+        tx
+      );
+    }
+    return "published";
   });
-  await audit("PRICE_PUBLISHED", {
-    targetType: "contribution",
-    targetId: contributionId,
-    detail: { how },
-    userId: moderatorId ?? null,
-  });
+  if (outcome === "published") {
+    await audit("PRICE_PUBLISHED", {
+      targetType: "contribution",
+      targetId: contributionId,
+      detail: { how },
+      userId: moderatorId ?? null,
+    });
+  }
+  return outcome;
 }

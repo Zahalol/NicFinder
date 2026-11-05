@@ -56,9 +56,20 @@ describe("import engine (acceptance tests 6–8, 13)", () => {
 
     // Stores created; flagged/rejected rows created no observations.
     const stores = await prisma.store.count();
-    expect(stores).toBe(7); // FIC-001..006 (Beta counted once) + FIC-004 availability row
+    // FIC-001..006 — Beta's two rows (zyn + ultra) share ONE store thanks to
+    // in-batch identity dedupe (they used to create a duplicate store each).
+    expect(stores).toBe(6);
     const obs = await prisma.priceObservation.count();
-    expect(obs).toBe(6); // rows 2,3(ultra),4,5,6(deal row),7(defaulted) — row FIC-004 has no price
+    expect(obs).toBe(7); // rows 2,3(ultra),4,5,6(deal row),7(defaulted) + FIC-004 availability-only
+
+    // FIC-004 ("not carried", no price) recorded as a price-less observation —
+    // honest evidence, no invented price.
+    const delta = await prisma.store.findFirst({ where: { name: { contains: "Delta" } } });
+    const availObs = await prisma.priceObservation.findMany({ where: { storeId: delta!.id } });
+    expect(availObs).toHaveLength(1);
+    expect(availObs[0].priceCents).toBeNull();
+    expect(availObs[0].availability).toBe("NOT_CARRIED");
+    expect(availObs[0].sourceType).toBe("IMPORT");
 
     // Ultra price went to the ultra line, not regular (acceptance 4).
     const ultra = await prisma.productLine.findUnique({ where: { slug: "zyn-ultra" } });
@@ -200,7 +211,7 @@ describe("import engine (acceptance tests 6–8, 13)", () => {
     expect(batch!.status).toBe("REVERSED");
     // Stores created solely by this batch are retired, not deleted.
     expect(await prisma.store.count({ where: { status: "RETIRED" } })).toBeGreaterThan(0);
-    expect(await prisma.store.count()).toBe(7);
+    expect(await prisma.store.count()).toBe(6);
   });
 
   it("rejects malformed prices/coords and quarantines them (acceptance 7)", async () => {
@@ -214,6 +225,60 @@ describe("import engine (acceptance tests 6–8, 13)", () => {
     expect(rows[0].outcome).toBe("REJECTED");
     expect(rows[1].outcome).toBe("REJECTED");
     expect(rows[2].outcome).toBe("REJECTED");
+  });
+
+  it("imports free-text hours onto new and existing stores", async () => {
+    const csv = [
+      "store_name,address,observed_at,product_line,price_usd,hours",
+      'Hours Store,1 A St,2026-11-01T10:00:00Z,zyn,6.49,"Mon-Sat 6am-11pm"',
+    ].join("\n");
+    const { batchId } = await uploadAndPreview("hours.csv", Buffer.from(csv));
+    await commitBatch(batchId);
+    const store = await prisma.store.findFirst({ where: { name: "Hours Store" } });
+    expect(store!.hours).toBe("Mon-Sat 6am-11pm");
+
+    // Enrichment on update, never blanking out.
+    const csv2 = [
+      "store_name,address,observed_at,product_line,price_usd,hours",
+      'Hours Store,1 A St,2026-11-02T10:00:00Z,zyn,6.59,"Mon-Sun 6am-10pm"',
+      // a later row without hours must not clear them
+    ].join("\n");
+    const { batchId: b2 } = await uploadAndPreview("hours2.csv", Buffer.from(csv2));
+    await commitBatch(b2);
+    const after = await prisma.store.findFirst({ where: { name: "Hours Store" } });
+    expect(after!.hours).toBe("Mon-Sun 6am-10pm");
+  });
+
+  it("flags fact-free rows instead of silently creating empty stores", async () => {
+    const csv = [
+      "store_name,address,observed_at,product_line,price_usd,availability",
+      "Factless Store,1 A St,2026-11-01T10:00:00Z,zyn,,", // no price, no availability, no deal
+      "Availability Store,2 B St,2026-11-01T10:00:00Z,zyn,,not_carried", // availability-only: fine
+    ].join("\n");
+    const { batchId, rows } = await uploadAndPreview("factless.csv", Buffer.from(csv));
+    expect(rows[0].outcome).toBe("FLAGGED");
+    expect(rows[0].issues.some((i) => i.code === "NO_FACTS")).toBe(true);
+    expect(rows[1].outcome).toBe("ACCEPTED");
+
+    await commitBatch(batchId);
+    // Flagged row applied nothing; availability-only row recorded evidence.
+    expect(await prisma.store.count()).toBe(1);
+    const o = await prisma.priceObservation.findFirst();
+    expect(o!.priceCents).toBeNull();
+    expect(o!.availability).toBe("NOT_CARRIED");
+  });
+
+  it("dedupes identical rows but keeps rows that differ only in availability", async () => {
+    const csv = [
+      "store_name,address,observed_at,product_line,price_usd,availability",
+      "Same Store,1 A St,2026-11-01T10:00:00Z,zyn,,out_of_stock",
+      "Same Store,1 A St,2026-11-01T10:00:00Z,zyn,,out_of_stock", // true duplicate
+      "Same Store,1 A St,2026-11-01T10:00:00Z,zyn,,in_stock", // availability correction
+    ].join("\n");
+    const { rows } = await uploadAndPreview("avail-dup.csv", Buffer.from(csv));
+    expect(rows[0].outcome).toBe("ACCEPTED");
+    expect(rows[1].outcome).toBe("SKIPPED_DUPLICATE");
+    expect(rows[2].outcome).not.toBe("SKIPPED_DUPLICATE");
   });
 
   it("unknown product lines are rejected, never guessed (acceptance 7)", async () => {
