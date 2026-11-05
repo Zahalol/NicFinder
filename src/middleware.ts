@@ -42,7 +42,7 @@ export const config = {
     // All pages; skip static assets and metadata files (no scripts there).
     {
       source:
-        "/((?!_next/static|_next/image|favicon.ico|icon-192.png|icon-512.png|manifest.webmanifest|robots.txt|sitemap.xml).*)",
+        "/((?!_next/static|_next/image|favicon.ico|icon.png|icon-192.png|icon-512.png|manifest.webmanifest|robots.txt|sitemap.xml).*)",
       missing: [
         { type: "header", key: "next-router-prefetch" },
         { type: "header", key: "purpose", value: "prefetch" },

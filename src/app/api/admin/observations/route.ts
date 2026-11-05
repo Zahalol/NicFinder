@@ -40,7 +40,9 @@ export async function POST(req: NextRequest) {
       select: { priceCents: true },
     });
 
-    const zipHadPricedStoreBefore = await zipHasPricedStore(store.zip);
+    const zipHadPricedStoreBefore = availabilityOnly
+      ? true // irrelevant: availability-only never triggers coverage notices
+      : await zipHasPricedStore(store.zip);
 
     const obs = await prisma.priceObservation.create({
       data: {

@@ -217,6 +217,21 @@ export async function POST(
         },
       });
       if (openProposal && openProposal.userId !== user.id) {
+        const alreadyCorroborated = await prisma.contribution.findFirst({
+          where: {
+            kind: "CONFIRM",
+            targetObservationId: openProposal.id,
+            userId: user.id,
+          },
+          select: { id: true },
+        });
+        if (alreadyCorroborated) {
+          return NextResponse.json({
+            ok: true,
+            already: true,
+            message: "You already corroborated this report — it still needs other members.",
+          });
+        }
         await prisma.contribution.create({
           data: {
             userId: user.id,

@@ -36,7 +36,7 @@ export function CollectRow({
         productLineId,
         price,
         availability,
-        taxIncluded: false,
+        // tax status is unknown unless the clerk states it — never asserted
       }),
     });
     const json = await res.json().catch(() => ({}));

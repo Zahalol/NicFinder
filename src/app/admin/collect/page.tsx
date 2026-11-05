@@ -8,14 +8,10 @@ import { getSettings } from "@/lib/settings";
 import { selectLatestPrice } from "@/lib/prices";
 import { formatCents } from "@/lib/money";
 import { CollectRow } from "./CollectRow";
+import { formatPhoneDisplay } from "@/lib/normalize";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Collect prices — NicFinder admin" };
-
-function formatPhone(e164: string): string {
-  const m = e164.match(/^\+1(\d{3})(\d{3})(\d{4})$/);
-  return m ? `(${m[1]}) ${m[2]}-${m[3]}` : e164;
-}
 
 export default async function CollectPage({
   searchParams,
@@ -52,7 +48,7 @@ export default async function CollectPage({
       name: s.name,
       address: [s.address, s.zip].filter(Boolean).join(" · "),
       phone: s.phone,
-      phoneDisplay: s.phone ? formatPhone(s.phone) : null,
+      phoneDisplay: s.phone ? formatPhoneDisplay(s.phone) : null,
       lastPrice: latest ? formatCents(latest.observation.priceCents) : null,
       lastAge: latest
         ? latest.ageDays === 0

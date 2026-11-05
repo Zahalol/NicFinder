@@ -94,3 +94,9 @@ export function splitUsAddress(full: string): {
   const zipM = s.match(/\b(\d{5})(-\d{4})?\s*$/);
   return { street: s || null, city: null, state: null, zip: zipM?.[1] ?? null };
 }
+
+/** +13125550101 → (312) 555-0101 for display; non-US passes through. */
+export function formatPhoneDisplay(e164: string): string {
+  const m = e164.match(/^\+1(\d{3})(\d{3})(\d{4})$/);
+  return m ? `(${m[1]}) ${m[2]}-${m[3]}` : e164;
+}

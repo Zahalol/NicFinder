@@ -54,7 +54,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Too many rows (10,000 max)." }, { status: 400 });
 
   const { mapping, unmapped } = autoMapHeaders(parsed.headers);
-  const validated = await validateRows(parsed.rows, mapping, { source: "api" });
+  // Identity tags use the shared default source so a batch uploaded via API
+  // and one uploaded via the admin UI match the same stores (the channel is
+  // recorded in the audit event, not in matching identities).
+  const validated = await validateRows(parsed.rows, mapping);
   const batchId = await createPreviewBatch({
     filename: file.name,
     contentHash: computeContentHash(buffer),
@@ -77,7 +80,7 @@ export async function POST(req: NextRequest) {
       unmappedHeaders: unmapped,
     });
   }
-  const counts = await commitBatch(batchId, { source: "api" });
+  const counts = await commitBatch(batchId);
   return NextResponse.json({
     batchId,
     status: "COMMITTED",

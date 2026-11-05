@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { getSettings } from "@/lib/settings";
 import { selectLatestPrice, selectLatestAvailability } from "@/lib/prices";
 import { formatCents } from "@/lib/money";
+import { formatPhoneDisplay } from "@/lib/normalize";
 import { DemoBadge, ReliabilityBadge } from "@/components/badges";
 import { assessReliability } from "@/lib/reliability";
 import { BackLink } from "@/components/BackLink";
@@ -18,12 +19,6 @@ import { PriceHistorySparkline } from "@/components/PriceHistorySparkline";
 import { searchStores } from "@/lib/search";
 
 export const dynamic = "force-dynamic";
-
-// +13125550101 -> (312) 555-0101 for display; href keeps E.164.
-function formatPhone(e164: string): string {
-  const m = e164.match(/^\+1(\d{3})(\d{3})(\d{4})$/);
-  return m ? `(${m[1]}) ${m[2]}-${m[3]}` : e164;
-}
 
 export async function generateMetadata({
   params,
@@ -191,7 +186,7 @@ export default async function StorePage({
             )}
             {store.phone && (
               <a href={`tel:${store.phone}`} className="text-teal-700 underline">
-                Call to confirm: {formatPhone(store.phone)}
+                Call to confirm: {formatPhoneDisplay(store.phone)}
               </a>
             )}
             {store.hours && (
