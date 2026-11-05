@@ -142,6 +142,23 @@ try {
     bodyText.includes("No price yet") && bodyText.includes("$7.49")
   );
 
+  // Search helpers ported from the beautiful-keller session.
+  await page.goto(`${BASE}/search?q=99999`);
+  check(
+    "ZIP typo recovery offers suggestions",
+    (await page.locator("text=Did you mean").count()) > 0
+  );
+  await page.goto(`${BASE}/search?q=60435`); // Joliet: outside coverage, near Chicago
+  check(
+    "nearest covered area suggested when reachable",
+    (await page.locator("text=Nearest covered area").count()) > 0
+  );
+  await page.goto(`${BASE}/search`);
+  check(
+    "quick-search chips on the empty search page",
+    (await page.locator("button", { hasText: "Near me" }).count()) > 0
+  );
+
   // Pages added by the beautiful-keller session.
   await page.goto(`${BASE}/price-drops`);
   const dropsBody = await page.textContent("body");

@@ -1,4 +1,7 @@
 import { geocode, nearestZip } from "@/lib/geocode";
+import { suggestZips } from "@/lib/zip-suggest";
+import { haversineMiles } from "@/lib/geo";
+import { QuickSearches } from "@/components/QuickSearches";
 import { searchStores, type SortKey } from "@/lib/search";
 import { SearchBox } from "@/components/SearchBox";
 import { SearchResults } from "@/components/SearchResults";
@@ -65,6 +68,31 @@ export default async function SearchPage({
     }
   }
 
+  // Store-name / street matches ("Looking for a specific store?") — only
+  // when the query isn't a plain ZIP.
+  const wordish = q && !/^\d{5}(-\d{4})?$/.test(q);
+  const nameMatches = wordish
+    ? await prisma.store
+        .findMany({
+          where: {
+            status: "ACTIVE",
+            OR: q
+              .split(/\s+/)
+              .filter((w) => w.length >= 3)
+              .slice(0, 4)
+              .map((w) => ({
+                OR: [
+                  { name: { contains: w, mode: "insensitive" as const } },
+                  { address: { contains: w, mode: "insensitive" as const } },
+                ],
+              })),
+          },
+          select: { id: true, name: true, address: true, city: true, zip: true, isDemo: true },
+          take: 5,
+        })
+        .catch(() => [])
+    : [];
+
   const hasLocation = lat !== null && lng !== null && !Number.isNaN(lat) && !Number.isNaN(lng);
   const [search, user] = await Promise.all([
     hasLocation
@@ -103,15 +131,26 @@ export default async function SearchPage({
       <SearchBox initialQuery={q} />
 
       {!q && !hasLocation && (
-        <p className="mt-8 text-center text-stone-500 dark:text-stone-400 text-sm">
-          Enter a ZIP code or address to find nearby prices.
-        </p>
+        <div className="mt-8 text-center">
+          <p className="text-stone-500 dark:text-stone-400 text-sm">
+            Enter a ZIP code or address to find nearby prices.
+          </p>
+          <QuickSearches
+            popular={[
+              { q: "60614", label: "Lincoln Park 60614" },
+              { q: "60657", label: "Lakeview 60657" },
+              { q: "60622", label: "Wicker Park 60622" },
+            ]}
+          />
+        </div>
       )}
 
       {geocodeFailed && (
         <div className="mt-8 max-w-xl mx-auto rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-6 text-center">
           <h2 className="font-medium text-stone-900 dark:text-stone-100">We couldn’t locate “{q}”</h2>
-          <p className="mt-2 text-sm text-stone-600 dark:text-stone-400">
+          <ZipSuggestions q={q} />
+          <NameMatchList q={q} matches={nameMatches} />
+          <p className="mt-3 text-sm text-stone-600 dark:text-stone-400">
             Try a 5-digit ZIP code (ZIP search works even offline) or a fuller
             street address. Address lookup uses OpenStreetMap and may be
             briefly unavailable.
@@ -168,6 +207,26 @@ export default async function SearchPage({
               ))}
             </span>
           </div>
+
+          {nameMatches.length > 0 && (
+            <div className="mt-3 rounded-xl border border-teal-200 dark:border-teal-800 bg-teal-50/50 dark:bg-teal-950/40 px-4 py-3 text-sm">
+              <p className="text-stone-600 dark:text-stone-400">
+                Looking for a specific store? These match “{q}”:
+              </p>
+              <p className="mt-1.5 flex flex-wrap gap-2">
+                {nameMatches.map((m) => (
+                  <Link
+                    key={m.id}
+                    href={`/stores/${m.id}`}
+                    className="rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 px-2.5 py-1 text-teal-700 dark:text-teal-400 hover:border-teal-400"
+                  >
+                    {m.name}
+                    <span className="text-stone-400 text-xs"> · {m.address}</span>
+                  </Link>
+                ))}
+              </p>
+            </div>
+          )}
 
           {search.results.length === 0 ? (
             <NoCoverage q={q} lat={lat!} lng={lng!} radius={radius} />
@@ -247,6 +306,70 @@ function BestPriceCard({
   );
 }
 
+/** "Did you mean" chips for a ZIP-like query that didn't resolve. */
+function ZipSuggestions({ q }: { q: string }) {
+  const suggestions = suggestZips(q);
+  if (suggestions.length === 0) return null;
+  return (
+    <div className="mt-3">
+      <p className="text-sm text-stone-600 dark:text-stone-400">Did you mean:</p>
+      <p className="mt-2 flex flex-wrap justify-center gap-2">
+        {suggestions.map((sgn) => (
+          <Link
+            key={sgn.zip}
+            href={`/search?q=${sgn.zip}`}
+            className="rounded-full border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 px-3 py-1.5 text-sm text-teal-700 dark:text-teal-400 hover:border-teal-400"
+          >
+            {sgn.zip} <span className="text-stone-500 dark:text-stone-400">({sgn.city}, {sgn.state})</span>
+          </Link>
+        ))}
+      </p>
+    </div>
+  );
+}
+
+type NameMatch = {
+  id: string;
+  name: string;
+  address: string | null;
+  city: string | null;
+  zip: string | null;
+  isDemo: boolean;
+};
+
+/** Stores whose name/street matches a query we couldn't geocode. */
+function NameMatchList({ q, matches }: { q: string; matches: NameMatch[] }) {
+  if (matches.length === 0) return null;
+  return (
+    <div className="mt-4 text-left">
+      <p className="text-sm text-stone-600 dark:text-stone-400 text-center">
+        Stores matching “{q}”:
+      </p>
+      <ul className="mt-2 space-y-1.5">
+        {matches.map((m) => (
+          <li key={m.id}>
+            <Link
+              href={`/stores/${m.id}`}
+              className="block rounded-lg border border-stone-200 dark:border-stone-700 px-3 py-2 text-sm hover:border-teal-400 transition"
+            >
+              <span className="font-medium text-stone-800 dark:text-stone-200">{m.name}</span>
+              {m.isDemo && (
+                <span className="ml-1.5 rounded bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-300 text-[9px] font-medium px-1 py-0.5 uppercase align-middle">
+                  demo
+                </span>
+              )}
+              <span className="block text-xs text-stone-500 dark:text-stone-400">
+                {m.address}
+                {m.city ? `, ${m.city}` : ""} {m.zip ?? ""}
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 /** Honest empty state + demand capture. */
 async function NoCoverage({
   q,
@@ -265,6 +388,32 @@ async function NoCoverage({
     ? await prisma.coverageRequest.count({ where: { zip } })
     : 0;
 
+  // Nearest covered area, suggested only when it's realistically reachable
+  // (an honest "the pilot is 20 mi east", never "drive 1,700 mi"). Covered
+  // means an active PRICE — a "not carried" row alone isn't coverage.
+  const NEARBY_SUGGEST_MILES = 100;
+  const covered = await prisma.store.findMany({
+    where: {
+      status: "ACTIVE",
+      latitude: { not: null },
+      longitude: { not: null },
+      observations: { some: { status: "ACTIVE", priceCents: { not: null } } },
+    },
+    select: { city: true, state: true, zip: true, latitude: true, longitude: true },
+    take: 500,
+  });
+  let nearestCovered: { label: string; zip: string; miles: number } | null = null;
+  for (const st of covered) {
+    const d = haversineMiles(lat, lng, st.latitude!, st.longitude!);
+    if (d <= NEARBY_SUGGEST_MILES && st.zip && (!nearestCovered || d < nearestCovered.miles)) {
+      nearestCovered = {
+        label: [st.city, st.state].filter(Boolean).join(", "),
+        zip: st.zip,
+        miles: Math.round(d),
+      };
+    }
+  }
+
   return (
     <div className="mt-10 max-w-xl mx-auto rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-6 text-center">
       <h2 className="font-medium text-stone-900 dark:text-stone-100">No coverage here yet</h2>
@@ -274,6 +423,17 @@ async function NoCoverage({
         we haven’t covered — try widening the radius or searching a Chicago
         ZIP like 60614.
       </p>
+      {nearestCovered && (
+        <p className="mt-3 text-sm">
+          <Link
+            href={`/search?q=${nearestCovered.zip}`}
+            className="text-teal-700 dark:text-teal-400 underline"
+          >
+            Nearest covered area: {nearestCovered.label} {nearestCovered.zip}
+          </Link>{" "}
+          <span className="text-stone-500 dark:text-stone-400">(~{nearestCovered.miles} mi from here)</span>
+        </p>
+      )}
       <CoverageRequestButton zip={zip} lat={lat} lng={lng} initialCount={requestCount} />
     </div>
   );
