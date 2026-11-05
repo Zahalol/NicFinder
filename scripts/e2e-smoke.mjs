@@ -239,6 +239,73 @@ try {
   await page.waitForTimeout(1500);
   check("map container renders", (await page.locator(".leaflet-container").count()) > 0);
 
+  // Admin endpoint round-trips: collect save (availability-only), hours,
+  // retire + restore — all against a throwaway store.
+  const adminFlows = await page.evaluate(async () => {
+    const out = {};
+    const mk = await fetch("/api/admin/stores", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "E2E Throwaway Store (fictional)", address: "999 E2E St", zip: "60614", isDemo: true }),
+    });
+    const { id } = await mk.json();
+    out.created = mk.ok && Boolean(id);
+
+    // product line id from settings-free public page is awkward; use import batch? grab from store page instead
+    const html = await (await fetch(`/stores/${id}`)).text();
+    const line = (html.match(/value="([a-z0-9]{20,})"/) || [])[1];
+    out.lineFound = Boolean(line);
+
+    const availOnly = await fetch("/api/admin/observations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ storeId: id, productLineId: line, price: "", availability: "NOT_CARRIED" }),
+    });
+    out.availabilityOnlySaved = availOnly.ok;
+
+    const hours = await fetch(`/api/admin/stores/${id}/details`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ hours: "Mon-Sun 6am-10pm (e2e)" }),
+    });
+    out.hoursSaved = hours.ok;
+    const page2 = await (await fetch(`/stores/${id}`)).text();
+    out.hoursShown = page2.includes("Mon-Sun 6am-10pm (e2e)");
+    out.notCarriedShown = page2.includes("Not carried");
+
+    const retire = await fetch(`/api/admin/stores/${id}/status`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "retire", reason: "e2e cleanup" }),
+    });
+    out.retired = retire.ok;
+    // Streaming (loading.tsx) flushes a 200 before notFound() resolves, so
+    // assert the content signals: not-found UI + noindex, and no store data.
+    const retiredHtml = await (await fetch(`/stores/${id}`)).text();
+    out.goneFromPublic =
+      retiredHtml.includes("noindex") && !retiredHtml.includes("E2E Throwaway Store");
+
+    const restore = await fetch(`/api/admin/stores/${id}/status`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "restore" }),
+    });
+    out.restored = restore.ok;
+    // leave it retired so repeated e2e runs don't accumulate visible stores
+    await fetch(`/api/admin/stores/${id}/status`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "retire", reason: "e2e cleanup (final)" }),
+    });
+    return out;
+  });
+  check("admin can create a store via API", adminFlows.created === true, JSON.stringify(adminFlows));
+  check("availability-only manual entry saves without a price", adminFlows.availabilityOnlySaved === true);
+  check("store page shows honest Not carried state", adminFlows.notCarriedShown === true);
+  check("staff hours save and display", adminFlows.hoursSaved === true && adminFlows.hoursShown === true);
+  check("retire removes the store from public pages", adminFlows.retired === true && adminFlows.goneFromPublic === true);
+  check("restore brings the store back", adminFlows.restored === true);
+
   const exportCsv = await page.evaluate(async () => {
     const r = await fetch("/api/admin/export");
     return { ok: r.ok, text: (await r.text()).slice(0, 200) };
