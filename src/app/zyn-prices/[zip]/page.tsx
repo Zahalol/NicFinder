@@ -99,7 +99,8 @@ export default async function ZipLandingPage({
   return (
     <div className="py-8 max-w-3xl mx-auto">
       <nav className="text-xs text-stone-400">
-        <Link href="/" className="hover:text-stone-700">NicFinder</Link> / ZYN prices / {zip}
+        <Link href="/" className="hover:text-stone-700">NicFinder</Link> /{" "}
+        <Link href="/zyn-prices" className="hover:text-stone-700">ZYN prices</Link> / {zip}
       </nav>
       <h1 className="mt-2 text-2xl sm:text-3xl font-semibold text-stone-900 dark:text-stone-100">
         ZYN prices in {info.city}, {info.state} {zip}

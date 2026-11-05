@@ -682,3 +682,37 @@ switch sort to Cheapest → both "✓ Comparing" chips and the tray's
 "Compare (2)" persist.
 
 **Recommendation: Keep.**
+
+---
+
+## Cycle 28 — e2e suite extended to the new features (37 → 46 checks)
+
+Confidence pills, compare tray/dialog (open + Escape), worth-the-trip at
+qty=5, ZIP-typo suggestions, nearest-covered suggestion, price-drops page,
+about page, web manifest, offline page, and the signed-in one-tap confirm
+chip are now all asserted against a production build. Session-2 features
+can't silently regress in future sessions.
+
+---
+
+## Cycle 29 — Watchlist per-can delta vs your cheapest
+
+Non-cheapest saved stores show "+$0.90/can vs your cheapest" under the
+price, completing the watchlist-as-decision-tool story.
+
+**Recommendation: Keep.**
+
+---
+
+## Cycle 30 — Covered-areas index at /zyn-prices
+
+**What changed.** The per-ZIP landing pages had no hub. `/zyn-prices` now
+lists every covered ZIP with city name, store counts, priced counts, and
+the current reported price range (or "directory only" — never a guessed
+number), sorted by data richness; linked from each ZIP page's breadcrumb
+and the sitemap.
+
+**Why selected.** Internal-linking hub for the only acquisition channel +
+a genuine "where do you have data?" answer for users.
+
+**Recommendation: Keep.**
