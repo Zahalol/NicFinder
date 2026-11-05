@@ -8,6 +8,12 @@ import { parsePriceToCents } from "../money";
 import { normalizePhone, normalizeAddress, nameSimilarity, splitUsAddress } from "../normalize";
 import { metersBetween } from "../geo";
 import { audit } from "../audit";
+import { sendImportWebhook } from "../import-webhook";
+import {
+  notifyPriceChange,
+  maybeNotifyCoverageArrived,
+  zipHasPricedStore,
+} from "../notifications";
 import {
   type CanonicalField,
   type CanonicalRow,
@@ -66,41 +72,48 @@ export function toCanonical(
     const n = Number(v);
     return Number.isFinite(n) ? n : null;
   };
-  const str = (v: unknown): string | null =>
-    v === null || v === undefined || String(v).trim() === ""
-      ? null
-      : String(v).trim();
+  // Defensive string handling for hostile/garbled files:
+  //  - strip C0/C1 control chars (incl. NUL, which Postgres text rejects),
+  //    keeping tab/newline inside multi-line cells out (collapsed by trim
+  //    where relevant), and cap length per field so a 1 MB cell can't bloat
+  //    the DB or the admin UI.
+  const str = (v: unknown, max = 500): string | null => {
+    if (v === null || v === undefined) return null;
+    const cleaned = String(v).replace(/[\u0000-\u0008\u000B-\u001F\u007F-\u009F]/g, "").trim();
+    return cleaned === "" ? null : cleaned.slice(0, max);
+  };
 
   return {
-    external_store_id: str(c.external_store_id),
-    store_name: str(c.store_name),
-    address: str(c.address),
-    city: str(c.city),
-    state: str(c.state)?.toUpperCase() ?? null,
-    zip: str(c.zip)?.slice(0, 5) ?? null,
+    external_store_id: str(c.external_store_id, 120),
+    store_name: str(c.store_name, 160),
+    address: str(c.address, 250),
+    city: str(c.city, 80),
+    state: str(c.state, 40)?.toUpperCase() ?? null,
+    zip: str(c.zip, 20)?.slice(0, 5) ?? null,
     latitude: num(c.latitude),
     longitude: num(c.longitude),
-    phone: str(c.phone),
-    observed_at: str(c.observed_at),
-    product_line: str(c.product_line)?.toLowerCase().replace(/[\s_]+/g, "-") ?? null,
+    phone: str(c.phone, 40),
+    hours: str(c.hours, 120),
+    observed_at: str(c.observed_at, 60),
+    product_line: str(c.product_line, 60)?.toLowerCase().replace(/[\s_]+/g, "-") ?? null,
     price_usd: (c.price_usd as string | number | null) ?? null,
-    currency: str(c.currency)?.toUpperCase() ?? null,
+    currency: str(c.currency, 10)?.toUpperCase() ?? null,
     tax_included: parseBool(c.tax_included),
-    availability: str(c.availability),
+    availability: str(c.availability, 40),
     confidence: num(c.confidence),
-    strength: str(c.strength),
-    flavor: str(c.flavor),
-    can_size: str(c.can_size),
+    strength: str(c.strength, 60),
+    flavor: str(c.flavor, 80),
+    can_size: str(c.can_size, 60),
     deal_min_qty: num(c.deal_min_qty),
     deal_price_per_can_usd: (c.deal_price_per_can_usd as string | number | null) ?? null,
     deal_discount_per_can_usd:
       (c.deal_discount_per_can_usd as string | number | null) ?? null,
     deal_applies_above_min_qty: parseBool(c.deal_applies_above_min_qty),
-    deal_conditions: str(c.deal_conditions),
-    deal_expires_at: str(c.deal_expires_at),
-    source_row_id: str(c.source_row_id),
-    call_id: str(c.call_id),
-    notes: str(c.notes),
+    deal_conditions: str(c.deal_conditions, 300),
+    deal_expires_at: str(c.deal_expires_at, 60),
+    source_row_id: str(c.source_row_id, 120),
+    call_id: str(c.call_id, 120),
+    notes: str(c.notes, 1000),
   };
 }
 
@@ -123,6 +136,7 @@ export function computeRowHash(c: CanonicalRow): string {
     c.observed_at ?? "",
     c.product_line ?? "",
     String(c.price_usd ?? ""),
+    (c.availability ?? "").toLowerCase().trim(),
     String(c.deal_min_qty ?? ""),
     String(c.deal_price_per_can_usd ?? ""),
     String(c.deal_discount_per_can_usd ?? ""),
@@ -338,26 +352,41 @@ export async function validateRows(
     if (c.currency && c.currency !== "USD")
       issues.push({ code: "BAD_CURRENCY", field: "currency", message: `Only USD supported (got ${c.currency})` });
 
-    let productLineId: string | null = null;
-    if (c.product_line) {
-      productLineId = slugById.get(c.product_line) ?? null;
-      if (!productLineId)
-        issues.push({ code: "UNKNOWN_PRODUCT", field: "product_line", message: `Unknown product line "${c.product_line}" — must be one of: ${[...slugById.keys()].join(", ")}` });
-    } else {
-      // Unlabeled price → attach to the default (regular) line; never to Ultra.
-      productLineId = defaultLine?.id ?? null;
-      if (priceCents !== null)
-        issues.push({ code: "PRODUCT_DEFAULTED", field: "product_line", message: `No product line given; attached to "${defaultLine?.slug}" with reduced confidence` });
-    }
-
     const availability = c.availability
       ? (AVAILABILITY_VALUES[c.availability.toLowerCase().trim()] ?? null)
       : "UNKNOWN";
     if (availability === null)
       issues.push({ code: "BAD_AVAILABILITY", field: "availability", message: `Unrecognized availability "${c.availability}"` });
 
+    let productLineId: string | null = null;
+    if (c.product_line) {
+      productLineId = slugById.get(c.product_line) ?? null;
+      if (!productLineId)
+        issues.push({ code: "UNKNOWN_PRODUCT", field: "product_line", message: `Unknown product line "${c.product_line}" — must be one of: ${[...slugById.keys()].join(", ")}` });
+    } else {
+      // Unlabeled fact → attach to the default (regular) line; never to Ultra.
+      productLineId = defaultLine?.id ?? null;
+      if (priceCents !== null || (availability !== null && availability !== "UNKNOWN"))
+        issues.push({ code: "PRODUCT_DEFAULTED", field: "product_line", message: `No product line given; attached to "${defaultLine?.slug}" with reduced confidence` });
+    }
+
     if (c.confidence !== null && (c.confidence < 0 || c.confidence > 1))
       issues.push({ code: "BAD_CONFIDENCE", field: "confidence", message: "Confidence must be 0..1" });
+
+    // A row with no price, no deal and no explicit availability asserts no
+    // fact — flag it rather than silently creating an evidence-free store.
+    const hasExplicitAvailability =
+      availability !== null && availability !== "UNKNOWN";
+    const hasAnyDealField =
+      c.deal_min_qty !== null ||
+      c.deal_price_per_can_usd !== null ||
+      c.deal_discount_per_can_usd !== null;
+    if (c.price_usd === null && !hasAnyDealField && !hasExplicitAvailability)
+      issues.push({
+        code: "NO_FACTS",
+        message:
+          "Row has no price, no deal and no explicit availability — nothing to record",
+      });
 
     // --- deal validation
     let deal: ValidatedRow["deal"] = null;
@@ -423,6 +452,12 @@ export async function validateRows(
         }
       }
       if (outcome !== "FLAGGED" && issues.some((x) => x.code === "PRICE_OUT_OF_RANGE")) {
+        outcome = "FLAGGED";
+      }
+      if (
+        (outcome === "ACCEPTED" || outcome === "UPDATED") &&
+        issues.some((x) => x.code === "NO_FACTS")
+      ) {
         outcome = "FLAGGED";
       }
     }
@@ -546,6 +581,41 @@ export async function commitBatch(
 
   const source = opts.source ?? "import";
 
+  // Price-watch alerts: stores anyone has saved, product-line names, and the
+  // displayed price before this batch, so imports can notify watchers too.
+  const watchedStoreIds = new Set(
+    (
+      await prisma.savedStore.findMany({ select: { storeId: true }, distinct: ["storeId"] })
+    ).map((w) => w.storeId)
+  );
+  const lineNames = new Map(
+    (await prisma.productLine.findMany({ select: { id: true, name: true } })).map((l) => [
+      l.id,
+      l.name,
+    ])
+  );
+  // ZIPs with un-notified signed-in coverage requests — the only ones where
+  // first-price detection is worth per-row queries.
+  const requestZips = new Set(
+    (
+      await prisma.coverageRequest.findMany({
+        where: { userId: { not: null }, notifiedAt: null },
+        select: { zip: true },
+        distinct: ["zip"],
+      })
+    ).map((r) => r.zip)
+  );
+  const watchedStoreNames = new Map(
+    watchedStoreIds.size
+      ? (
+          await prisma.store.findMany({
+            where: { id: { in: [...watchedStoreIds] } },
+            select: { id: true, name: true },
+          })
+        ).map((st) => [st.id, st.name])
+      : []
+  );
+
   await prisma.$transaction(
     async (tx) => {
       for (let i = 0; i < validated.length; i++) {
@@ -567,6 +637,7 @@ export async function commitBatch(
               latitude: c.latitude,
               longitude: c.longitude,
               phone: normalizePhone(c.phone),
+              hours: c.hours,
             },
           });
           storeId = store.id;
@@ -616,6 +687,7 @@ export async function commitBatch(
           if (c.longitude !== null) data.longitude = c.longitude;
           const phone = normalizePhone(c.phone);
           if (phone) data.phone = phone;
+          if (c.hours) data.hours = c.hours;
           if (Object.keys(data).length)
             await tx.store.update({ where: { id: storeId }, data });
           if (c.external_store_id) {
@@ -631,6 +703,45 @@ export async function commitBatch(
           const c = row.canonical;
           if (row.priceCents !== null && row.observedAt && row.productLineId) {
             const defaulted = row.issues.some((x) => x.code === "PRODUCT_DEFAULTED");
+            // Watchers of an existing store get an in-app alert when this
+            // batch changes its price (new stores can't be watched yet).
+            if (row.outcome === "UPDATED" && watchedStoreIds.has(storeId)) {
+              const prev = await tx.priceObservation.findFirst({
+                where: {
+                  storeId,
+                  productLineId: row.productLineId,
+                  status: "ACTIVE",
+                  priceCents: { not: null },
+                },
+                orderBy: { observedAt: "desc" },
+                select: { priceCents: true },
+              });
+              await notifyPriceChange(
+                {
+                  storeId,
+                  storeName: watchedStoreNames.get(storeId) ?? "A saved store",
+                  productLineName: lineNames.get(row.productLineId) ?? "price",
+                  newPriceCents: row.priceCents,
+                  previousPriceCents: prev?.priceCents ?? null,
+                },
+                tx
+              );
+            }
+            // Coverage-arrived pre-check (before the insert changes the answer).
+            let coverageInfo: { zip: string; name: string; had: boolean } | null = null;
+            if (requestZips.size) {
+              const st = await tx.store.findUnique({
+                where: { id: storeId },
+                select: { zip: true, name: true },
+              });
+              if (st?.zip && requestZips.has(st.zip)) {
+                coverageInfo = {
+                  zip: st.zip,
+                  name: st.name,
+                  had: await zipHasPricedStore(st.zip, tx),
+                };
+              }
+            }
             await tx.priceObservation.create({
               data: {
                 storeId,
@@ -651,12 +762,43 @@ export async function commitBatch(
                   : c.notes,
               },
             });
+            if (coverageInfo) {
+              await maybeNotifyCoverageArrived(
+                {
+                  zip: coverageInfo.zip,
+                  storeName: coverageInfo.name,
+                  zipHadPricedStoreBefore: coverageInfo.had,
+                },
+                tx
+              );
+              if (!coverageInfo.had) requestZips.delete(coverageInfo.zip);
+            }
           } else if (row.observedAt && row.productLineId && c.availability) {
-            // Availability-only rows (e.g. "not carried") still record evidence.
+            // Availability-only rows (e.g. "not carried") record evidence as a
+            // price-less observation — we never invent a price for them.
             const avail = AVAILABILITY_VALUES[c.availability.toLowerCase().trim()];
             if (avail && avail !== "UNKNOWN") {
-              // No price — we record nothing in PriceObservation (priceCents is
-              // required); availability-only facts live in notes/audit for MVP.
+              const defaulted = row.issues.some((x) => x.code === "PRODUCT_DEFAULTED");
+              await tx.priceObservation.create({
+                data: {
+                  storeId,
+                  productLineId: row.productLineId,
+                  priceCents: null,
+                  taxIncluded: c.tax_included,
+                  availability: avail,
+                  strength: c.strength,
+                  flavor: c.flavor,
+                  canSize: c.can_size,
+                  observedAt: row.observedAt,
+                  sourceType: "IMPORT",
+                  confidence: defaulted ? Math.min(c.confidence ?? 0.6, 0.6) : c.confidence,
+                  importRowId: dbRow.id,
+                  externalCallId: c.call_id,
+                  notes: defaulted
+                    ? [c.notes, "Product line not specified in source; attached to regular line."].filter(Boolean).join(" ")
+                    : c.notes,
+                },
+              });
             }
           }
           if (row.deal && row.observedAt && row.productLineId) {
@@ -711,6 +853,13 @@ export async function commitBatch(
     targetType: "importBatch",
     targetId: batchId,
     detail: countOutcomes(validated) as unknown as Record<string, unknown>,
+  });
+  await sendImportWebhook({
+    event: "import.committed",
+    batchId,
+    filename: batch.filename,
+    counts: countOutcomes(validated) as unknown as Record<string, number>,
+    at: new Date().toISOString(),
   });
   return countOutcomes(validated);
 }
@@ -774,5 +923,11 @@ export async function reverseBatch(
     targetType: "importBatch",
     targetId: batchId,
     detail: { reason },
+  });
+  await sendImportWebhook({
+    event: "import.reversed",
+    batchId,
+    reason,
+    at: new Date().toISOString(),
   });
 }

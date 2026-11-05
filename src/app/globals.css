@@ -1,9 +1,16 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #fafaf9;
-  --fg: #1c1917;
+  --bg: #fafaf9; /* stone-50 */
+  --fg: #1c1917; /* stone-900 */
   --accent: #0d9488;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0c0a09; /* stone-950 */
+    --fg: #e7e5e4; /* stone-200 */
+  }
 }
 
 html {
@@ -21,4 +28,16 @@ body {
   height: 100%;
   border-radius: 0.75rem;
   z-index: 0;
+}
+
+/* Dark mode: dim + invert OSM tiles so the map doesn't glare. Markers and
+   popups are our own DOM and stay theme-colored. */
+@media (prefers-color-scheme: dark) {
+  /* higher specificity than leaflet.css's own .leaflet-tile{filter:inherit} */
+  .leaflet-container .leaflet-tile {
+    filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9) saturate(0.7);
+  }
+  .leaflet-container {
+    background: #1c1917;
+  }
 }

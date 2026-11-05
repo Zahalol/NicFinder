@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { selectLatestPrice, type ObservationWithVerifications } from "@/lib/prices";
+import {
+  selectLatestPrice,
+  selectLatestAvailability,
+  type ObservationWithVerifications,
+} from "@/lib/prices";
 import { DEFAULT_SETTINGS } from "@/lib/settings";
 
 const now = new Date("2026-11-04T12:00:00Z");
@@ -103,5 +107,70 @@ describe("latest-price selection policy", () => {
     const r = selectLatestPrice([o], DEFAULT_SETTINGS, now);
     expect(r?.confirmCount).toBe(2);
     expect(r?.disputeCount).toBe(1);
+  });
+
+  it("never selects availability-only observations as a price", () => {
+    const r = selectLatestPrice(
+      [
+        obs({ priceCents: 649, observedAt: daysAgo(5) }),
+        obs({ priceCents: null, availability: "NOT_CARRIED", observedAt: daysAgo(1) }),
+      ],
+      DEFAULT_SETTINGS,
+      now
+    );
+    // Newer "not carried" report must not become the displayed price —
+    // and must not invent one.
+    expect(r?.observation.priceCents).toBe(649);
+  });
+
+  it("returns null when only availability-only observations exist", () => {
+    const r = selectLatestPrice(
+      [obs({ priceCents: null, availability: "NOT_CARRIED", observedAt: daysAgo(1) })],
+      DEFAULT_SETTINGS,
+      now
+    );
+    expect(r).toBeNull();
+  });
+});
+
+describe("latest-availability selection", () => {
+  it("surfaces the newest explicit availability signal", () => {
+    const r = selectLatestAvailability(
+      [
+        obs({ priceCents: 649, availability: "IN_STOCK", observedAt: daysAgo(5) }),
+        obs({ priceCents: null, availability: "NOT_CARRIED", observedAt: daysAgo(1) }),
+      ],
+      DEFAULT_SETTINGS,
+      now
+    );
+    expect(r?.availability).toBe("NOT_CARRIED");
+    expect(r?.ageDays).toBe(1);
+  });
+
+  it("ignores UNKNOWN availability and non-ACTIVE rows", () => {
+    const r = selectLatestAvailability(
+      [
+        obs({ availability: "UNKNOWN", observedAt: daysAgo(1) }),
+        obs({ availability: "OUT_OF_STOCK", observedAt: daysAgo(0), status: "INVALIDATED" }),
+      ],
+      DEFAULT_SETTINGS,
+      now
+    );
+    expect(r).toBeNull();
+  });
+
+  it("expires availability signals on the same window as prices", () => {
+    const r = selectLatestAvailability(
+      [
+        obs({
+          availability: "NOT_CARRIED",
+          priceCents: null,
+          observedAt: daysAgo(DEFAULT_SETTINGS.expireAfterDays + 1),
+        }),
+      ],
+      DEFAULT_SETTINGS,
+      now
+    );
+    expect(r).toBeNull();
   });
 });

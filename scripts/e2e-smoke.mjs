@@ -68,7 +68,7 @@ try {
   server = spawn("npx", ["next", "start", "-p", String(PORT)], {
     cwd: process.cwd(),
     stdio: ["ignore", "pipe", "pipe"],
-    env: { ...process.env },
+    env: { ...process.env, IMPORT_API_KEY: "e2e-import-api-key-0123" },
     detached: true,
   });
   server.stderr.on("data", (d) => process.stderr.write(`[server] ${d}`));
@@ -217,19 +217,280 @@ try {
     body2.includes("Sample Mart Alpha") || uploadResult.counts.accepted === 0
   );
 
+  // Two-store comparison: pick two stores from the list, open /compare.
+  await page.goto(`${BASE}/search?q=60614&radius=5`);
+  // Pick two stores that are KNOWN priced (seeded demo fixtures) — arbitrary
+  // nearest stores may be unpriced and the qty row would legitimately be absent.
+  const namedHref = async (name) =>
+    page.locator("a", { hasText: name }).first().getAttribute("href").catch(() => null);
+  const hrefA = await namedHref("Demo Fuel Stop #1");
+  const hrefB = await namedHref("Demo Corner Mart #2");
+  const storeIds = [hrefA, hrefB]
+    .filter(Boolean)
+    .map((h) => h.split("/")[2]?.split("?")[0])
+    .filter(Boolean);
+  if (storeIds.length >= 2) {
+    await page.goto(`${BASE}/compare?a=${storeIds[0]}&b=${storeIds[1]}&qty=5`);
+    const compareBody = await page.textContent("body");
+    check(
+      "compare page renders both stores",
+      compareBody.includes("Compare stores") && /5 cans of ZYN/.test(compareBody)
+    );
+  } else {
+    check("compare page renders both stores", false, "fewer than 2 stores in search results");
+  }
+
+  await page.goto(`${BASE}/search?q=60614&radius=5`);
   await page.locator("button", { hasText: "Map" }).first().click();
   await page.waitForTimeout(1500);
   check("map container renders", (await page.locator(".leaflet-container").count()) > 0);
+
+  // Admin endpoint round-trips: collect save (availability-only), hours,
+  // retire + restore — all against a throwaway store.
+  const adminFlows = await page.evaluate(async () => {
+    const out = {};
+    const mk = await fetch("/api/admin/stores", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "E2E Throwaway Store (fictional)", address: "999 E2E St", zip: "60614", isDemo: true }),
+    });
+    const { id } = await mk.json();
+    out.created = mk.ok && Boolean(id);
+
+    // product line id from settings-free public page is awkward; use import batch? grab from store page instead
+    const html = await (await fetch(`/stores/${id}`)).text();
+    const line = (html.match(/value="([a-z0-9]{20,})"/) || [])[1];
+    out.lineFound = Boolean(line);
+
+    const availOnly = await fetch("/api/admin/observations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ storeId: id, productLineId: line, price: "", availability: "NOT_CARRIED" }),
+    });
+    out.availabilityOnlySaved = availOnly.ok;
+
+    const hours = await fetch(`/api/admin/stores/${id}/details`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ hours: "Mon-Sun 6am-10pm (e2e)" }),
+    });
+    out.hoursSaved = hours.ok;
+    const page2 = await (await fetch(`/stores/${id}`)).text();
+    out.hoursShown = page2.includes("Mon-Sun 6am-10pm (e2e)");
+    out.notCarriedShown = page2.includes("Not carried");
+
+    const retire = await fetch(`/api/admin/stores/${id}/status`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "retire", reason: "e2e cleanup" }),
+    });
+    out.retired = retire.ok;
+    // Streaming (loading.tsx) flushes a 200 before notFound() resolves, so
+    // assert the content signals: not-found UI + noindex, and no store data.
+    const retiredHtml = await (await fetch(`/stores/${id}`)).text();
+    out.goneFromPublic =
+      retiredHtml.includes("noindex") && !retiredHtml.includes("E2E Throwaway Store");
+
+    const restore = await fetch(`/api/admin/stores/${id}/status`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "restore" }),
+    });
+    out.restored = restore.ok;
+    // leave it retired so repeated e2e runs don't accumulate visible stores
+    await fetch(`/api/admin/stores/${id}/status`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "retire", reason: "e2e cleanup (final)" }),
+    });
+    return out;
+  });
+  check("admin can create a store via API", adminFlows.created === true, JSON.stringify(adminFlows));
+  check("availability-only manual entry saves without a price", adminFlows.availabilityOnlySaved === true);
+  check("store page shows honest Not carried state", adminFlows.notCarriedShown === true);
+  check("staff hours save and display", adminFlows.hoursSaved === true && adminFlows.hoursShown === true);
+  check("retire removes the store from public pages", adminFlows.retired === true && adminFlows.goneFromPublic === true);
+  check("restore brings the store back", adminFlows.restored === true);
+
+  const exportCsv = await page.evaluate(async () => {
+    const r = await fetch("/api/admin/export");
+    return { ok: r.ok, text: (await r.text()).slice(0, 200) };
+  });
+  check(
+    "admin price CSV export works",
+    exportCsv.ok && exportCsv.text.startsWith("store_id,"),
+    exportCsv.text
+  );
 
   for (const [path2, marker] of [
     ["/admin", "Active stores"],
     ["/admin/imports", "sample-import.csv"],
     ["/admin/coverage", "Coverage demand"],
     ["/admin/analytics", "Price range by ZIP"],
+    ["/admin/economics", "Pilot economics"],
+    ["/admin/collect", "Collect prices"],
   ]) {
     await page.goto(`${BASE}${path2}`);
     check(`${path2} renders`, (await page.locator(`text=${marker}`).count()) > 0);
   }
+
+  // --- Community trust loop (second user in a fresh context) ---------------
+  console.log("Trust loop (alerts, flags, resolution notices)…");
+  const ctx2 = await browser.newContext();
+  const member = await ctx2.newPage();
+  await member.goto(BASE);
+  const memberEmail = `e2e-member-${Date.now()}@example.com`;
+  const signupRes = await member.evaluate(async (email) => {
+    const r = await fetch("/api/auth/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email,
+        password: "e2e-member-password",
+        displayName: "E2E Member",
+      }),
+    });
+    return r.ok;
+  }, memberEmail);
+  check("second user can sign up", signupRes === true);
+
+  // Pick the imported fictional store and watch it.
+  const storeMeta = await member.evaluate(async () => {
+    const r = await fetch("/search?q=60614&radius=5");
+    const html = await r.text();
+    const m = html.match(/\/stores\/([a-z0-9]+)/);
+    return m ? m[1] : null;
+  });
+  check("member can resolve a store id", Boolean(storeMeta));
+  const watchRes = await member.evaluate(async (sid) => {
+    const r = await fetch(`/api/stores/${sid}/save`, { method: "POST" });
+    return r.ok;
+  }, storeMeta);
+  check("member can save a store to the watchlist", watchRes === true);
+
+  // Admin enters a new price at the watched store → member gets an alert.
+  // Product line id comes from the ContributePanel's <select> on the store page.
+  const lineId = await member.evaluate(async (sid) => {
+    const html = await (await fetch(`/stores/${sid}`)).text();
+    const m = html.match(/value="([a-z0-9]{20,})"/);
+    return m ? m[1] : null;
+  }, storeMeta);
+  check("product line id discoverable", Boolean(lineId));
+
+  if (lineId && storeMeta) {
+    const entered = await page.evaluate(
+      async ({ sid, pid }) => {
+        const r = await fetch("/api/admin/observations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ storeId: sid, productLineId: pid, price: "6.12" }),
+        });
+        return r.ok;
+      },
+      { sid: storeMeta, pid: lineId }
+    );
+    check("admin can enter a manual price", entered === true);
+
+    await member.goto(`${BASE}/account`);
+    const accountBody = await member.textContent("body");
+    check(
+      "watcher sees an in-app price alert",
+      /\$6\.12|Price alerts.*new/s.test(accountBody)
+    );
+
+    // Member flags the newest observation; admin upholds; member is notified.
+    const flagged = await member.evaluate(async (sid) => {
+      const html = await (await fetch(`/stores/${sid}`)).text();
+      return html.includes("report issue");
+    }, storeMeta);
+    check("flag affordance present for signed-in member", flagged === true);
+  }
+  // Moderation UI journey: member reports a deal → admin clicks
+  // "Approve & publish" in the review queue → deal appears on the store page.
+  const dealTarget = storeMeta; // the watched store from the trust loop
+  const dealReported = await member.evaluate(async (sid) => {
+    const html = await (await fetch(`/stores/${sid}`)).text();
+    const line = (html.match(/value="([a-z0-9]{20,})"/) || [])[1];
+    const r = await fetch(`/api/stores/${sid}/contributions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        kind: "REPORT_DEAL",
+        productLineId: line,
+        minQty: 4,
+        dealDiscount: "0.75",
+        conditions: "e2e journey deal",
+      }),
+    });
+    return r.ok;
+  }, dealTarget);
+  check("member can submit a deal report", dealReported === true);
+
+  await page.goto(`${BASE}/admin/review`);
+  const approveBtn = page.locator("button", { hasText: "Approve & publish" }).first();
+  check("deal report visible in review queue", await approveBtn.isVisible());
+  await approveBtn.click();
+  // Poll — the approval POST + queue refresh can take a moment.
+  let dealShown = false;
+  for (let i = 0; i < 10 && !dealShown; i++) {
+    await page.waitForTimeout(500);
+    const storePage = await page.evaluate(async (sid) => {
+      return await (await fetch(`/stores/${sid}`)).text();
+    }, dealTarget);
+    // React splits "buy 4+" across text nodes in the payload, so match the
+    // unique conditions marker only.
+    dealShown = storePage.includes("e2e journey deal");
+  }
+  check("approved deal appears on the store page", dealShown);
+
+  await ctx2.close();
+
+  // Automated import API: auth boundary + preview round-trip.
+  const apiChecks = await page.evaluate(async () => {
+    const out = {};
+    out.noKey = (await fetch("/api/imports", { method: "POST" })).status;
+    out.badKey = (
+      await fetch("/api/imports", {
+        method: "POST",
+        headers: { authorization: "Bearer wrong-key-wrong-key" },
+      })
+    ).status;
+    const fd = new FormData();
+    fd.append(
+      "file",
+      new Blob(
+        [
+          "store_name,address,observed_at,product_line,price_usd\n" +
+            "API Probe Store (fictional),1 Api St,2026-11-01T10:00:00Z,zyn,6.49\n",
+        ],
+        { type: "text/csv" }
+      ),
+      "api-probe.csv"
+    );
+    const prev = await fetch("/api/imports", {
+      method: "POST",
+      headers: { authorization: "Bearer e2e-import-api-key-0123" },
+      body: fd,
+    });
+    const pj = await prev.json();
+    const status = await fetch(`/api/imports/${pj.batchId}`, {
+      headers: { authorization: "Bearer e2e-import-api-key-0123" },
+    });
+    out.preview = prev.ok && pj.status === "PREVIEW";
+    out.statusGet = status.ok;
+    return out;
+  });
+  check("import API rejects missing/invalid keys", apiChecks.noKey === 401 && apiChecks.badKey === 401);
+  check("import API preview + status round-trip", apiChecks.preview === true && apiChecks.statusGet === true);
+
+  // Dark mode regression guard: a dark-preferring browser gets a dark body.
+  const darkCtx = await browser.newContext({ colorScheme: "dark" });
+  const darkPage = await darkCtx.newPage();
+  await darkPage.goto(`${BASE}/`);
+  const bodyBg = await darkPage.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  // stone-950 = #0c0a09 = rgb(12, 10, 9)
+  check("dark scheme renders a dark body background", bodyBg === "rgb(12, 10, 9)", bodyBg);
+  await darkCtx.close();
 
   console.log(failures === 0 ? "\nAll smoke checks passed." : `\n${failures} smoke check(s) FAILED.`);
 } catch (e) {

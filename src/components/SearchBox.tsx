@@ -43,8 +43,10 @@ export function SearchBox({
         value={q}
         onChange={(e) => setQ(e.target.value)}
         autoFocus={autoFocus}
-        placeholder="ZIP code or address (e.g. 60614)"
-        className="flex-1 min-w-0 rounded-xl border border-stone-300 bg-white px-4 py-3 text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+        placeholder="ZIP code or address"
+        inputMode="text"
+        autoComplete="postal-code"
+        className="flex-1 min-w-0 rounded-xl border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 px-4 py-3 text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
         aria-label="Search by ZIP code or address"
       />
       <button
@@ -58,7 +60,7 @@ export function SearchBox({
         onClick={useMyLocation}
         title="Use my location"
         aria-label="Use my location"
-        className="shrink-0 rounded-xl border border-stone-300 bg-white px-3 text-stone-600 hover:bg-stone-50"
+        className="shrink-0 rounded-xl border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 px-3 text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-800"
       >
         {locating ? "…" : "📍"}
       </button>

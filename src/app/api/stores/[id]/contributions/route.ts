@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
-import { requireUser, AuthError } from "@/lib/auth";
+import { requireUser, AuthError, stableIpHash } from "@/lib/auth";
 import { getSettings } from "@/lib/settings";
 import { parsePriceToCents } from "@/lib/money";
 import { countRecentContributions } from "@/lib/rate-limit";
@@ -12,6 +12,8 @@ import {
   addReputation,
   REP_DELTAS,
 } from "@/lib/reputation";
+import { flagObservation, flagDeal } from "@/lib/flags";
+import { reportDeal } from "@/lib/deal-reports";
 
 export async function POST(
   req: NextRequest,
@@ -21,6 +23,9 @@ export async function POST(
     const user = await requireUser();
     const { id: storeId } = await params;
     const settings = await getSettings();
+    const ipHash = stableIpHash(
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+    );
 
     const recent = await countRecentContributions(user.id);
     if (recent >= settings.contributionRateLimitPerHour) {
@@ -36,6 +41,41 @@ export async function POST(
 
     const body = await req.json().catch(() => null);
     const kind = body?.kind;
+
+    // ----- FLAG a specific (possibly historical) observation ---------------
+    // Product line comes from the observation itself, so handle before the
+    // productLineId validation below.
+    if (kind === "FLAG_OBSERVATION") {
+      const result = await flagObservation({
+        observationId: String(body?.targetObservationId ?? ""),
+        storeId,
+        userId: user.id,
+        reason: String(body?.comment ?? ""),
+      });
+      if (!result.ok)
+        return NextResponse.json({ error: result.error }, { status: result.status });
+      return NextResponse.json({
+        ok: true,
+        message: "Thanks — a moderator will review this observation.",
+      });
+    }
+
+    // ----- FLAG a deal (no longer offered / wrong) -------------------------
+    if (kind === "FLAG_DEAL") {
+      const result = await flagDeal({
+        dealId: String(body?.dealId ?? ""),
+        storeId,
+        userId: user.id,
+        reason: String(body?.comment ?? ""),
+      });
+      if (!result.ok)
+        return NextResponse.json({ error: result.error }, { status: result.status });
+      return NextResponse.json({
+        ok: true,
+        message: "Thanks — a moderator will check this deal.",
+      });
+    }
+
     const productLineId = String(body?.productLineId ?? "");
     const productLine = await prisma.productLine.findUnique({ where: { id: productLineId } });
     if (!productLine)
@@ -51,6 +91,12 @@ export async function POST(
         return NextResponse.json(
           { error: "That price is no longer current — refresh the page." },
           { status: 409 }
+        );
+      // Availability-only observations carry no price to confirm.
+      if (obs.priceCents === null)
+        return NextResponse.json(
+          { error: "This entry has no price to confirm." },
+          { status: 400 }
         );
 
       // Confirming your own community observation is self-confirmation.
@@ -121,6 +167,25 @@ export async function POST(
       return NextResponse.json({ ok: true, message: "Thanks — confirmation recorded." });
     }
 
+    // ----- REPORT_DEAL: propose a multi-can deal (moderator-reviewed) -----
+    if (kind === "REPORT_DEAL") {
+      const result = await reportDeal({
+        storeId,
+        productLineId,
+        userId: user.id,
+        minQty: body?.minQty,
+        dealPrice: body?.dealPrice ?? null,
+        dealDiscount: body?.dealDiscount ?? null,
+        conditions: body?.conditions,
+      });
+      if (!result.ok)
+        return NextResponse.json({ error: result.error }, { status: result.status });
+      return NextResponse.json({
+        ok: true,
+        message: "Thanks — a moderator will review the deal before it’s shown.",
+      });
+    }
+
     // ----- DISPUTE: propose a replacement price ---------------------------
     if (kind === "DISPUTE") {
       const priceCents = parsePriceToCents(body?.proposedPrice);
@@ -152,6 +217,21 @@ export async function POST(
         },
       });
       if (openProposal && openProposal.userId !== user.id) {
+        const alreadyCorroborated = await prisma.contribution.findFirst({
+          where: {
+            kind: "CONFIRM",
+            targetObservationId: openProposal.id,
+            userId: user.id,
+          },
+          select: { id: true },
+        });
+        if (alreadyCorroborated) {
+          return NextResponse.json({
+            ok: true,
+            already: true,
+            message: "You already corroborated this report — it still needs other members.",
+          });
+        }
         await prisma.contribution.create({
           data: {
             userId: user.id,
@@ -162,6 +242,7 @@ export async function POST(
             status: "PUBLISHED",
             resolvedAt: new Date(),
             comment: body?.comment ? String(body.comment).slice(0, 500) : null,
+            ipHash,
           },
         });
         const published = await maybePublishCorroborated(openProposal.id, settings);
@@ -193,8 +274,11 @@ export async function POST(
           storeId,
           productLineId,
           kind: "DISPUTE",
+          ipHash,
           proposedPriceCents: priceCents,
           proposedQty: body?.proposedQty ? Number(body.proposedQty) : null,
+          proposedStrength: body?.strength ? String(body.strength).trim().slice(0, 60) || null : null,
+          proposedFlavor: body?.flavor ? String(body.flavor).trim().slice(0, 80) || null : null,
           comment: body?.comment ? String(body.comment).slice(0, 500) : null,
           status:
             decision.action === "AUTO_PUBLISH"

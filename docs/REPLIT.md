@@ -73,6 +73,11 @@ The app has a built-in **Replit Auth** provider (`/api/auth/replit`):
 2. Health check path: `/api/health` (returns 503 if the DB is unreachable).
 3. Attach a custom domain in deployment settings when ready.
 
+Autoscale runs **multiple instances**, so set the secret
+`RATE_LIMIT_BACKEND=db` there: login/signup throttling then uses a shared
+Postgres sliding window (`RateLimitEvent`, pruned by the maintenance job)
+instead of per-process memory. Locally the default (`memory`) is fine.
+
 Autoscale notes: the filesystem is ephemeral (fine — all state is in
 Postgres) and the in-memory login rate limiter is per-instance (documented
 in ARCHITECTURE.md; acceptable at this scale).

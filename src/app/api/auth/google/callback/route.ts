@@ -42,6 +42,7 @@ export async function GET(req: NextRequest) {
     const info = (await infoRes.json()) as {
       sub: string;
       email?: string;
+      email_verified?: boolean;
       name?: string;
     };
     if (!info.email) throw new Error("no email from Google");
@@ -51,6 +52,16 @@ export async function GET(req: NextRequest) {
     if (!user) {
       const byEmail = await prisma.user.findUnique({ where: { email } });
       if (byEmail) {
+        // Account-linking safety: local emails are NOT verified (no email
+        // verification flow), so an attacker could pre-register a victim's
+        // address with a password and wait for the victim to "sign in with
+        // Google". Never auto-link into a password-protected account, and
+        // never trust an unverified Google email for linking.
+        if (byEmail.passwordHash || info.email_verified !== true) {
+          return NextResponse.redirect(
+            new URL("/login?error=email-exists-use-password", req.url)
+          );
+        }
         user = await prisma.user.update({
           where: { id: byEmail.id },
           data: { googleId: info.sub },

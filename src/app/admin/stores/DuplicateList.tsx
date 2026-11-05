@@ -30,25 +30,25 @@ export function DuplicateList({
   }
 
   return (
-    <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50/50 p-4">
-      <h2 className="text-sm font-medium text-amber-900">
+    <div className="mt-4 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50/50 p-4">
+      <h2 className="text-sm font-medium text-amber-900 dark:text-amber-200">
         Possible duplicate stores ({duplicates.length})
       </h2>
       <ul className="mt-2 space-y-3">
         {duplicates.map((d) => (
-          <li key={d.id} className="rounded-lg bg-white border border-stone-200 p-3 text-sm">
-            <p className="text-xs text-stone-500">{d.reason}</p>
+          <li key={d.id} className="rounded-lg bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 p-3 text-sm">
+            <p className="text-xs text-stone-500 dark:text-stone-400">{d.reason}</p>
             <div className="mt-1 grid sm:grid-cols-2 gap-2">
               {[d.a, d.b].map((s) => (
                 <div key={s.id} className="flex items-center justify-between gap-2">
                   <span>
                     <strong>{s.name}</strong>{" "}
-                    <span className="text-stone-500">{s.address} · {s.phone ?? "no phone"}</span>
+                    <span className="text-stone-500 dark:text-stone-400">{s.address} · {s.phone ?? "no phone"}</span>
                   </span>
                   <button
                     disabled={busy === d.id}
                     onClick={() => act(d.id, "merge", s.id)}
-                    className="shrink-0 rounded border border-teal-300 text-teal-700 px-2 py-0.5 text-xs hover:bg-teal-50"
+                    className="shrink-0 rounded border border-teal-300 dark:border-teal-700 text-teal-700 dark:text-teal-400 px-2 py-0.5 text-xs hover:bg-teal-50 dark:hover:bg-teal-950"
                   >
                     Keep this
                   </button>
@@ -58,7 +58,7 @@ export function DuplicateList({
             <button
               disabled={busy === d.id}
               onClick={() => act(d.id, "dismiss")}
-              className="mt-2 text-xs text-stone-500 hover:text-stone-900 underline"
+              className="mt-2 text-xs text-stone-500 dark:text-stone-400 hover:text-stone-900 underline"
             >
               Not duplicates — dismiss
             </button>

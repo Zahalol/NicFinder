@@ -2,6 +2,10 @@ import { NextResponse, type NextRequest } from "next/server";
 import { withStaff } from "@/lib/admin-api";
 import { prisma } from "@/lib/db";
 import { publishDispute, addReputation, REP_DELTAS } from "@/lib/reputation";
+import { upholdFlag, dismissFlag, upholdDealFlag, dismissDealFlag } from "@/lib/flags";
+import { setCommentVisibility } from "@/lib/comments";
+import { publishDealReport, rejectDealReport } from "@/lib/deal-reports";
+import { notifyReportResolved } from "@/lib/notifications";
 import { audit } from "@/lib/audit";
 
 export async function POST(req: NextRequest) {
@@ -15,6 +19,17 @@ export async function POST(req: NextRequest) {
       const c = await prisma.contribution.findUnique({ where: { id: targetId } });
       if (!c || !["PENDING", "CORROBORATING"].includes(c.status))
         return NextResponse.json({ error: "Contribution not reviewable." }, { status: 409 });
+      if (c.kind === "FLAG_OBSERVATION")
+        return NextResponse.json({ error: "Use UPHOLD_FLAG for observation flags." }, { status: 400 });
+      if (c.kind === "REPORT_DEAL") {
+        const result = await publishDealReport(c.id, user.id);
+        if (!result.ok)
+          return NextResponse.json({ error: result.error }, { status: result.status });
+        await prisma.moderationAction.create({
+          data: { actorId: user.id, action, targetType: "contribution", targetId, reason: reason || "Deal approved" },
+        });
+        return NextResponse.json({ ok: true });
+      }
       await publishDispute(c.id, "moderator", user.id);
       await prisma.moderationAction.create({
         data: { actorId: user.id, action, targetType: "contribution", targetId, reason: reason || "Approved" },
@@ -26,6 +41,14 @@ export async function POST(req: NextRequest) {
       const c = await prisma.contribution.findUnique({ where: { id: targetId } });
       if (!c || !["PENDING", "CORROBORATING"].includes(c.status))
         return NextResponse.json({ error: "Contribution not reviewable." }, { status: 409 });
+      if (c.kind === "FLAG_OBSERVATION")
+        return NextResponse.json({ error: "Use DISMISS_FLAG for observation flags." }, { status: 400 });
+      if (c.kind === "REPORT_DEAL") {
+        const result = await rejectDealReport(c.id, user.id, reason);
+        if (!result.ok)
+          return NextResponse.json({ error: result.error }, { status: result.status });
+        return NextResponse.json({ ok: true });
+      }
       if (!reason)
         return NextResponse.json({ error: "A reason is required to reject." }, { status: 400 });
       await prisma.$transaction(async (tx) => {
@@ -40,17 +63,58 @@ export async function POST(req: NextRequest) {
         await tx.moderationAction.create({
           data: { actorId: user.id, action, targetType: "contribution", targetId, reason },
         });
+        const storeRow = await tx.store.findUnique({
+          where: { id: c.storeId },
+          select: { name: true },
+        });
+        await notifyReportResolved(
+          {
+            userId: c.userId,
+            storeId: c.storeId,
+            storeName: storeRow?.name ?? "a store",
+            what: "price report",
+            outcome: "rejected",
+            note: reason,
+          },
+          tx
+        );
       });
+      return NextResponse.json({ ok: true });
+    }
+
+    if (action === "UPHOLD_FLAG") {
+      const result = await upholdFlag(targetId, user.id, reason || undefined);
+      if (!result.ok)
+        return NextResponse.json({ error: result.error }, { status: result.status });
+      return NextResponse.json({ ok: true });
+    }
+
+    if (action === "DISMISS_FLAG") {
+      const result = await dismissFlag(targetId, user.id, reason);
+      if (!result.ok)
+        return NextResponse.json({ error: result.error }, { status: result.status });
+      return NextResponse.json({ ok: true });
+    }
+
+    if (action === "UPHOLD_DEAL_FLAG") {
+      const how = b?.how === "invalid" ? "invalid" : "ended";
+      const result = await upholdDealFlag(targetId, user.id, how, reason || undefined);
+      if (!result.ok)
+        return NextResponse.json({ error: result.error }, { status: result.status });
+      return NextResponse.json({ ok: true });
+    }
+
+    if (action === "DISMISS_DEAL_FLAG") {
+      const result = await dismissDealFlag(targetId, user.id, reason);
+      if (!result.ok)
+        return NextResponse.json({ error: result.error }, { status: result.status });
       return NextResponse.json({ ok: true });
     }
 
     if (action === "HIDE_COMMENT" || action === "RESTORE_COMMENT") {
       const comment = await prisma.comment.findUnique({ where: { id: targetId } });
       if (!comment) return NextResponse.json({ error: "Comment not found." }, { status: 404 });
-      await prisma.comment.update({
-        where: { id: targetId },
-        data: { status: action === "HIDE_COMMENT" ? "HIDDEN" : "VISIBLE", reportCount: 0 },
-      });
+      await setCommentVisibility(targetId, action === "RESTORE_COMMENT");
       await prisma.moderationAction.create({
         data: { actorId: user.id, action, targetType: "comment", targetId, reason: reason || action },
       });

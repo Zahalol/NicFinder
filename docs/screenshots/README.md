@@ -35,3 +35,18 @@ price yet"). Desktop shots at 1440×900, mobile at 390×844 (iPhone-class).
 |---|---|
 | **Search** | ![Mobile search](16-mobile-search.png) |
 | **Store detail** | ![Mobile store](17-mobile-store.png) |
+
+## Session 2 additions (2026-11-05, autonomous overnight session)
+
+| | |
+|---|---|
+| **Store detail v2** — reliability chips, price-history sparkline, hours, nearby alternatives, flag/deal-report affordances | ![Store v2](18-store-detail-v2.png) |
+| **Two-store comparison** — per-line prices and N-can deal math, honest not-carried states | ![Compare](19-compare.png) |
+| **How it works** — trust explainer (data sources, confidence labels, verification flows) | ![How it works](20-how-it-works.png) |
+| **Admin: collect prices** — the G1 worksheet (tap-to-call, inline entry, availability-only facts) | ![Collect](21-admin-collect.png) |
+| **Admin: coverage demand** — requests by ZIP joined with store/price coverage | ![Coverage](22-admin-coverage.png) |
+| **Admin: pilot economics** — coverage stats + what-if call-cost calculator | ![Economics](23-admin-economics.png) |
+| **Admin: review queue v2** — disputes, deal reports, observation & deal flags, comments | ![Review v2](24-admin-review-v2.png) |
+| **Account v2** — price alerts, settings, watchlist with quick-compare | ![Account v2](25-account-v2.png) |
+| **Dark mode (system preference)** — search | ![Dark search](26-dark-search.png) |
+| **Dark mode** — store detail with theme-aware sparkline | ![Dark store](27-dark-store.png) |

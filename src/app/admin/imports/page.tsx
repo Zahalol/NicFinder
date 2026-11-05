@@ -6,9 +6,9 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Imports — NicFinder admin" };
 
 const STATUS_STYLE: Record<string, string> = {
-  PREVIEW: "bg-amber-50 text-amber-700",
-  COMMITTED: "bg-emerald-50 text-emerald-700",
-  REVERSED: "bg-red-50 text-red-700",
+  PREVIEW: "bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-400",
+  COMMITTED: "bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400",
+  REVERSED: "bg-red-50 text-red-700 dark:text-red-400",
 };
 
 export default async function ImportsPage() {
@@ -20,8 +20,8 @@ export default async function ImportsPage() {
 
   return (
     <div>
-      <h1 className="text-lg font-semibold text-stone-900">Data imports</h1>
-      <p className="text-sm text-stone-500 mt-1">
+      <h1 className="text-lg font-semibold text-stone-900 dark:text-stone-100">Data imports</h1>
+      <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">
         Upload CSV or XLSX observation files (see <code>docs/IMPORT_CONTRACT.md</code> and{" "}
         <code>sample-data/</code>). Files are previewed and validated before anything
         is applied; committed imports can be reversed without losing history.
@@ -31,7 +31,7 @@ export default async function ImportsPage() {
 
       <table className="mt-6 w-full text-sm">
         <thead>
-          <tr className="text-left text-xs text-stone-500 border-b border-stone-200">
+          <tr className="text-left text-xs text-stone-500 dark:text-stone-400 border-b border-stone-200 dark:border-stone-700">
             <th className="py-2 pr-2">File</th>
             <th className="py-2 pr-2">Uploaded</th>
             <th className="py-2 pr-2">Status</th>
@@ -44,23 +44,23 @@ export default async function ImportsPage() {
             <tr><td colSpan={5} className="py-4 text-stone-400">No imports yet.</td></tr>
           )}
           {batches.map((b) => (
-            <tr key={b.id} className="border-b border-stone-100">
+            <tr key={b.id} className="border-b border-stone-100 dark:border-stone-800">
               <td className="py-2 pr-2">
-                <Link href={`/admin/imports/${b.id}`} className="text-teal-700 hover:underline">
+                <Link href={`/admin/imports/${b.id}`} className="text-teal-700 dark:text-teal-400 hover:underline">
                   {b.filename}
                 </Link>
               </td>
-              <td className="py-2 pr-2 text-stone-500">{b.createdAt.toLocaleString()}</td>
+              <td className="py-2 pr-2 text-stone-500 dark:text-stone-400">{b.createdAt.toLocaleString()}</td>
               <td className="py-2 pr-2">
                 <span className={`text-xs rounded px-1.5 py-0.5 ${STATUS_STYLE[b.status] ?? ""}`}>
                   {b.status.toLowerCase()}
                 </span>
               </td>
-              <td className="py-2 pr-2 text-stone-600">
+              <td className="py-2 pr-2 text-stone-600 dark:text-stone-400">
                 {b.acceptedRows}/{b.updatedRows}/{b.skippedRows}/{b.flaggedRows}/{b.rejectedRows}
                 <span className="text-stone-400"> of {b.totalRows}</span>
               </td>
-              <td className="py-2 text-stone-500">{b.uploadedBy?.displayName ?? "—"}</td>
+              <td className="py-2 text-stone-500 dark:text-stone-400">{b.uploadedBy?.displayName ?? "API / system"}</td>
             </tr>
           ))}
         </tbody>

@@ -5,6 +5,67 @@ finished work, decisions, and lessons. Current state and open items live in HAND
 
 ---
 
+## 2026-11-04/05 — Session 2 (autonomous overnight marathon)
+
+**Done** (74 improvement cycles, each its own commit; full evidence table in
+AUTONOMOUS_WORKLOG.md)
+- **Found & fixed a lost page**: /admin/coverage existed in nav+e2e but the
+  unanchored `coverage/` gitignore had silently kept it out of every commit.
+- **Data honesty core**: nullable `priceCents` — availability-only
+  observations ("not carried"/"out of stock") imported, searched, displayed
+  and exported without ever inventing a price; honest states on search, store,
+  ZIP and compare pages.
+- **Community trust v2**: flag any listed observation (moderator upholds →
+  append-only INVALIDATED with provenance); deal flags (ended vs invalid);
+  community multi-can deal reports (always reviewed); corroboration now
+  requires distinct accounts on distinct networks (stable salted ipHash,
+  never raw IPs); comment-report dedupe (distinct reporters, restore clears
+  the ledger); confirmations rejected on price-less rows.
+- **Engagement loop**: in-app price alerts for saved stores (collapsed, actor
+  excluded), per-event resolution notices, header bell, account alerts panel,
+  /how-it-works, credibility profiles (trusted badge, accuracy), comment
+  editing, account settings (password change revokes other sessions,
+  sign-out-everywhere, display name).
+- **Product depth**: reliability tiers with auditable reasons; price-history
+  sparklines (display-policy step line, ≥3 obs); value-of-trip math;
+  /compare + watchlist quick-compare; nearby alternatives; priced-only filter
+  (URL-persisted); tap-to-call; per-store SEO metadata + LocalBusiness JSON-LD
+  (real stores only) + share; data-driven product toggle (multi-brand ready).
+- **Ops/hardening**: security pass (OAuth pre-registration takeover closed,
+  error hygiene, rate-limit map cap); pluggable rate-limit storage
+  (RATE_LIMIT_BACKEND=db for Autoscale); import fuzzing (NUL/length caps,
+  15-test suite); 10k-store benchmark exposing + fixing arbitrary nearest-500
+  truncation; catalog-wide duplicate scan; CSV price export (formula-injection
+  guarded); pilot-economics dashboard; audit-log viewer; security headers;
+  unused zod dependency removed; PWA manifest; demo seed exercises the new
+  features; docs refreshed (roadmap/progress/reputation/architecture/demo).
+- Three adversarial self-review passes over the session diff fixed 15 of
+  their own findings (worklog rows 22, 38 and 67).
+- Second half (rows 43-71): store retire/restore, the /admin/collect G1
+  price-collection worksheet, staff/import-carried store hours, coverage-
+  arrived notifications, the automated import API + HMAC-signed webhooks
+  (roadmap #11, disabled by default), variant detail on community reports,
+  save-from-search, searchStores test suite, and media-based dark mode
+  (all routes verified, CSS-filtered dark map tiles).
+
+**Decisions**
+- Flags/deal reports never auto-publish — moderator-only (deal math and
+  historical corrections are too error-prone for corroboration).
+- Reliability is three explained tiers, never a percentage (false precision).
+- No service worker with the PWA manifest (stale cached prices would violate
+  the freshness promise).
+- npm audit majors (Next 16 / Prisma 7) left for the owner — breaking
+  upgrades don't belong in an unattended session.
+
+**Lessons**
+- An unanchored gitignore pattern (`coverage/`) can silently eat application
+  routes; tests that only run in-session won't catch what never gets
+  committed — e2e in CI would have.
+- `take:` + bounding box without ORDER BY is a correctness bug at scale, not
+  a perf tweak; the benchmark found it before production data could.
+
+---
+
 ## 2026-11-04 — Session 1
 
 **Done**
