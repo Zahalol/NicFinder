@@ -1,7 +1,39 @@
 # Autonomous worklog
 
-Unattended improvement marathon, 2026-11-04 night (UTC). One row per completed
+Unattended improvement marathon, 2026-11-04 → 05 (UTC). One row per completed
 cycle. Recommendation is mine, not a decision on the owner's behalf.
+
+## Owner summary (read this first)
+
+- **What happened**: ~47 verified improvement cycles on branch
+  `claude/keen-planck-rmqrm9`, each its own commit, each gated on lint +
+  typecheck + vitest + prod build + Playwright e2e before pushing.
+- **Totals at the end**: 128 vitest tests (was 53), ~48 e2e browser checks
+  (was ~33), 7 new DB migrations (verified to deploy cleanly onto a virgin
+  database), 0 known red gates.
+- **Biggest wins to look at first**:
+  1. *Data honesty*: "not carried / out of stock" now representable with no
+     invented price, end to end (row 2); search no longer silently drops the
+     nearest stores at scale (row 12 — a real correctness bug found by the
+     new 10k-store benchmark).
+  2. *Trust loop*: flag any observation or deal, community deal reports,
+     in-app price alerts + resolution notices, reliability chips, network-
+     independent corroboration (rows 4, 10, 11, 27, 28, 30, 34).
+  3. *Security*: OAuth account-takeover hole closed, comment-report abuse
+     closed, CSP + security headers, account self-management
+     (rows 3, 22, 25, 41, 45).
+  4. *Admin*: coverage demand (a page that was literally lost to a gitignore
+     bug), economics what-if, duplicate scan, CSV export, audit log,
+     retire/restore (rows 1, 14, 16, 19, 29, 43).
+- **Experimental / review-worthy** (marked Consider or with real tradeoffs):
+  the economics dashboard's assumptions (row 16), the reliability-tier
+  weights (row 10), the accuracy metric on public profiles (row 20), and
+  the stable ipHash privacy tradeoff (row 34).
+- **Nothing was deployed, purchased, emailed, or called.** DEMO_MODE stays
+  on; real stores remain unpriced; demo data stays labeled.
+- **How to review**: `git log --oneline 2e3de05..HEAD` pairs 1:1 with the
+  rows below; any cycle can be reverted independently. Remaining ideas are
+  ranked in AUTONOMOUS_BACKLOG.md. Deployment steps: HANDOFF.md.
 
 | # | Change | Why | Files / commit | Tests & evidence | Limitations / risks | Rec |
 |---|--------|-----|----------------|------------------|---------------------|-----|
