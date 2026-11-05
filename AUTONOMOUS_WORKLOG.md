@@ -5,11 +5,11 @@ cycle. Recommendation is mine, not a decision on the owner's behalf.
 
 ## Owner summary (read this first)
 
-- **What happened**: 71 verified improvement cycles on branch
+- **What happened**: 73 verified improvement cycles on branch
   `claude/keen-planck-rmqrm9`, each its own commit, each gated on lint +
   typecheck + vitest + prod build + Playwright e2e before pushing.
-- **Totals at the end**: 132 vitest tests (was 53), 51 e2e browser checks
-  (was ~33), 9 new DB migrations (verified twice to deploy cleanly onto a
+- **Totals at the end**: 132 vitest tests (was 53), 54 e2e browser checks
+  (was ~33, 5/5 green in a back-to-back soak), 9 new DB migrations (verified twice to deploy cleanly onto a
   virgin database), 0 known red gates. Three adversarial self-review passes
   fixed 15 of their own findings.
 - **Biggest wins to look at first**:
@@ -115,6 +115,7 @@ cycle. Recommendation is mine, not a decision on the owner's behalf.
 | 70 | Dark map tiles: in dark mode OSM tiles get an invert/hue-rotate/dim filter (scoped with higher specificity than leaflet.css's own .leaflet-tile{filter:inherit}, which silently defeated the first attempt) — dark base map with readable labels and teal price pins; light mode untouched (verified both) | The map was the last glaring-light surface in dark mode | globals.css | before/after screenshots both schemes; build, e2e all green | Filtered tiles distort OSM's palette by design — a 'real' dark tile layer would need a different provider | Keep |
 | 71 | Mobile browser chrome follows the theme (viewport themeColor pair); DECISIONS.md records the session's 9 key decisions; e2e gains a dark-mode regression guard (dark-preferring context must get the stone-950 body) | Theme consistency + decision log the docs promise + regression safety for the dark tokens | layout viewport, docs/DECISIONS.md, e2e | e2e all green incl. the new check | — | Keep |
 | 72 | e2e moderation-UI journey (member submits a deal report → admin clicks 'Approve & publish' in the queue → deal appears on the store page) — 3 new checks, 54 total; root-caused the earlier 'environmental' flake: the compare check picked the two nearest stores, which can legitimately be unpriced (no qty row) — it now uses two known-priced demo stores. Correction to row 48: the flake was data-dependence, not server startup | The click→action wiring of the review queue had no coverage; the flake verdict deserved correction once evidence appeared | scripts/e2e-smoke.mjs | 3 consecutive full e2e runs green (54 checks) | Approve button targets the oldest pending item (first()) — fine while runs clean up after themselves | Keep |
+| 73 | Soak-test follow-through: the 10-run soak crashed every run — root cause was the e2e itself tripping the (correct) 6/hour contribution rate limit, because the deal-report journey submitted as the ADMIN user whose contributions accumulate across runs; the fresh per-run member submits now. 5 consecutive back-to-back runs green afterward | A test suite must be repeatable within an hour; and the failure proved the rate limiter works | scripts/e2e-smoke.mjs | 5/5 soak green (54 checks each) | Running e2e >6 times/hour still consumes the member-side budget fresh each run (unique user) — safe | Keep |
 
 ## Resume instructions
 
