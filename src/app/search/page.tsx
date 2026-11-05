@@ -241,6 +241,7 @@ export default async function SearchPage({
                 initialPricedOnly={params.priced === "1"}
                 signedIn={Boolean(user)}
                 initialSavedIds={savedIds}
+                productLineId={search.productLineId}
               />
             </>
           )}

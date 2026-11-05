@@ -252,6 +252,22 @@ try {
     return r.status;
   });
   check("signup succeeds", newSignupStatus === 200, `(got ${newSignupStatus})`);
+  await page.goto(`${BASE}/search?q=60614&radius=5`);
+  check(
+    "new member gets one-tap confirm chips",
+    (await page.locator("button", { hasText: "Still this price?" }).count()) > 0
+  );
+  // One tap records a confirmation (or reports a cooldown/rate limit honestly).
+  await page.locator("button", { hasText: "Still this price?" }).first().click();
+  // (Not [role=alert] in general — Next's route announcer always has it.)
+  await page
+    .waitForSelector('button:has-text("Thanks ✓")', { timeout: 10_000 })
+    .catch(() => {});
+  check(
+    "one-tap confirm records a confirmation",
+    (await page.locator("button", { hasText: "Thanks ✓" }).count()) > 0,
+    `(${(await page.locator('span[role="alert"]').allTextContents()).join(" | ").slice(0, 160)})`
+  );
 
   // 6. Admin login + import + watchlist
   console.log("Admin flows…");

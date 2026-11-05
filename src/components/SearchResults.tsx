@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import type { StoreResult } from "@/lib/search";
@@ -15,6 +16,73 @@ const StoreMap = dynamic(() => import("./StoreMap"), {
   ),
 });
 
+// One-tap "still this price?" confirmation for
+// signed-in members, straight from the results list.
+function QuickConfirm({
+  storeId,
+  productLineId,
+  observationId,
+}: {
+  storeId: string;
+  productLineId: string;
+  observationId: string;
+}) {
+  const router = useRouter();
+  const [state, setState] = useState<"idle" | "busy" | "done" | "error">("idle");
+  const [msg, setMsg] = useState<string | null>(null);
+
+  async function confirm(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (state === "busy" || state === "done") return;
+    setState("busy");
+    try {
+      const res = await fetch(`/api/stores/${storeId}/contributions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          kind: "CONFIRM",
+          productLineId,
+          targetObservationId: observationId,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setState("done");
+        router.refresh();
+      } else {
+        setState("error");
+        setMsg(data.error ?? "Couldn’t record that.");
+      }
+    } catch {
+      setState("error");
+      setMsg("Network error.");
+    }
+  }
+
+  if (state === "error")
+    return (
+      <span role="alert" className="text-[11px] text-stone-400 dark:text-stone-500" title={msg ?? undefined}>
+        {msg}
+      </span>
+    );
+  return (
+    <button
+      onClick={confirm}
+      disabled={state !== "idle"}
+      aria-live="polite"
+      className={`rounded-md border px-2 py-0.5 text-[11px] font-medium transition ${
+        state === "done"
+          ? "border-emerald-300 bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
+          : "border-stone-300 dark:border-stone-600 text-stone-500 dark:text-stone-400 hover:border-teal-400 hover:text-teal-700 dark:hover:text-teal-400"
+      }`}
+      aria-label="Confirm this price is still right"
+    >
+      {state === "done" ? "Thanks ✓" : state === "busy" ? "…" : "✓ Still this price?"}
+    </button>
+  );
+}
+
 export function SearchResults({
   results,
   center,
@@ -23,6 +91,7 @@ export function SearchResults({
   initialPricedOnly = false,
   signedIn = false,
   initialSavedIds = [],
+  productLineId = null,
 }: {
   results: StoreResult[];
   center: { lat: number; lng: number };
@@ -31,6 +100,8 @@ export function SearchResults({
   initialPricedOnly?: boolean;
   signedIn?: boolean;
   initialSavedIds?: string[];
+  /** Active product line (needed for one-tap confirmations). */
+  productLineId?: string | null;
 }) {
   const [view, setView] = useState<"list" | "map">("list");
   const [pricedOnly, setPricedOnlyState] = useState(initialPricedOnly);
@@ -194,6 +265,13 @@ export function SearchResults({
                         )}
                         {r.latest.availability === "OUT_OF_STOCK" && (
                           <span className="text-red-600 dark:text-red-400">reported out of stock</span>
+                        )}
+                        {signedIn && productLineId && (
+                          <QuickConfirm
+                            storeId={r.id}
+                            productLineId={productLineId}
+                            observationId={r.latest.observationId}
+                          />
                         )}
                         {r.availabilitySignal && (
                           <span className={r.availabilitySignal.availability === "NOT_CARRIED" ? "text-stone-500 dark:text-stone-400" : "text-red-600 dark:text-red-400"}>
