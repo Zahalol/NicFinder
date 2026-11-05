@@ -15,6 +15,7 @@ export interface CanonicalRow {
   latitude: number | null;
   longitude: number | null;
   phone: string | null; // raw; normalized later
+  hours: string | null; // free-text opening hours (display-only)
   // Observation
   observed_at: string | null; // ISO 8601
   product_line: string | null; // slug, e.g. "zyn" | "zyn-ultra"
@@ -49,6 +50,7 @@ export const CANONICAL_FIELDS = [
   "latitude",
   "longitude",
   "phone",
+  "hours",
   "observed_at",
   "product_line",
   "price_usd",
@@ -99,6 +101,9 @@ export const HEADER_ALIASES: Record<string, CanonicalField> = {
   "phone number": "phone",
   phonenumber: "phone",
   telephone: "phone",
+  hours: "hours",
+  "opening hours": "hours",
+  "store hours": "hours",
   // observation
   "observed at": "observed_at",
   "observation date": "observed_at",

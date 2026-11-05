@@ -225,6 +225,28 @@ describe("import engine (acceptance tests 6–8, 13)", () => {
     expect(rows[2].outcome).toBe("REJECTED");
   });
 
+  it("imports free-text hours onto new and existing stores", async () => {
+    const csv = [
+      "store_name,address,observed_at,product_line,price_usd,hours",
+      'Hours Store,1 A St,2026-11-01T10:00:00Z,zyn,6.49,"Mon-Sat 6am-11pm"',
+    ].join("\n");
+    const { batchId } = await uploadAndPreview("hours.csv", Buffer.from(csv));
+    await commitBatch(batchId);
+    const store = await prisma.store.findFirst({ where: { name: "Hours Store" } });
+    expect(store!.hours).toBe("Mon-Sat 6am-11pm");
+
+    // Enrichment on update, never blanking out.
+    const csv2 = [
+      "store_name,address,observed_at,product_line,price_usd,hours",
+      'Hours Store,1 A St,2026-11-02T10:00:00Z,zyn,6.59,"Mon-Sun 6am-10pm"',
+      // a later row without hours must not clear them
+    ].join("\n");
+    const { batchId: b2 } = await uploadAndPreview("hours2.csv", Buffer.from(csv2));
+    await commitBatch(b2);
+    const after = await prisma.store.findFirst({ where: { name: "Hours Store" } });
+    expect(after!.hours).toBe("Mon-Sun 6am-10pm");
+  });
+
   it("flags fact-free rows instead of silently creating empty stores", async () => {
     const csv = [
       "store_name,address,observed_at,product_line,price_usd,availability",

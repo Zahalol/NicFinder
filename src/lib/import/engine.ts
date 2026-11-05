@@ -88,6 +88,7 @@ export function toCanonical(
     latitude: num(c.latitude),
     longitude: num(c.longitude),
     phone: str(c.phone, 40),
+    hours: str(c.hours, 120),
     observed_at: str(c.observed_at, 60),
     product_line: str(c.product_line, 60)?.toLowerCase().replace(/[\s_]+/g, "-") ?? null,
     price_usd: (c.price_usd as string | number | null) ?? null,
@@ -620,6 +621,7 @@ export async function commitBatch(
               latitude: c.latitude,
               longitude: c.longitude,
               phone: normalizePhone(c.phone),
+              hours: c.hours,
             },
           });
           storeId = store.id;
@@ -669,6 +671,7 @@ export async function commitBatch(
           if (c.longitude !== null) data.longitude = c.longitude;
           const phone = normalizePhone(c.phone);
           if (phone) data.phone = phone;
+          if (c.hours) data.hours = c.hours;
           if (Object.keys(data).length)
             await tx.store.update({ where: { id: storeId }, data });
           if (c.external_store_id) {
