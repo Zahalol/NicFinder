@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
+import { prisma } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -16,12 +17,19 @@ export default async function AdminLayout({
     redirect("/login");
   }
 
+  const pendingReview = await prisma.contribution.count({
+    where: { status: { in: ["PENDING", "CORROBORATING"] } },
+  });
+
   const tabs = [
     { href: "/admin", label: "Overview" },
     { href: "/admin/imports", label: "Imports" },
     { href: "/admin/stores", label: "Stores" },
     { href: "/admin/collect", label: "Collect" },
-    { href: "/admin/review", label: "Review queue" },
+    {
+      href: "/admin/review",
+      label: pendingReview > 0 ? `Review queue (${pendingReview})` : "Review queue",
+    },
     { href: "/admin/coverage", label: "Coverage demand" },
     { href: "/admin/analytics", label: "Analytics" },
     { href: "/admin/economics", label: "Economics" },
